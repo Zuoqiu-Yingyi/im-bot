@@ -1,0 +1,80 @@
+// Copyright (C) 2026 Zuoqiu Yingyi
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Affero General Public License as
+// published by the Free Software Foundation, either version 3 of the
+// License, or (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU Affero General Public License for more details.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+export const ACCESS_TOKEN_URL = "https://bots.qq.com/app/getAppAccessToken"; // 获取接口调用凭证
+export const API_BASE_URL = "https://api.bot.qq.com"; // OpenAPI 根地址
+
+export const PROXY_DIAL_TIMEOUT = 10_000; // /api/network/proxy 的 t 参数, 只限制连接目标的时长 (ms); 整个请求受 siyuan.client.fetch 的 1 分钟超时限制
+export const DEFAULT_HEARTBEAT_INTERVAL = 45_000; // HELLO 未给出心跳间隔时使用 (ms)
+export const RECONNECT_BASE_DELAY = 1_000; // 重连退避的初始间隔 (ms)
+export const RECONNECT_MAX_DELAY = 60_000; // 重连退避的最大间隔 (ms)
+
+/**
+ * 网关 opcode
+ * REF: https://bot.q.qq.com/wiki/develop/api-v2/dev-prepare/interface-framework/event-emit.html
+ */
+export enum OpCode {
+    DISPATCH = 0, // 服务端推送事件
+    HEARTBEAT = 1, // 心跳
+    IDENTIFY = 2, // 鉴权
+    RESUME = 6, // 恢复连接
+    RECONNECT = 7, // 服务端通知客户端重连
+    INVALID_SESSION = 9, // identify 或 resume 的参数有误
+    HELLO = 10, // 连接建立后网关下发的第一条消息
+    HEARTBEAT_ACK = 11, // 心跳回包
+}
+
+/**
+ * 事件订阅 intents, 键的顺序即设置面板中开关的顺序
+ * REF: https://bot.q.qq.com/wiki/develop/api-v2/dev-prepare/interface-framework/event-emit.html
+ */
+export const INTENTS = {
+    GUILDS: 1 << 0,
+    GUILD_MEMBERS: 1 << 1,
+    GUILD_MESSAGES: 1 << 9, // 仅私域机器人
+    GUILD_MESSAGE_REACTIONS: 1 << 10,
+    DIRECT_MESSAGE: 1 << 12,
+    GROUP_AND_C2C_EVENT: 1 << 25,
+    INTERACTION: 1 << 26,
+    MESSAGE_AUDIT: 1 << 27,
+    FORUMS_EVENT: 1 << 28, // 仅私域机器人
+    AUDIO_ACTION: 1 << 29,
+    PUBLIC_GUILD_MESSAGES: 1 << 30,
+} as const;
+
+export type TIntent = keyof typeof INTENTS;
+
+/**
+ * 既不能 resume 也不能重新 identify 的关闭码, 收到后停止重连
+ * REF: https://bot.q.qq.com/wiki/develop/api-v2/dev-prepare/error-trace/websocket.html
+ */
+export const FATAL_CLOSE_CODES = new Map<number, string>([
+    [4001, "invalid opcode"],
+    [4002, "invalid payload"],
+    [4010, "invalid shard"],
+    [4011, "too many guilds, sharding required"],
+    [4012, "invalid version"],
+    [4013, "invalid intent"],
+    [4014, "intent not permitted"],
+    [4914, "bot is offline, only the sandbox environment is allowed"],
+    [4915, "bot is banned"],
+]);
+
+/* 不能 resume, 需要丢弃会话重新 identify 的关闭码 (4900~4913 为网关内部错误) */
+export const IDENTIFY_CLOSE_CODES = new Set<number>([
+    4006,
+    4007,
+    ...Array.from({ length: 14 }, (_, i) => 4900 + i),
+]);

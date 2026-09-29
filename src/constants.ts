@@ -1,26 +1,23 @@
-// Copyright (C) 2024 Zuoqiu Yingyi
-// 
+// Copyright (C) 2026 Zuoqiu Yingyi
+//
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Affero General Public License as
 // published by the Free Software Foundation, either version 3 of the
 // License, or (at your option) any later version.
-// 
+//
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU Affero General Public License for more details.
-// 
+//
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import type { TIntent } from "@/qq/constants";
-
-export interface IConfig {
-    qq: IQQBotConfig;
-}
-
-export interface IQQBotConfig {
-    appid: string; // QQ_BOT_APPID
-    secret: string; // QQ_BOT_SECRET
-    intents: Record<TIntent, boolean>; // QQ_BOT_INTENTS: 各类事件是否订阅
-}
+export default {
+    /* 插件配置文件名, 前端插件 saveData 与内核插件 siyuan.storage 都相对 data/storage/petal/im-bot/ */
+    GLOBAL_CONFIG_NAME: "config.json",
+    /* 前端插件与内核插件共用的 RPC 方法名 */
+    KERNEL_RPC_METHOD: {
+        UPDATE_CONFIG: "update-config", // 更新配置, QQ 机器人配置变化时重新连接
+    } as const,
+} as const;

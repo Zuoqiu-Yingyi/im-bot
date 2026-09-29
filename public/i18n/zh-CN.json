@@ -7,6 +7,34 @@
                 "title": "重置设置选项"
             },
             "title": "常规设置"
+        },
+        "qqBotSettings": {
+            "appid": {
+                "description": "QQ 机器人的 AppID，在 QQ 开放平台（q.qq.com）的机器人开发设置中获取",
+                "title": "AppID <code class=\"fn__code\">QQ_BOT_APPID</code>"
+            },
+            "intents": {
+                "description": "网关只推送已订阅类别的事件，收到的事件会打印到内核日志，修改后会自动重新连接。频道、频道成员与频道 @ 机器人消息以外的类别可能需要先在 QQ 开放平台申请权限，订阅了没有权限的类别时网关会关闭连接（4014）。各类别包含的事件见 <a href=\"https://bot.q.qq.com/wiki/develop/api-v2/dev-prepare/interface-framework/event-emit.html\">事件订阅与通知</a>",
+                "items": {
+                    "AUDIO_ACTION": "音频",
+                    "DIRECT_MESSAGE": "频道私信",
+                    "FORUMS_EVENT": "论坛（仅私域）",
+                    "GROUP_AND_C2C_EVENT": "群聊与单聊",
+                    "GUILDS": "频道与子频道",
+                    "GUILD_MEMBERS": "频道成员",
+                    "GUILD_MESSAGES": "频道全部消息（仅私域）",
+                    "GUILD_MESSAGE_REACTIONS": "频道消息表态",
+                    "INTERACTION": "互动",
+                    "MESSAGE_AUDIT": "消息审核",
+                    "PUBLIC_GUILD_MESSAGES": "频道 @ 机器人消息"
+                },
+                "title": "订阅事件 <code class=\"fn__code\">QQ_BOT_INTENTS</code>"
+            },
+            "secret": {
+                "description": "QQ 机器人的 AppSecret，用于获取接口调用凭证。以明文保存在工作空间的 <code class=\"fn__code\">data/storage/petal/im-bot/config.json</code> 中，会随数据同步",
+                "title": "AppSecret <code class=\"fn__code\">QQ_BOT_SECRET</code>"
+            },
+            "title": "QQ 机器人"
         }
     }
 }

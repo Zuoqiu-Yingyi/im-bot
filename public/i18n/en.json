@@ -7,6 +7,34 @@
                 "title": "Reset settings options"
             },
             "title": "General"
+        },
+        "qqBotSettings": {
+            "appid": {
+                "description": "AppID of the QQ bot, available in the development settings of the bot on the QQ Open Platform (q.qq.com)",
+                "title": "AppID <code class=\"fn__code\">QQ_BOT_APPID</code>"
+            },
+            "intents": {
+                "description": "The gateway only pushes events of the subscribed categories. Received events are written to the kernel log, and the bot reconnects after a change. Categories other than guilds, guild members and guild @bot messages may need permission from the QQ Open Platform first; the gateway closes the connection (4014) when a subscribed category is not permitted. See <a href=\"https://bot.q.qq.com/wiki/develop/api-v2/dev-prepare/interface-framework/event-emit.html\">Event Subscription and Notification</a> for the events in each category",
+                "items": {
+                    "AUDIO_ACTION": "Audio",
+                    "DIRECT_MESSAGE": "Guild direct messages",
+                    "FORUMS_EVENT": "Forums (private bots only)",
+                    "GROUP_AND_C2C_EVENT": "Group and C2C chats",
+                    "GUILDS": "Guilds and channels",
+                    "GUILD_MEMBERS": "Guild members",
+                    "GUILD_MESSAGES": "All guild messages (private bots only)",
+                    "GUILD_MESSAGE_REACTIONS": "Guild message reactions",
+                    "INTERACTION": "Interactions",
+                    "MESSAGE_AUDIT": "Message audit",
+                    "PUBLIC_GUILD_MESSAGES": "Guild @bot messages"
+                },
+                "title": "Subscribed events <code class=\"fn__code\">QQ_BOT_INTENTS</code>"
+            },
+            "secret": {
+                "description": "AppSecret of the QQ bot, used to get the access token. It is stored in plain text in <code class=\"fn__code\">data/storage/petal/im-bot/config.json</code> of the workspace and synced with your data",
+                "title": "AppSecret <code class=\"fn__code\">QQ_BOT_SECRET</code>"
+            },
+            "title": "QQ Bot"
         }
     }
 }

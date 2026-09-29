@@ -22,6 +22,7 @@ import { Logger } from "@workspace/utils/logger";
 import { mergeIgnoreArray } from "@workspace/utils/misc/merge";
 
 import { DEFAULT_CONFIG } from "./configs/default";
+import CONSTANTS from "./constants";
 
 import Settings from "./components/Settings.svelte";
 
@@ -33,7 +34,7 @@ import type { I18N } from "./utils/i18n";
 declare const _globalThis: ISiyuanGlobal;
 
 export default class ImBotPlugin extends siyuan.Plugin {
-    public static readonly GLOBAL_CONFIG_NAME = "config.json";
+    public static readonly GLOBAL_CONFIG_NAME = CONSTANTS.GLOBAL_CONFIG_NAME;
 
     // @ts-expect-error ignore original type
     declare public readonly i18n: I18N;
@@ -107,6 +108,17 @@ export default class ImBotPlugin extends siyuan.Plugin {
         if (config && config !== this.config) {
             this.config = config;
         }
-        return this.saveData(ImBotPlugin.GLOBAL_CONFIG_NAME, JSON.stringify(this.config, undefined, 4));
+        await this.saveData(ImBotPlugin.GLOBAL_CONFIG_NAME, JSON.stringify(this.config, undefined, 4));
+        await this.updateKernelConfig();
+    }
+
+    /* 同步配置到内核插件, QQ 机器人配置变化时内核插件会重新连接 */
+    public async updateKernelConfig(): Promise<void> {
+        try {
+            await this.kernel.rpc.call[CONSTANTS.KERNEL_RPC_METHOD.UPDATE_CONFIG]?.(this.config);
+        }
+        catch (error) {
+            this.logger.warn(error);
+        }
     }
 }

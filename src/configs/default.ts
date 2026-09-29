@@ -16,4 +16,21 @@
 import type { IConfig } from "@/types/config";
 
 export const DEFAULT_CONFIG: IConfig = {
+    qq: {
+        appid: "",
+        secret: "",
+        intents: {
+            GUILDS: false,
+            GUILD_MEMBERS: false,
+            GUILD_MESSAGES: false,
+            GUILD_MESSAGE_REACTIONS: false,
+            DIRECT_MESSAGE: false,
+            GROUP_AND_C2C_EVENT: true,
+            INTERACTION: false,
+            MESSAGE_AUDIT: false,
+            FORUMS_EVENT: false,
+            AUDIO_ACTION: false,
+            PUBLIC_GUILD_MESSAGES: true,
+        },
+    },
 };

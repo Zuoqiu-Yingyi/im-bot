@@ -18,15 +18,20 @@
 <!-- 设置面板 -->
 
 <script lang="ts">
+    import Group from "@workspace/components/siyuan/setting/item/Group.svelte";
     import Input from "@workspace/components/siyuan/setting/item/Input.svelte";
     import { ItemType } from "@workspace/components/siyuan/setting/item/item";
     import Item from "@workspace/components/siyuan/setting/item/Item.svelte";
+    import MiniItem from "@workspace/components/siyuan/setting/item/MiniItem.svelte";
     import Panel from "@workspace/components/siyuan/setting/panel/Panel.svelte";
     import Panels from "@workspace/components/siyuan/setting/panel/Panels.svelte";
+
+    import { INTENTS } from "@/qq/constants";
 
     import type { ITab } from "@workspace/components/siyuan/setting/tab";
 
     import type Plugin from "@/index";
+    import type { TIntent } from "@/qq/constants";
     import type { IConfig } from "@/types/config";
 
     interface IProps {
@@ -42,8 +47,6 @@
     // svelte-ignore state_referenced_locally
     const i18n = plugin.i18n;
 
-    // @ts-expect-error
-    // eslint-disable-next-line no-unused-vars, unused-imports/no-unused-vars
     async function updated() {
         await plugin.updateConfig(config);
     }
@@ -61,6 +64,7 @@
 
     const PanelKey = {
         general: "general", // 常规设置
+        qq: "qq", // QQ 机器人设置
     } as const;
 
     const panels_focus_key = PanelKey.general;
@@ -71,7 +75,16 @@
             name: i18n.settings.generalSettings.title,
             icon: "#iconSettings",
         },
+        {
+            key: PanelKey.qq,
+            text: i18n.settings.qqBotSettings.title,
+            name: i18n.settings.qqBotSettings.title,
+            icon: "#iconUsers",
+        },
     ] as const satisfies ITab[];
+
+    const intents = Object.keys(INTENTS) as TIntent[];
+    const intentsTitle = `${i18n.settings.qqBotSettings.intents.title}<div class="b3-label__text">${i18n.settings.qqBotSettings.intents.description}</div>`;
 </script>
 
 <Panels
@@ -95,6 +108,79 @@
                     />
                 {/snippet}
             </Item>
+        </Panel>
+
+        <!-- QQ 机器人设置面板 -->
+        <Panel display={panels[1].key === focusPanel}>
+            <!-- AppID -->
+            <Item
+                block={true}
+                text={i18n.settings.qqBotSettings.appid.description}
+                title={i18n.settings.qqBotSettings.appid.title}
+            >
+                {#snippet input()}
+                    <Input
+                        block={true}
+                        onChanged={async (e) => {
+                            config.qq.appid = e.value;
+                            await updated();
+                        }}
+                        placeholder="QQ_BOT_APPID"
+                        settingKey="appid"
+                        settingValue={config.qq.appid}
+                        type={ItemType.text}
+                    />
+                {/snippet}
+            </Item>
+
+            <!-- AppSecret -->
+            <Item
+                block={true}
+                text={i18n.settings.qqBotSettings.secret.description}
+                title={i18n.settings.qqBotSettings.secret.title}
+            >
+                {#snippet input()}
+                    <Input
+                        block={true}
+                        onChanged={async (e) => {
+                            config.qq.secret = e.value;
+                            await updated();
+                        }}
+                        placeholder="QQ_BOT_SECRET"
+                        settingKey="secret"
+                        settingValue={config.qq.secret}
+                        type={ItemType.text}
+                    />
+                {/snippet}
+            </Item>
+
+            <!-- 订阅事件 -->
+            <Group title={intentsTitle}>
+                {#each intents as intent (intent)}
+                    <MiniItem
+                        marginRight="1em"
+                        minWidth="18em"
+                    >
+                        {#snippet title()}
+                            {i18n.settings.qqBotSettings.intents.items[intent]}
+                            <div class="b3-label__text">
+                                <code class="fn__code">{intent}</code>
+                            </div>
+                        {/snippet}
+                        {#snippet input()}
+                            <Input
+                                onChanged={async (e) => {
+                                    config.qq.intents[intent] = e.value;
+                                    await updated();
+                                }}
+                                settingKey={intent}
+                                settingValue={config.qq.intents[intent]}
+                                type={ItemType.checkbox}
+                            />
+                        {/snippet}
+                    </MiniItem>
+                {/each}
+            </Group>
         </Panel>
     {/snippet}
 </Panels>
