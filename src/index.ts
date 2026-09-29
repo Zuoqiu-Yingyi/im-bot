@@ -1,15 +1,15 @@
 // Copyright (C) 2024 Zuoqiu Yingyi
-// 
+//
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Affero General Public License as
 // published by the Free Software Foundation, either version 3 of the
 // License, or (at your option) any later version.
-// 
+//
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU Affero General Public License for more details.
-// 
+//
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
@@ -17,9 +17,7 @@ import * as sdk from "@siyuan-community/siyuan-sdk";
 import siyuan from "siyuan";
 import { mount } from "svelte";
 
-import {
-    FLAG_MOBILE,
-} from "@workspace/utils/env/front-end";
+import { FLAG_MOBILE } from "@workspace/utils/env/front-end";
 import { Logger } from "@workspace/utils/logger";
 import { mergeIgnoreArray } from "@workspace/utils/misc/merge";
 
@@ -34,7 +32,7 @@ import type { I18N } from "./utils/i18n";
 
 declare const _globalThis: ISiyuanGlobal;
 
-export default class TemplatePlugin extends siyuan.Plugin {
+export default class ImBotPlugin extends siyuan.Plugin {
     public static readonly GLOBAL_CONFIG_NAME = "config.json";
 
     // @ts-expect-error ignore original type
@@ -61,29 +59,24 @@ export default class TemplatePlugin extends siyuan.Plugin {
         // this.logger.debug(this);
 
         /* 注册图标 */
-        this.addIcons([
-        ].join(""));
+        this.addIcons([].join(""));
 
         try {
-            const config = await this.loadData(TemplatePlugin.GLOBAL_CONFIG_NAME);
+            const config = await this.loadData(ImBotPlugin.GLOBAL_CONFIG_NAME);
             if (config) {
                 this.config = mergeIgnoreArray(DEFAULT_CONFIG, config) as IConfig;
-            }
-            else {
+            } else {
                 this.config = mergeIgnoreArray(DEFAULT_CONFIG);
                 this.updateConfig();
             }
-        }
-        catch (error) {
+        } catch (error) {
             this.logger.error(error);
         }
     }
 
-    public override onLayoutReady(): void {
-    }
+    public override onLayoutReady(): void {}
 
-    public override onunload(): void {
-    }
+    public override onunload(): void {}
 
     public override openSetting(): void {
         const dialog = new siyuan.Dialog({
@@ -114,6 +107,6 @@ export default class TemplatePlugin extends siyuan.Plugin {
         if (config && config !== this.config) {
             this.config = config;
         }
-        return this.saveData(TemplatePlugin.GLOBAL_CONFIG_NAME, JSON.stringify(this.config, undefined, 4));
+        return this.saveData(ImBotPlugin.GLOBAL_CONFIG_NAME, JSON.stringify(this.config, undefined, 4));
     }
-};
+}

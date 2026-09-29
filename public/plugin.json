@@ -1,11 +1,10 @@
 {
-    "name": "template",
+    "name": "im-bot",
     "author": "Zuoqiu Yingyi",
-    "url": "https://github.com/Zuoqiu-Yingyi/siyuan-plugin-template",
+    "url": "https://github.com/Zuoqiu-Yingyi/siyuan-plugin-im-bot",
     "version": "0.0.0",
     "minAppVersion": "2.9.0",
-    "keywords": [
-    ],
+    "keywords": [],
     "backends": [
         "all"
     ],
