@@ -1,0 +1,39 @@
+{
+    "name": "template",
+    "author": "Zuoqiu Yingyi",
+    "url": "https://github.com/Zuoqiu-Yingyi/siyuan-plugin-template",
+    "version": "0.0.0",
+    "minAppVersion": "2.9.0",
+    "keywords": [
+    ],
+    "backends": [
+        "all"
+    ],
+    "frontends": [
+        "all"
+    ],
+    "displayName": {
+        "default": "",
+        "zh-CN": "",
+        "zh-TW": ""
+    },
+    "description": {
+        "default": "",
+        "zh-CN": "",
+        "zh-TW": ""
+    },
+    "readme": {
+        "default": "README.md",
+        "zh-CN": "README.zh-CN.md",
+        "zh-TW": "README.zh-CN.md"
+    },
+    "funding": {
+        "openCollective": "",
+        "patreon": "",
+        "github": "https://github.com/Zuoqiu-Yingyi",
+        "custom": [
+            "https://afdian.com/a/zuoqiu",
+            "https://ko-fi.com/zuoqiu"
+        ]
+    }
+}

@@ -1,0 +1,50 @@
+> **Git submodule of the [siyuan-packages-monorepo](https://github.com/Zuoqiu-Yingyi/siyuan-packages-monorepo) at [/workspace/plugins/template](https://github.com/Zuoqiu-Yingyi/siyuan-packages-monorepo/tree/main/workspace/plugins/template)**
+
+<div align="center">
+<img alt="icon" src="./public/icon.png" style="width: 8em; height: 8em;">
+
+---
+
+[![GitHub release (latest by date including pre-releases)](https://img.shields.io/github/v/release/Zuoqiu-Yingyi/siyuan-plugin-template?include_prereleases&style=flat-square)](https://github.com/Zuoqiu-Yingyi/siyuan-plugin-template/releases/latest)
+[![GitHub Release Date](https://img.shields.io/github/release-date/Zuoqiu-Yingyi/siyuan-plugin-template?style=flat-square)](https://github.com/Zuoqiu-Yingyi/siyuan-plugin-template/releases/latest)
+[![GitHub License](https://img.shields.io/github/license/Zuoqiu-Yingyi/siyuan-plugin-template?style=flat-square)](https://github.com/Zuoqiu-Yingyi/siyuan-plugin-template/blob/main/LICENSE)
+[![GitHub last commit](https://img.shields.io/github/last-commit/Zuoqiu-Yingyi/siyuan-plugin-template?style=flat-square)](https://github.com/Zuoqiu-Yingyi/siyuan-plugin-template/commits/main)
+![GitHub repo size](https://img.shields.io/github/repo-size/Zuoqiu-Yingyi/siyuan-plugin-template?style=flat-square)
+![GitHub code size](https://img.shields.io/github/languages/code-size/Zuoqiu-Yingyi/siyuan-plugin-template.svg?style=flat-square)
+![hits](https://hits.b3log.org/Zuoqiu-Yingyi/siyuan-plugin-template.svg)
+
+<!-- ![jsDelivr hits (GitHub)](https://img.shields.io/jsdelivr/gh/hy/Zuoqiu-Yingyi/siyuan-packages-template?style=flat-square) -->
+
+[![GitHub all releases](https://img.shields.io/github/downloads/Zuoqiu-Yingyi/siyuan-plugin-template/total?style=flat-square)](https://github.com/Zuoqiu-Yingyi/siyuan-plugin-template/releases)
+
+---
+
+</div>
+
+## USER GUIDE
+
+[简体中文](./public/README.zh-CN.md) \| [English](./public/README.md)
+
+## DEVELOPER GUIDE
+
+### RELEASE STEPS
+
+1. Update the version number in `<subrepo-root-dir>/package.json` and `<subrepo-root-dir>/public/plugin.json`, then commit the changes in this sub-repository on the `main` branch.
+2. Push the `main` branch to `origin`.
+   ```bash
+   git push origin main
+   ```
+3. Update the submodule pointer in [monorepo](https://github.com/Zuoqiu-Yingyi/siyuan-packages-monorepo) to this sub-repository commit, then commit the pointer change in monorepo.
+   ```bash
+   cd <monorepo-root-dir>
+   git add workspace/plugins/template
+   git commit -m "chore(submodule): update template"
+   ```
+4. Await for the CD workflow `release-please.yml` to complete, it will create a _release pull request_ in sub-repository.
+5. Merge the _release pull request_, it will create a new _pre-release_ with current [changelog](./CHANGELOG.md) and a new _tag_ with [semantic version](https://semver.org/) in sub-repository.
+6. Await for the CD workflow `build.yml` to complete, it will update the distribution files to `publish` branch in sub-repository.
+7. Await for the CD workflow `release-distribution.yml` to complete, it will create a new _pre-release_ with an asset named `package.zip` and a new _tag_ with timestamp in sub-repository.
+
+## CHANGELOG
+
+[CHANGE LOG](./CHANGELOG.md)
