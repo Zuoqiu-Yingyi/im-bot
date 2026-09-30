@@ -14,7 +14,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import { GROUP_MESSAGE_EVENTS, MessageType } from "./constants";
-import { convertMessage, sceneValue } from "./message";
+import { convertMessage, mentionsBot, sceneValue } from "./message";
 
 import type * as kernel from "siyuan/kernel";
 
@@ -70,12 +70,13 @@ function blockDate(id: string): string {
 }
 
 /**
- * 思源收集箱: 把绑定群聊的消息写入收集箱文档。
+ * 思源收集箱: 把绑定群聊的消息写入收集箱文档。提及机器人的消息都视为指令, 不写入收集箱 (见 mentionsBot)。
  * 每条消息先插入收集箱文档下的 .temp 文档, 需要时调用 netAssets2LocalAssets 下载资源文件,
  * 再移动到 YYYY/MM/YYYY-MM-DD 文档的末尾。消息逐条处理, 保证顺序, 也不会重复创建日期文档。
- * Writes the messages of bound QQ groups into SiYuan documents: each message is
- * inserted into the .temp document, its assets are downloaded, and then it is
- * moved to the end of the YYYY/MM/YYYY-MM-DD document.
+ * Writes the messages of bound QQ groups into SiYuan documents, except messages
+ * that mention the bot, which are commands: each message is inserted into the
+ * .temp document, its assets are downloaded, and then it is moved to the end of
+ * the YYYY/MM/YYYY-MM-DD document.
  */
 export class QQInbox {
     private readonly siyuan: kernel.ISiyuan;
@@ -95,12 +96,15 @@ export class QQInbox {
         this.config = config;
     }
 
-    /* 处理网关推送的事件, 只接收绑定了收集箱的群聊消息 */
+    /* 处理网关推送的事件, 只接收绑定了收集箱的群聊中没有 @ 机器人的消息 */
     public handle(payload: IPayload): void {
         if (!payload.t || !GROUP_MESSAGE_EVENTS.has(payload.t)) {
             return;
         }
         const message = payload.d as IGroupMessage;
+        if (mentionsBot(payload.t, message)) {
+            return;
+        }
         const bindings = this.config().bindings.filter((binding) => binding.group === message.group_openid);
         if (bindings.length === 0) {
             return;

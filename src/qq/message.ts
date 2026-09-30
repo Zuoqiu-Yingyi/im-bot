@@ -79,6 +79,23 @@ export function sceneValue(message: Pick<IMessage, "message_scene">, key: string
     return message.message_scene?.ext?.find((item) => item.startsWith(prefix))?.slice(prefix.length);
 }
 
+/**
+ * 群聊消息是否提及了本机器人。
+ * GROUP_AT_MESSAGE_CREATE 就是提及机器人的消息, 其 content 已去掉提及机器人的前缀, mentions 也不含机器人;
+ * GROUP_MESSAGE_CREATE 的 mentions 中机器人的一项带 is_you。
+ * 提及全体成员的一项同样带 is_you (scope 为 all), 这样的消息即使同时提及了机器人也视为没有提及机器人:
+ * GROUP_AT_MESSAGE_CREATE 看不出这样的消息是否另外提及了机器人, 而同一条消息的两种事件必须得到相同的结果
+ * @param event - 事件类型, GROUP_AT_MESSAGE_CREATE 或 GROUP_MESSAGE_CREATE
+ * @param message - 群聊消息
+ */
+export function mentionsBot(event: string, message: IGroupMessage): boolean {
+    const mentions = message.mentions ?? [];
+    if (mentions.some((mention) => mention.scope === "all") || (message.content ?? "").includes("<@all>")) {
+        return false;
+    }
+    return event === "GROUP_AT_MESSAGE_CREATE" || mentions.some((mention) => mention.is_you === true);
+}
+
 /* 表情的 ext 为 base64 编码的 JSON, 如 `{"text":"暗中观察"}`; 超级表情 (图片) 的 text 为空 */
 function faceText(ext: string): string {
     try {

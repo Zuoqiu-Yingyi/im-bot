@@ -50,7 +50,8 @@ function waitAtMost(promise: Promise<unknown>, ms: number): Promise<void> {
  * 内核插件, 构建为 dist/kernel.js。
  * 运行在思源内核的 goja 运行时中 (没有 DOM), 只能通过全局对象 siyuan 调用内核能力。
  * 按插件配置接入 QQ 机器人 WebSocket 网关, 把网关推送的全部事件打印到内核日志, 开启事件日志时同时保存到 logs/events/,
- * 把绑定群聊的消息写入收集箱文档, 开始运行与卸载时向这些群发送通知, 响应 /openid 等指令, 并按配置同步指令面板。
+ * 把绑定群聊中没有提及机器人的消息写入收集箱文档, 开始运行与卸载时向这些群发送通知,
+ * 响应单聊中以及群主提及机器人发送的 /openid 等指令, 并按配置同步指令面板。
  * 指定了运行设备时, 只有该设备连接网关、发送通知并同步指令面板。
  * 前端可以通过 RPC call-qq-api 以机器人身份调用 QQ 开放平台的服务端接口。
  * kernel.js 以普通脚本 (非 ES module) 执行: 本文件不能 export, 也不能从 external 模块 (如 siyuan) 导入运行时值。
@@ -58,10 +59,11 @@ function waitAtMost(promise: Promise<unknown>, ms: number): Promise<void> {
  * SiYuan kernel (no DOM) and uses the global `siyuan` object. Connects to the
  * QQ bot WebSocket gateway with the plugin config and writes every pushed
  * event to the kernel log, and to logs/events/ when the event log is on. Writes
- * the messages of bound groups into inbox documents and notifies these groups
- * when it starts running and when it unloads, answers commands such as /openid
- * and syncs the command panels with the config. When a device is set, only that
- * device connects to the gateway, sends the notices and syncs the command
+ * the messages of bound groups that do not mention the bot into inbox documents
+ * and notifies these groups when it starts running and when it unloads, answers
+ * commands such as /openid sent in C2C chats or by group owners who mention the
+ * bot, and syncs the command panels with the config. When a device is set, only
+ * that device connects to the gateway, sends the notices and syncs the command
  * panels. The call-qq-api RPC method calls the QQ bot OpenAPI as the bot.
  * kernel.js is evaluated as a plain script, not an ES module: do not export
  * from this file or import runtime values from external modules (e.g. siyuan).
@@ -251,7 +253,7 @@ class ImBotKernelPlugin {
         return this.openapi.request(credentials, request);
     }
 
-    /* 打印 QQ 网关推送的事件, 开启事件日志时同时保存到文件, 绑定了收集箱的群聊消息写入收集箱, 并响应消息中的指令 */
+    /* 打印 QQ 网关推送的事件, 开启事件日志时同时保存到文件; 群聊中 @ 机器人的消息作为指令处理, 其余消息写入绑定的收集箱 */
     private onQQDispatch(payload: IPayload): void {
         void this.siyuan.logger.info("[qq] event", payload.t, payload);
         if (this.config.qq.eventLog) {

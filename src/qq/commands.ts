@@ -14,7 +14,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import { COMMANDS, GROUP_MESSAGE_EVENTS } from "./constants";
-import { sceneValue } from "./message";
+import { mentionsBot, sceneValue } from "./message";
 import { resolveCredentials } from "./openapi";
 
 import type * as kernel from "siyuan/kernel";
@@ -38,8 +38,9 @@ interface IOpenIdLabels {
 }
 
 const COMMAND = /^\/(\S+)/; // 以 `/指令名` 开头的消息
+const COMMAND_ROLE = "owner"; // 群聊中只接受群主发送的指令
 const MENTION = /<@!?(\w+)>/g;
-const RECENT_COMMANDS = 1024; // 在内存中记住的最近处理过的指令消息数
+const RECENT_COMMANDS = 1024; // 在内存中记住的最近回复过的指令消息数
 
 function errorMessage(error: unknown): string {
     return error instanceof Error ? error.message : String(error);
@@ -62,10 +63,12 @@ function stripBotMentions(message: IGroupMessage): string {
 
 /**
  * 指令: 响应用户在单聊或群聊中发送的 `/指令名`, 目前只有 /openid。
- * 群聊消息去掉提及机器人的标记后以 `/指令名` 开头才视为指令, 因此以提及其他人开头的消息不会触发。
+ * 群聊中只有提及机器人的消息是指令 (见 mentionsBot), 且只接受群主 (member_role 为 owner) 发送的指令。
+ * 群聊消息去掉提及机器人的标记后以 `/指令名` 开头才会响应, 因此以提及其他人开头的消息不会触发。
  * 同一条消息可能重复推送, 也可能同时推送 GROUP_AT_MESSAGE_CREATE 与 GROUP_MESSAGE_CREATE, 只回复一次。
- * Answers commands (`/name`) sent in C2C or group chats; only /openid for now.
- * A message is answered once, even when it is pushed again or pushed as both
+ * Answers commands (`/name`) sent in C2C chats, or in group messages that
+ * mention the bot and come from the group owner; only /openid for now. A
+ * message is answered once, even when it is pushed again or pushed as both
  * GROUP_AT_MESSAGE_CREATE and GROUP_MESSAGE_CREATE.
  */
 export class QQCommands {
@@ -73,7 +76,7 @@ export class QQCommands {
     private readonly openapi: QQOpenApi;
     private readonly config: () => IQQBotConfig;
 
-    private readonly handled = new Set<string>(); // 最近处理过的消息的 `id:消息 ID` 与 `idx:msg_idx`
+    private readonly answered = new Set<string>(); // 最近回复过的消息的 `id:消息 ID` 与 `idx:msg_idx`
 
     /**
      * @param siyuan - 内核插件全局对象
@@ -86,7 +89,7 @@ export class QQCommands {
         this.config = config;
     }
 
-    /* 处理网关推送的事件, 只接收单聊与群聊消息 */
+    /* 处理网关推送的事件, 只接收单聊消息与 @ 机器人的群聊消息 */
     public handle(payload: IPayload): void {
         let message: IMessage;
         let text: string;
@@ -103,7 +106,7 @@ export class QQCommands {
         else if (payload.t && GROUP_MESSAGE_EVENTS.has(payload.t)) {
             const group = payload.d as IGroupMessage;
             const user = group.author?.member_openid || group.author?.id;
-            if (!user || !group.group_openid) {
+            if (!user || !group.group_openid || !mentionsBot(payload.t, group)) {
                 return;
             }
             message = group;
@@ -119,28 +122,43 @@ export class QQCommands {
         }
 
         const command = COMMAND.exec(text.trim())?.[1];
-        if (command !== COMMANDS.OPENID || !this.claim(message)) {
+        if (command !== COMMANDS.OPENID || this.isAnswered(message)) {
             return;
         }
+        const role = message.author?.member_role;
+        if (chat.group && role !== COMMAND_ROLE) {
+            // 不记住被忽略的消息: 同一条消息的另一种事件可能带有群主的角色
+            void this.siyuan.logger.info(`[qq] [commands] ignore /${command} from ${chat.user} in group ${chat.group}: only the group owner can send commands, and the member_role is ${role || "empty"}`);
+            return;
+        }
+        this.remember(message);
         void this.siyuan.logger.info(`[qq] [commands] /${command} from ${chat.user}${chat.group ? ` in group ${chat.group}` : ""}`);
         void this.reply(message, chat, this.openIdText(chat));
     }
 
-    /* 记住消息的 ID 与 msg_idx, 返回该消息是否还没有处理过 */
-    private claim(message: IMessage): boolean {
+    /* 消息在回复记录中的键: 消息 ID 与 msg_idx */
+    private keys(message: IMessage): string[] {
         const msgIdx = sceneValue(message, "msg_idx");
-        const keys = [`id:${message.id}`, ...(msgIdx ? [`idx:${msgIdx}`] : [])];
-        if (keys.some((key) => this.handled.has(key))) {
-            void this.siyuan.logger.debug(`[qq] [commands] the message ${message.id} is already handled, skip it`);
+        return [`id:${message.id}`, ...(msgIdx ? [`idx:${msgIdx}`] : [])];
+    }
+
+    /* 该消息是否已经回复过 */
+    private isAnswered(message: IMessage): boolean {
+        if (!this.keys(message).some((key) => this.answered.has(key))) {
             return false;
         }
-        for (const key of keys) {
-            this.handled.add(key);
-        }
-        while (this.handled.size > RECENT_COMMANDS * 2) {
-            this.handled.delete(this.handled.values().next().value!);
-        }
+        void this.siyuan.logger.debug(`[qq] [commands] the message ${message.id} is already answered, skip it`);
         return true;
+    }
+
+    /* 记住回复过的消息, 只保留最近的 RECENT_COMMANDS 条 */
+    private remember(message: IMessage): void {
+        for (const key of this.keys(message)) {
+            this.answered.add(key);
+        }
+        while (this.answered.size > RECENT_COMMANDS * 2) {
+            this.answered.delete(this.answered.values().next().value!);
+        }
     }
 
     /* /openid 的回复: 用户的 OpenID, 群聊中还有群组的 OpenID */

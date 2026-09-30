@@ -49,7 +49,7 @@ export interface IMessageAuthor {
     union_openid?: string;
     username?: string;
     bot?: boolean;
-    member_role?: string;
+    member_role?: string; // 群内角色: member 为普通成员, admin 为管理员, owner 为群主
 }
 
 /* 富媒体附件 */
@@ -70,7 +70,7 @@ export interface IMention {
     member_openid?: string;
     username?: string;
     scope?: string; // single: @ 成员, all: @ 全体成员
-    is_you?: boolean;
+    is_you?: boolean; // 是否 @ 了本机器人, @ 全体成员的一项也为 true
     bot?: boolean;
 }
 

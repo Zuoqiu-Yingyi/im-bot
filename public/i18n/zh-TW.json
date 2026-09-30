@@ -41,7 +41,7 @@
         },
         "inboxSettings": {
             "bindings": {
-                "description": "每行一條綁定，格式為 <code class=\"fn__code\">group_openid:文件 ID</code>，即群聊的 group_openid 與收集箱文件的 ID 以冒號分隔。收到該群的訊息後，先插入收集箱文件下的 <code class=\"fn__code\">.temp</code> 文件，再移動到其下 <code class=\"fn__code\">YYYY/MM/YYYY-MM-DD</code> 文件的末尾，缺少的文件會自動建立。在群聊中 @ 機器人傳送 <code class=\"fn__code\">/openid</code> 可以查詢 group_openid，也可以在事件日誌中找到。插件啟動與停止時，會向綁定的群傳送上線與下線通知",
+                "description": "每行一條綁定，格式為 <code class=\"fn__code\">group_openid:文件 ID</code>，即群聊的 group_openid 與收集箱文件的 ID 以冒號分隔。收到該群的訊息後，先插入收集箱文件下的 <code class=\"fn__code\">.temp</code> 文件，再移動到其下 <code class=\"fn__code\">YYYY/MM/YYYY-MM-DD</code> 文件的末尾，缺少的文件會自動建立。@ 機器人的訊息視為指令，不會寫入收集箱，@ 全體成員的訊息除外。群主在群聊中 @ 機器人傳送 <code class=\"fn__code\">/openid</code> 可以查詢 group_openid，也可以在事件日誌中找到。插件啟動與停止時，會向綁定的群傳送上線與下線通知",
                 "placeholder": "7E1569E220555215CCBF5D1A85B1A123:20260930112233-abcdefg",
                 "title": "綁定群聊"
             },
