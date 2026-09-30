@@ -20,11 +20,12 @@ export type TAttributes = Record<string, string | undefined>;
 /**
  * 转义纯文本, 使其按原样显示在一个段落中。
  * 转义所有有语法含义的 ASCII 标点 (包括思源扩展的标签、表情、块引用等语法),
+ * 其中 `"` 是因为链接后紧跟 `"` 时 lute 不会将其解析为链接;
  * 换行转为 `<br>`: 空行不会拆分段落, 行首的 `#`、`>` 等也不会被解析为块。
  */
 export function escapeText(text: string): string {
     return text
-        .replace(/[\\`*_{}[\]()#+\-.!|~=^$<>:&]/g, "\\$&")
+        .replace(/[\\`*_{}[\]()#+\-.!|~=^$<>:&"]/g, "\\$&")
         .replace(/\r\n?|\n/g, "<br>");
 }
 
@@ -83,9 +84,16 @@ export function blockquote(children: string[]): string {
         .join("\n");
 }
 
-/* 尖括号形式的链接目标, 可以包含括号 */
+/**
+ * 链接目标。
+ * 不用尖括号形式: 尖括号形式的链接后紧跟空白时 lute 不会将其解析为链接。
+ * 空白、`<`、`>` 与括号转为百分号编码: 不配对的括号会改变链接目标的范围, 反斜杠转义的括号会把反斜杠留在网址中。
+ */
 function destination(url: string): string {
-    return `<${url.replace(/[<>\s]/g, (char) => encodeURIComponent(char))}>`;
+    return url
+        .replace(/[\s<>]/g, (char) => encodeURIComponent(char))
+        .replace(/\(/g, "%28")
+        .replace(/\)/g, "%29");
 }
 
 /* 行内图片; lute 会在替代文本中第一个反斜杠转义处截断, 所以替代文本不转义, 只去掉方括号、反斜杠与换行 */
