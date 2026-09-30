@@ -33,5 +33,10 @@ export const DEFAULT_CONFIG: IConfig = {
             PUBLIC_GUILD_MESSAGES: true,
         },
         eventLog: true,
+        device: "",
+        inbox: {
+            bindings: [],
+            downloadAssets: true,
+        },
     },
 };

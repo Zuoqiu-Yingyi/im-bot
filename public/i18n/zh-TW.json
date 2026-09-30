@@ -1,4 +1,8 @@
 {
+    "inbox": {
+        "quote": "引用的訊息",
+        "unavailable": "[無法顯示的訊息]"
+    },
     "settings": {
         "generalSettings": {
             "reset": {
@@ -8,10 +12,29 @@
             },
             "title": "常規設定"
         },
+        "inboxSettings": {
+            "bindings": {
+                "description": "每行一條綁定：群聊的 group_openid 與收集箱文件的 ID，以空格分隔。收到該群的訊息後，先插入收集箱文件下的 <code class=\"fn__code\">.temp</code> 文件，再移動到其下 <code class=\"fn__code\">YYYY/MM/YYYY-MM-DD</code> 文件的末尾，缺少的文件會自動建立。group_openid 可以在事件日誌中找到",
+                "placeholder": "7E1569E220555215CCBF5D1A85B1A123 20260930112233-abcdefg",
+                "title": "綁定群聊"
+            },
+            "downloadAssets": {
+                "description": "訊息包含圖片、語音、影片或檔案時，在移動前呼叫思源的「轉換網路資源檔案為本機」把它們下載到工作空間",
+                "title": "下載資源檔案"
+            },
+            "title": "收集箱"
+        },
         "qqBotSettings": {
             "appid": {
                 "description": "QQ 機器人的 AppID，在 QQ 開放平台（q.qq.com）的機器人開發設定中取得",
                 "title": "AppID <code class=\"fn__code\">QQ_BOT_APPID</code>"
+            },
+            "device": {
+                "assigned": "目前執行的裝置 ID",
+                "current": "本裝置 ID",
+                "description": "開啟後只有這台裝置連線 QQ 機器人，寫入事件日誌與收集箱；設定同步到其他裝置後，那些裝置會中斷閘道連線。關閉時每台裝置都會連線，多台裝置同時寫入收集箱可能產生重複訊息或同步衝突",
+                "title": "只在此裝置上執行",
+                "unassigned": "未指定執行裝置，每台裝置都會連線"
             },
             "eventLog": {
                 "description": "將閘道推送的每個事件以不帶縮排的 JSON 儲存到工作空間的 <code class=\"fn__code\">data/storage/petal/im-bot/logs/events/&lt;事件類型&gt;/&lt;事件 ID&gt;.json</code>，會隨資料同步。沒有事件 ID 的事件（<code class=\"fn__code\">READY</code>、<code class=\"fn__code\">RESUMED</code>）不會儲存",

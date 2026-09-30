@@ -24,4 +24,16 @@ export interface IQQBotConfig {
     secret: string; // QQ_BOT_SECRET
     intents: Record<TIntent, boolean>; // QQ_BOT_INTENTS: 各类事件是否订阅
     eventLog: boolean; // 事件日志: 是否把网关推送的事件保存到 logs/events/
+    device: string; // 运行 QQ 机器人的设备 ID, 为空时每台设备都运行
+    inbox: IQQInboxConfig; // 思源收集箱
+}
+
+export interface IQQInboxConfig {
+    bindings: IQQInboxBinding[]; // 群聊与收集箱文档的绑定
+    downloadAssets: boolean; // 是否把消息中的资源文件下载到本地
+}
+
+export interface IQQInboxBinding {
+    group: string; // group_openid
+    doc: string; // 收集箱文档 ID
 }

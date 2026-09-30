@@ -41,6 +41,63 @@ export interface IReadyData {
     shard: [number, number];
 }
 
+/* 消息作者 */
+export interface IMessageAuthor {
+    id: string;
+    member_openid?: string;
+    union_openid?: string;
+    username?: string;
+    bot?: boolean;
+    member_role?: string;
+}
+
+/* 富媒体附件 */
+export interface IAttachment {
+    content_type: string; // image/png、image/jpeg、image/gif、video/mp4、voice、file
+    url: string;
+    filename?: string;
+    size?: number;
+    width?: number;
+    height?: number;
+    voice_wav_url?: string; // 语音转换后的 WAV 文件
+    asr_refer_text?: string; // 语音识别结果
+}
+
+/* content 中 @ 的对象 */
+export interface IMention {
+    id?: string;
+    member_openid?: string;
+    username?: string;
+    scope?: string; // single: @ 成员, all: @ 全体成员
+    is_you?: boolean;
+    bot?: boolean;
+}
+
+/* 嵌套的消息元素, 如引用消息中被引用的消息 */
+export interface IMessageElement {
+    msg_idx?: string;
+    message_type?: number;
+    content?: string;
+    attachments?: IAttachment[];
+}
+
+/* op=0, t=GROUP_AT_MESSAGE_CREATE 或 GROUP_MESSAGE_CREATE */
+export interface IGroupMessage {
+    id: string; // 消息 ID
+    content: string;
+    timestamp: string;
+    group_openid: string;
+    message_type?: number;
+    author: IMessageAuthor;
+    attachments?: IAttachment[];
+    mentions?: IMention[];
+    message_scene?: {
+        source?: string;
+        ext?: string[]; // 形如 msg_idx=..., ref_msg_idx=..., auth_token=...
+    };
+    msg_elements?: IMessageElement[];
+}
+
 /* POST https://bots.qq.com/app/getAppAccessToken */
 export interface IAccessToken {
     access_token: string;

@@ -32,7 +32,7 @@
 
     import type Plugin from "@/index";
     import type { TIntent } from "@/qq/constants";
-    import type { IConfig } from "@/types/config";
+    import type { IConfig, IQQInboxBinding } from "@/types/config";
 
     interface IProps {
         config: IConfig; // 传入的配置项
@@ -65,6 +65,7 @@
     const PanelKey = {
         general: "general", // 常规设置
         qq: "qq", // QQ 机器人设置
+        inbox: "inbox", // 收集箱设置
     } as const;
 
     const panels_focus_key = PanelKey.general;
@@ -81,10 +82,29 @@
             name: i18n.settings.qqBotSettings.title,
             icon: "#iconUsers",
         },
+        {
+            key: PanelKey.inbox,
+            text: i18n.settings.inboxSettings.title,
+            name: i18n.settings.inboxSettings.title,
+            icon: "#iconInbox",
+        },
     ] as const satisfies ITab[];
 
     const intents = Object.keys(INTENTS) as TIntent[];
     const intentsTitle = `${i18n.settings.qqBotSettings.intents.title}<div class="b3-label__text">${i18n.settings.qqBotSettings.intents.description}</div>`;
+
+    const currentDevice = window.siyuan.config!.system.id; // 本机设备 ID
+    // svelte-ignore state_referenced_locally
+    let device = $state(config.qq.device); // 运行 QQ 机器人的设备 ID
+
+    /* 每行一条绑定: group_openid 与文档 ID, 用空白分隔 */
+    function parseBindings(text: string): IQQInboxBinding[] {
+        return text
+            .split("\n")
+            .map((line) => line.trim().split(/\s+/))
+            .filter((fields): fields is [string, string, ...string[]] => fields.length >= 2)
+            .map(([group, doc]) => ({ group, doc }));
+    }
 </script>
 
 <Panels
@@ -195,6 +215,75 @@
                         }}
                         settingKey="eventLog"
                         settingValue={config.qq.eventLog}
+                        type={ItemType.checkbox}
+                    />
+                {/snippet}
+            </Item>
+
+            <!-- 运行设备 -->
+            <Item title={i18n.settings.qqBotSettings.device.title}>
+                {#snippet textSlot()}
+                    {i18n.settings.qqBotSettings.device.description}
+                    <br />
+                    {i18n.settings.qqBotSettings.device.current} <code class="fn__code">{currentDevice}</code>
+                    <br />
+                    {#if device}
+                        {i18n.settings.qqBotSettings.device.assigned} <code class="fn__code">{device}</code>
+                    {:else}
+                        {i18n.settings.qqBotSettings.device.unassigned}
+                    {/if}
+                {/snippet}
+                {#snippet input()}
+                    <Input
+                        onChanged={async (e) => {
+                            device = e.value ? currentDevice : "";
+                            config.qq.device = device;
+                            await updated();
+                        }}
+                        settingKey="device"
+                        settingValue={device === currentDevice}
+                        type={ItemType.checkbox}
+                    />
+                {/snippet}
+            </Item>
+        </Panel>
+
+        <!-- 收集箱设置面板 -->
+        <Panel display={panels[2].key === focusPanel}>
+            <!-- 绑定群聊 -->
+            <Item
+                block={true}
+                text={i18n.settings.inboxSettings.bindings.description}
+                title={i18n.settings.inboxSettings.bindings.title}
+            >
+                {#snippet input()}
+                    <Input
+                        block={true}
+                        onChanged={async (e) => {
+                            config.qq.inbox.bindings = parseBindings(e.value);
+                            await updated();
+                        }}
+                        placeholder={i18n.settings.inboxSettings.bindings.placeholder}
+                        settingKey="bindings"
+                        settingValue={config.qq.inbox.bindings.map((binding) => `${binding.group} ${binding.doc}`).join("\n")}
+                        type={ItemType.textarea}
+                    />
+                {/snippet}
+            </Item>
+
+            <!-- 下载资源文件 -->
+            <Item
+                text={i18n.settings.inboxSettings.downloadAssets.description}
+                title={i18n.settings.inboxSettings.downloadAssets.title}
+            >
+                {#snippet input()}
+                    <Input
+                        onChanged={async (e) => {
+                            config.qq.inbox.downloadAssets = e.value;
+                            await updated();
+                        }}
+                        settingKey="downloadAssets"
+                        settingValue={config.qq.inbox.downloadAssets}
                         type={ItemType.checkbox}
                     />
                 {/snippet}

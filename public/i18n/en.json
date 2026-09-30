@@ -1,4 +1,8 @@
 {
+    "inbox": {
+        "quote": "Quoted message",
+        "unavailable": "[Message not available]"
+    },
     "settings": {
         "generalSettings": {
             "reset": {
@@ -8,10 +12,29 @@
             },
             "title": "General"
         },
+        "inboxSettings": {
+            "bindings": {
+                "description": "One binding per line: the group_openid of a group and the ID of an inbox document, separated by a space. Each message of the group is first inserted into the <code class=\"fn__code\">.temp</code> document under the inbox document, then moved to the end of the <code class=\"fn__code\">YYYY/MM/YYYY-MM-DD</code> document under it. Missing documents are created automatically. The group_openid can be found in the event log",
+                "placeholder": "7E1569E220555215CCBF5D1A85B1A123 20260930112233-abcdefg",
+                "title": "Bound groups"
+            },
+            "downloadAssets": {
+                "description": "When a message contains images, voice, videos or files, download them into the workspace with the SiYuan feature that converts network assets to local ones before moving the message",
+                "title": "Download assets"
+            },
+            "title": "Inbox"
+        },
         "qqBotSettings": {
             "appid": {
                 "description": "AppID of the QQ bot, available in the development settings of the bot on the QQ Open Platform (q.qq.com)",
                 "title": "AppID <code class=\"fn__code\">QQ_BOT_APPID</code>"
+            },
+            "device": {
+                "assigned": "Device running the bot",
+                "current": "This device",
+                "description": "When on, only this device connects to the QQ bot and writes the event log and the inbox; other devices disconnect from the gateway once the config syncs to them. When off, every device connects, and writing the inbox on several devices may create duplicate messages or sync conflicts",
+                "title": "Run on this device only",
+                "unassigned": "No device is set, every device connects"
             },
             "eventLog": {
                 "description": "Save every event pushed by the gateway as unindented JSON to <code class=\"fn__code\">data/storage/petal/im-bot/logs/events/&lt;event type&gt;/&lt;event ID&gt;.json</code> of the workspace, synced with your data. Events without an event ID (<code class=\"fn__code\">READY</code>, <code class=\"fn__code\">RESUMED</code>) are not saved",

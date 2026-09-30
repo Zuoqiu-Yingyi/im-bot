@@ -37,6 +37,23 @@ export enum OpCode {
 }
 
 /**
+ * 群消息的 message_type, 图片、语音、视频与文件等附件都在 attachments 中
+ * REF: https://bot.q.qq.com/wiki/develop/api-v2/autogen/event/group_message_create.html
+ */
+export enum MessageType {
+    NORMAL = 0, // 普通消息
+    ARK = 3, // 卡片
+    CHAT_RECORD = 102, // 聊天记录 (合并转发), 只有 content 中的文本
+    REFERENCE = 103, // 引用消息
+}
+
+/* 群消息事件: GROUP_AT_MESSAGE_CREATE 为 @ 机器人的消息, GROUP_MESSAGE_CREATE 为群主允许机器人接收的全部消息 */
+export const GROUP_MESSAGE_EVENTS = new Set<string>([
+    "GROUP_AT_MESSAGE_CREATE",
+    "GROUP_MESSAGE_CREATE",
+]);
+
+/**
  * 事件订阅 intents, 键的顺序即设置面板中开关的顺序
  * REF: https://bot.q.qq.com/wiki/develop/api-v2/dev-prepare/interface-framework/event-emit.html
  */
