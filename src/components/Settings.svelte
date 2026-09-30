@@ -97,13 +97,18 @@
     // svelte-ignore state_referenced_locally
     let device = $state(config.qq.device); // 运行 QQ 机器人的设备 ID
 
-    /* 每行一条绑定: group_openid 与文档 ID, 用空白分隔 */
+    /* 每行一条绑定 `group_openid:文档 ID`, 输入法输出的全角冒号也视为分隔符 */
     function parseBindings(text: string): IQQInboxBinding[] {
-        return text
-            .split("\n")
-            .map((line) => line.trim().split(/\s+/))
-            .filter((fields): fields is [string, string, ...string[]] => fields.length >= 2)
-            .map(([group, doc]) => ({ group, doc }));
+        const bindings: IQQInboxBinding[] = [];
+        for (const line of text.split("\n")) {
+            const separator = line.search(/[:：]/);
+            const group = line.slice(0, separator).trim();
+            const doc = line.slice(separator + 1).trim();
+            if (separator >= 0 && group && doc) {
+                bindings.push({ group, doc });
+            }
+        }
+        return bindings;
     }
 </script>
 
@@ -265,7 +270,7 @@
                         }}
                         placeholder={i18n.settings.inboxSettings.bindings.placeholder}
                         settingKey="bindings"
-                        settingValue={config.qq.inbox.bindings.map((binding) => `${binding.group} ${binding.doc}`).join("\n")}
+                        settingValue={config.qq.inbox.bindings.map((binding) => `${binding.group}:${binding.doc}`).join("\n")}
                         type={ItemType.textarea}
                     />
                 {/snippet}

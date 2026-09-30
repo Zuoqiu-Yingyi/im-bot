@@ -14,8 +14,8 @@
         },
         "inboxSettings": {
             "bindings": {
-                "description": "每行一条绑定：群聊的 group_openid 与收集箱文档的 ID，用空格分隔。收到该群的消息后，先插入收集箱文档下的 <code class=\"fn__code\">.temp</code> 文档，再移动到其下 <code class=\"fn__code\">YYYY/MM/YYYY-MM-DD</code> 文档的末尾，缺少的文档会自动创建。group_openid 可以在事件日志中找到",
-                "placeholder": "7E1569E220555215CCBF5D1A85B1A123 20260930112233-abcdefg",
+                "description": "每行一条绑定，格式为 <code class=\"fn__code\">group_openid:文档 ID</code>，即群聊的 group_openid 与收集箱文档的 ID 用冒号分隔。收到该群的消息后，先插入收集箱文档下的 <code class=\"fn__code\">.temp</code> 文档，再移动到其下 <code class=\"fn__code\">YYYY/MM/YYYY-MM-DD</code> 文档的末尾，缺少的文档会自动创建。group_openid 可以在事件日志中找到",
+                "placeholder": "7E1569E220555215CCBF5D1A85B1A123:20260930112233-abcdefg",
                 "title": "绑定群聊"
             },
             "downloadAssets": {

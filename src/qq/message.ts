@@ -19,6 +19,7 @@ import {
     blockRef,
     escapeText,
     image,
+    kbd,
     link,
     paragraph,
     superBlock,
@@ -118,12 +119,14 @@ function mentionText(id: string | undefined, mentions: IMention[] | undefined): 
  * @param mentions - content 中提及的对象
  * @param text - 纯文本的输出方式
  * @param url - 网址的输出方式
+ * @param mention - 被提及对象 (如 `@昵称`) 的输出方式
  */
 function renderContent(
     content: string,
     mentions: IMention[] | undefined,
     text: (value: string) => string,
     url: (value: string) => string,
+    mention: (value: string) => string,
 ): string {
     let result = "";
     let last = 0;
@@ -140,20 +143,21 @@ function renderContent(
             result += text(faceText(ext));
         }
         else {
-            result += text(mentionText(id, mentions));
+            result += mention(mentionText(id, mentions));
         }
     }
     return result + text(content.slice(last));
 }
 
-/* 段落中的行内内容: 文字按原样显示, 网址转为超链接 */
+/* 段落中的行内内容: 文字按原样显示, 网址转为超链接, 被提及对象转为键盘元素 */
 function inlineContent(content: string, mentions: IMention[] | undefined): string {
-    return renderContent(content, mentions, escapeText, (href) => link(href, href));
+    return renderContent(content, mentions, escapeText, (href) => link(href, href), kbd);
 }
 
-/* 块引用的锚文本 */
+/* 块引用的锚文本, 只能是纯文本 */
 function anchorText(content: string, mentions: IMention[] | undefined): string {
-    const text = renderContent(content, mentions, (value) => value, (href) => href).replace(/\s+/g, " ").trim();
+    const plain = (value: string): string => value;
+    const text = renderContent(content, mentions, plain, plain, plain).replace(/\s+/g, " ").trim();
     return text.length > ANCHOR_LENGTH
         ? `${text.slice(0, ANCHOR_LENGTH)}...`
         : text;

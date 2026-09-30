@@ -109,6 +109,18 @@ export function video(url: string): string {
 }
 
 /**
+ * 键盘 (kbd) 行内元素。
+ * lute 按原样显示其中的内容: 反斜杠转义不生效 (遇到 `\<` 还会截断), 只需把 `&`、`<`、`>` 转为实体。
+ */
+export function kbd(text: string): string {
+    const content = text
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;");
+    return `<kbd>${content}</kbd>`;
+}
+
+/**
  * 块引用, 锚文本为静态文本
  * @param id - 被引用的块 ID
  * @param anchor - 锚文本, 不能为空: 没有锚文本时思源会把块 ID 作为锚文本

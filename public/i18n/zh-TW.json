@@ -14,8 +14,8 @@
         },
         "inboxSettings": {
             "bindings": {
-                "description": "每行一條綁定：群聊的 group_openid 與收集箱文件的 ID，以空格分隔。收到該群的訊息後，先插入收集箱文件下的 <code class=\"fn__code\">.temp</code> 文件，再移動到其下 <code class=\"fn__code\">YYYY/MM/YYYY-MM-DD</code> 文件的末尾，缺少的文件會自動建立。group_openid 可以在事件日誌中找到",
-                "placeholder": "7E1569E220555215CCBF5D1A85B1A123 20260930112233-abcdefg",
+                "description": "每行一條綁定，格式為 <code class=\"fn__code\">group_openid:文件 ID</code>，即群聊的 group_openid 與收集箱文件的 ID 以冒號分隔。收到該群的訊息後，先插入收集箱文件下的 <code class=\"fn__code\">.temp</code> 文件，再移動到其下 <code class=\"fn__code\">YYYY/MM/YYYY-MM-DD</code> 文件的末尾，缺少的文件會自動建立。group_openid 可以在事件日誌中找到",
+                "placeholder": "7E1569E220555215CCBF5D1A85B1A123:20260930112233-abcdefg",
                 "title": "綁定群聊"
             },
             "downloadAssets": {
