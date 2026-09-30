@@ -159,7 +159,7 @@ From then on, the messages of the group are recorded in dated sub-documents of t
     - `Group Open ID`: the OpenID of the group (group_openid). The group owner can get it by sending `/openid` to the bot with an @ mention in the group, and it is also in the event log
     - `Inbox document ID`: the ID of the document that collects the messages. Right-click the document in the document tree and choose "Copy > Copy ID"
     - `Enabled`: when off, the binding writes no messages and sends no online or offline notices. A binding without a group or a document ID has no effect either
-    - `Reply with the block link`: when on, each message written to the document gets a reply from the bot with the block hyperlink of its super block, `siyuan://blocks/<block ID>`. A message written to several documents with this switch on gets one reply per document. Off by default; see Q & A for the limits
+    - `Reply with the block link`: when on, the bot quotes each message written to the document in a reply with the block hyperlink of its super block, `siyuan://blocks/<block ID>`. A message written to several documents with this switch on gets one reply per document. Off by default; see Q & A for the limits
     - `Online and offline notices`: when on, the group gets the online and offline notices when the plugin starts running and stops; see "Online and offline notices". When several bindings of a group turn this on, the group gets one notice each time. Off by default
   - `Download assets`
 

@@ -80,7 +80,7 @@ export function activeBindings(config: IQQInboxConfig): IQQInboxBinding[] {
  * 思源收集箱: 把绑定群聊的消息写入收集箱文档。提及机器人的消息都视为指令, 不写入收集箱 (见 mentionsBot)。
  * 每条消息先插入收集箱文档下的 .temp 文档, 需要时调用 netAssets2LocalAssets 下载资源文件,
  * 再移动到 YYYY/MM/YYYY-MM-DD 文档的末尾。消息逐条处理, 保证顺序, 也不会重复创建日期文档。
- * 绑定开启回复时, 消息插入 .temp 后即向该消息被动回复其超级块的块超链接 (siyuan://blocks/ 加块 ID)。
+ * 绑定开启回复时, 消息插入 .temp 后即引用该消息, 被动回复其超级块的块超链接 (siyuan://blocks/ 加块 ID)。
  * Writes the messages of bound QQ groups into SiYuan documents, except messages
  * that mention the bot, which are commands: each message is inserted into the
  * .temp document, its assets are downloaded, and then it is moved to the end of
@@ -336,7 +336,9 @@ export class QQInbox {
     }
 
     /**
-     * 向消息被动回复其超级块的块超链接, 失败时只记录日志
+     * 引用消息, 被动回复其超级块的块超链接, 失败时只记录日志。
+     * 引用的 message_reference.message_id 是消息的 msg_idx (以 REFIDX_ 开头), 不是消息 ID; 消息没有 msg_idx 时只回复, 不引用
+     * REF: https://bot.q.qq.com/wiki/develop/api-v2/autogen/api/v2_groups_group_openid_messages.post.html
      * @param message - 写入收集箱的消息
      * @param block - 消息的超级块 ID
      * @param seq - 回复序号 msg_seq
@@ -346,6 +348,7 @@ export class QQInbox {
         if (!credentials) {
             return;
         }
+        const msgIdx = sceneValue(message, "msg_idx");
         try {
             const response = await this.openapi.request(credentials, {
                 url: `/v2/groups/${encodeURIComponent(message.group_openid)}/messages`,
@@ -355,6 +358,7 @@ export class QQInbox {
                     content: `siyuan://blocks/${block}`,
                     msg_id: message.id,
                     msg_seq: seq,
+                    message_reference: msgIdx ? { message_id: msgIdx } : undefined,
                 },
             });
             if (response.status < 200 || response.status >= 300) {
