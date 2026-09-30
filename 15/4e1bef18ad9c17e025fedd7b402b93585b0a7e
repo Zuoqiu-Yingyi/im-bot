@@ -1,0 +1,42 @@
+public/README.zh-CN.md
+  s_bb49b27415f6ba::t_4824114a7ae576 74-96,174,183
+  s_bb49b27415f6ba::t_d5b0b5e567d12f 97
+src/types/users.d.ts
+  s_bb49b27415f6ba::t_b113328f1dd81a 1-33,39,41-44,46-47,65-72,75-80,83,85
+  s_bb49b27415f6ba::t_6945d041c092ce 34-38,40,45,48-64,73-74,81-82,84
+src/kernel.ts
+  s_bb49b27415f6ba::t_12c5667347b694 67-69,137
+  s_bb49b27415f6ba::t_ae6845134fc92c 25,53-54,65-66,81,97,138,262,270
+src/types/qq.d.ts
+  s_bb49b27415f6ba::t_632d6a2dba160a 106-131
+public/README.md
+  s_bb49b27415f6ba::t_3a39f338a8920c 74-96,174,183
+  s_bb49b27415f6ba::t_84c54acb68f9f3 97
+src/qq/users.ts
+  s_bb49b27415f6ba::t_d7050c5cbeffcb 300-341
+  s_bb49b27415f6ba::t_4827514d7640ba 48-54,56-65,67-84,86-96
+  s_bb49b27415f6ba::t_26d594c42c98db 207-247
+  s_bb49b27415f6ba::t_61eddf19672bab 154-206
+  s_bb49b27415f6ba::t_fe3d38157dbfb0 22,55,66,85,142,146,253-258
+  s_bb49b27415f6ba::t_84e01b57369088 248-252,259-299
+  s_bb49b27415f6ba::t_4c59ad350905d4 1-21,23-47
+  s_bb49b27415f6ba::t_0aec07b745d88c 97-141,143-145,147-153
+src/constants.ts
+  s_bb49b27415f6ba::t_af3ed7057b9da2 19-20
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.45-trip",
+  "base_commit_sha": "154e1bef18ad9c17e025fedd7b402b93585b0a7e",
+  "prompts": {},
+  "sessions": {
+    "s_bb49b27415f6ba": {
+      "agent_id": {
+        "tool": "chengxiaobang",
+        "id": "s_ylq1xoabc7mg",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Yingyi / 颖逸 <49649786+Zuoqiu-Yingyi@users.noreply.github.com>"
+    }
+  }
+}
