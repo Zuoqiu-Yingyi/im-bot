@@ -1,0 +1,62 @@
+src/types/config.d.ts
+  s_08bc93b2fa287c::t_5348cc95574c4f 27-38
+src/kernel.ts
+  s_08bc93b2fa287c::t_0077792f1b065f 148-149
+  s_08bc93b2fa287c::t_ec36587f56c5a1 22,29-30,34-35,40-42,49,52-54,58-59,71,75-77,82,90,95-138,159,168
+  s_08bc93b2fa287c::t_53c7aec261abd9 162
+  s_08bc93b2fa287c::t_65f743b2183157 92-94
+src/qq/constants.ts
+  s_08bc93b2fa287c::t_799be7ac7d3be3 40-55
+public/i18n/en.json
+  s_08bc93b2fa287c::t_59cdcc31874bfb 2-5,15-26,32-37
+src/qq/inbox.ts
+  s_08bc93b2fa287c::t_965d5c48484af0 1-15,17-22,25,27-42,45-85,87-121,129-132,134-136,138-142,144-148,150-153,156-160,162-163,170-174,176,179-181,185-186,203-204,207-212,214-217,219-220,222-240,242-250,253,259,263-264,276-280,282,285-286,288,300,303-304,312,315-332,335-338,340-343,346-372
+  s_08bc93b2fa287c::t_d299e99019128d 26,161
+  s_08bc93b2fa287c::t_5491f21e82e803 43-44,126-127,241,251-252,254-258,260-262,265-275
+  s_08bc93b2fa287c::t_0d48f0bc8eebf7 86,122-125,128,133,143,149,154-155,164-169,175,177-178,182-184,187-202,205-206,213,218,221,281,283-284,287,289-299,301-302,305-311,313-314,333-334,339,344-345
+  s_08bc93b2fa287c::t_36e90ca72e8621 23-24
+  s_08bc93b2fa287c::t_93d130e59a0ea2 16,137
+src/configs/default.ts
+  s_08bc93b2fa287c::t_dfd945b88374a1 36-40
+src/qq/message.ts
+  s_08bc93b2fa287c::t_b0b512e435a0be 67,95-107,136-137
+  s_08bc93b2fa287c::t_dd22662007c76a 32-33,54,73,117,180-181,183
+  s_08bc93b2fa287c::t_9f0ed42f960b01 1-31,34-53,55-66,68-72,74-94,108-116,119-135,138-179,184-295
+  s_08bc93b2fa287c::t_1b7f9f2d637570 118,182
+public/i18n/zh-TW.json
+  s_08bc93b2fa287c::t_f5c753e0dab3c4 2-5,15-26,32-37
+public/i18n/zh-CN.json
+  s_08bc93b2fa287c::t_efeac3fc05e5dc 2-5,15-26,32-37
+src/types/qq.d.ts
+  s_08bc93b2fa287c::t_fb3699cb13725a 44-100
+src/utils/kramdown.ts
+  s_08bc93b2fa287c::t_9953e1d8f86d7e 91,93
+  s_08bc93b2fa287c::t_c5a1431a3bd59b 113
+  s_08bc93b2fa287c::t_9105d476bfc78f 1-90,92,94-112,114-118
+src/components/Settings.svelte
+  s_08bc93b2fa287c::t_743f0b4fe0acc5 96
+  s_08bc93b2fa287c::t_2e560d845211a4 35,68,85-90,95,97-107,222-286
+src/qq/chat-record.ts
+  s_08bc93b2fa287c::t_fc021c7bbab91e 1-153
+README.md
+  s_08bc93b2fa287c::t_b85450ce413c49 50,54-62,64-69,71,73
+  s_08bc93b2fa287c::t_4cbabe1a2e38b0 70
+  s_08bc93b2fa287c::t_bd03fce50fe6cf 63
+  s_08bc93b2fa287c::t_636a75ee517806 72
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.45-trip",
+  "base_commit_sha": "118acff06165d3c62f89f86a39108fb6b77838ac",
+  "prompts": {},
+  "sessions": {
+    "s_08bc93b2fa287c": {
+      "agent_id": {
+        "tool": "chengxiaobang",
+        "id": "s_x2kvs9g65t5k",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Yingyi / 颖逸 <49649786+Zuoqiu-Yingyi@users.noreply.github.com>"
+    }
+  }
+}
