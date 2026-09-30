@@ -1,0 +1,25 @@
+public/README.zh-CN.md
+  s_08bc93b2fa287c::t_019c0deb112c3f 92
+src/styles/siyuan.less
+  s_08bc93b2fa287c::t_5b3d2eb2bff089 1-19,23-25,27-35
+src/index.ts
+  s_08bc93b2fa287c::t_14ac1c50958237 38-39
+public/README.md
+  s_08bc93b2fa287c::t_a7f58dcb9f3a24 92
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.45-trip",
+  "base_commit_sha": "3434cc0979bd9d2eeaa8b90f37c9f64151672f41",
+  "prompts": {},
+  "sessions": {
+    "s_08bc93b2fa287c": {
+      "agent_id": {
+        "tool": "chengxiaobang",
+        "id": "s_x2kvs9g65t5k",
+        "model": "claude-sonnet-5"
+      },
+      "human_author": "Yingyi / 颖逸 <49649786+Zuoqiu-Yingyi@users.noreply.github.com>"
+    }
+  }
+}
