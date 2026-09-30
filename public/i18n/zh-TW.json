@@ -1,4 +1,21 @@
 {
+    "apiDebugger": {
+        "body": "請求主體",
+        "bodyPlaceholder": "JSON 格式的請求主體，留空時不傳送請求主體",
+        "duration": "耗時",
+        "error": "請求失敗",
+        "headers": "回應標頭",
+        "invalidBody": "請求主體不是有效的 JSON，未傳送請求",
+        "method": "請求方法",
+        "noBody": "沒有回應主體",
+        "open": "開啟 QQ 機器人介面偵錯",
+        "response": "回應",
+        "send": "傳送",
+        "sending": "傳送中...",
+        "title": "QQ 機器人介面偵錯",
+        "url": "請求路徑",
+        "urlPlaceholder": "以 / 開頭的請求路徑，相對於 https://api.bot.qq.com，例如 /gateway/bot"
+    },
     "inbox": {
         "quote": "引用的訊息",
         "unavailable": "[無法顯示的訊息]"

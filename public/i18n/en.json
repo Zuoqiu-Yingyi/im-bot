@@ -1,4 +1,21 @@
 {
+    "apiDebugger": {
+        "body": "Request body",
+        "bodyPlaceholder": "Request body in JSON, leave it empty to send no body",
+        "duration": "Time",
+        "error": "Request failed",
+        "headers": "Response headers",
+        "invalidBody": "The request body is not valid JSON, the request was not sent",
+        "method": "Request method",
+        "noBody": "No response body",
+        "open": "Open the QQ bot API debugger",
+        "response": "Response",
+        "send": "Send",
+        "sending": "Sending...",
+        "title": "QQ bot API debugger",
+        "url": "Request path",
+        "urlPlaceholder": "Request path starting with /, relative to https://api.bot.qq.com, for example /gateway/bot"
+    },
     "inbox": {
         "quote": "Quoted message",
         "unavailable": "[Message not available]"

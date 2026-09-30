@@ -1,4 +1,21 @@
 {
+    "apiDebugger": {
+        "body": "请求体",
+        "bodyPlaceholder": "JSON 格式的请求体，留空时不发送请求体",
+        "duration": "耗时",
+        "error": "请求失败",
+        "headers": "响应头",
+        "invalidBody": "请求体不是有效的 JSON，未发送请求",
+        "method": "请求方法",
+        "noBody": "没有响应体",
+        "open": "打开 QQ 机器人接口调试",
+        "response": "响应",
+        "send": "发送",
+        "sending": "发送中...",
+        "title": "QQ 机器人接口调试",
+        "url": "请求路径",
+        "urlPlaceholder": "以 / 开头的请求路径，相对于 https://api.bot.qq.com，例如 /gateway/bot"
+    },
     "inbox": {
         "quote": "引用的消息",
         "unavailable": "[无法显示的消息]"

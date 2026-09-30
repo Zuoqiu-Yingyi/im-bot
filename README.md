@@ -31,10 +31,10 @@
 
 The plugin has two entries, both built into `dist/`:
 
-| Entry           | Output                          | Runs in                           | Script              |
-| --------------- | ------------------------------- | --------------------------------- | ------------------- |
-| `src/index.ts`  | `dist/index.js` (CommonJS)      | SiYuan frontend                   | `pnpm build:plugin` |
-| `src/kernel.ts` | `dist/kernel.js` (plain script) | goja runtime of the SiYuan kernel | `pnpm build:kernel` |
+| Entry           | Output                                       | Runs in                           | Script              |
+| --------------- | -------------------------------------------- | --------------------------------- | ------------------- |
+| `src/index.ts`  | `dist/index.js` (CommonJS), `dist/index.css` | SiYuan frontend                   | `pnpm build:plugin` |
+| `src/kernel.ts` | `dist/kernel.js` (plain script)              | goja runtime of the SiYuan kernel | `pnpm build:kernel` |
 
 - `pnpm build` and `pnpm build:dev` build the frontend plugin first, then the kernel plugin. The kernel build does not empty `dist/`.
 - SiYuan starts `kernel.js` only when `public/plugin.json` declares `kernels`. It lists the backends where the kernel plugin runs, matched like `backends` (`all` for every backend).
@@ -62,6 +62,7 @@ The plugin has two entries, both built into `dist/`:
 - It resolves to the response `{ status, headers, body }` (`IApiResponse` in `src/types/qq.d.ts`) for every HTTP status, so an error such as `400 { err_code, message, trace_id }` is returned rather than thrown. `headers` are the target's response headers without the `Siyuan-Proxy-` prefix the kernel adds, for example `X-Tps-Trace-Id`. `body` is the parsed JSON, `null` when there is no body (such as `204`), or the raw text when it is not JSON. The call rejects with a JSON-RPC error only when the request cannot be made: invalid parameters, an empty AppID or AppSecret, a failed access token request, or the kernel failing to reach the target.
 - The access token is cached with its `expires_in` and fetched again when less than 60 s is left: within its validity the token endpoint returns the same token, and in the last 60 s it returns a new one while the old one stays valid. Concurrent calls share one token request, and a `401` response drops the cached token so the next call fetches a new one.
 - The method works on every device, regardless of "Run on this device only". Any code that can call the kernel API of the workspace, including other plugins, can call it and act as the bot; the access token itself is never returned.
+- The command "Open the QQ bot API debugger" (`openApiDebugger`) opens a tab (`src/components/ApiDebugger.svelte`) for trying the API: pick the method, enter the path and a JSON body, then click "Send" or press Enter in the path field. The tab calls `call-qq-api` through `callQQApi` of the frontend plugin and shows the status code, the time, the response headers and the body (JSON is pretty-printed). A body that is not valid JSON is not sent, an empty body sends no body, and an RPC rejection shows the JSON-RPC code, message and data. The request being edited is written to the tab data, which SiYuan saves with the layout (for example when a tab is opened, switched or closed), so a tab restored from the layout shows the request as of the last layout save. Running the command again switches to a debugger tab that still has the default request instead of opening another one. The command is not registered on mobile, where SiYuan does not open custom tabs.
 
 ### INBOX
 
