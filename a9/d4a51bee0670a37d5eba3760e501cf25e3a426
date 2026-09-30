@@ -1,0 +1,33 @@
+src/components/Settings.svelte
+  s_08bc93b2fa287c::t_0b8c29559d845e 100,102-111,273
+public/i18n/zh-CN.json
+  s_08bc93b2fa287c::t_ee61f7a5e32934 17-18
+src/qq/message.ts
+  s_08bc93b2fa287c::t_25cbba6afad92b 22,122,129,146,152,154,157,159-160
+public/i18n/zh-TW.json
+  s_08bc93b2fa287c::t_53b72b251a829b 17-18
+README.md
+  s_08bc93b2fa287c::t_6d72bce3b98e95 65
+  s_08bc93b2fa287c::t_44c77db9e3b285 58
+src/utils/kramdown.ts
+  s_08bc93b2fa287c::t_b90df8512211a1 112-118,120-122
+  s_08bc93b2fa287c::t_262f218f1a5ff9 119
+public/i18n/en.json
+  s_08bc93b2fa287c::t_816c6c8633a300 17-18
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.45-trip",
+  "base_commit_sha": "a9d4a51bee0670a37d5eba3760e501cf25e3a426",
+  "prompts": {},
+  "sessions": {
+    "s_08bc93b2fa287c": {
+      "agent_id": {
+        "tool": "chengxiaobang",
+        "id": "s_x2kvs9g65t5k",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Yingyi / 颖逸 <49649786+Zuoqiu-Yingyi@users.noreply.github.com>"
+    }
+  }
+}
