@@ -98,7 +98,7 @@ export interface IGroupMessage {
     msg_elements?: IMessageElement[];
 }
 
-/* POST https://bots.qq.com/app/getAppAccessToken */
+/* POST https://api.bot.qq.com/app/getAppAccessToken */
 export interface IAccessToken {
     access_token?: string;
     expires_in?: number | string; // 有效时间 (s), 文档的字段表写的是 number, 示例是 string

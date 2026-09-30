@@ -13,7 +13,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-export const ACCESS_TOKEN_URL = "https://bots.qq.com/app/getAppAccessToken"; // 获取接口调用凭证
+export const ACCESS_TOKEN_URL = "https://api.bot.qq.com/app/getAppAccessToken"; // 获取接口调用凭证
 export const API_BASE_URL = "https://api.bot.qq.com"; // OpenAPI 根地址
 
 export const PROXY_DIAL_TIMEOUT = 10_000; // /api/network/proxy 的 t 参数, 只限制连接目标的时长 (ms); 整个请求受 siyuan.client.fetch 的 1 分钟超时限制
