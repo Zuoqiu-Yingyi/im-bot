@@ -41,34 +41,41 @@
         },
         "inboxSettings": {
             "bindings": {
-                "description": "One binding per line in the form <code class=\"fn__code\">group_openid:document ID</code>, that is the group_openid of a group and the ID of an inbox document separated by a colon. Each message of the group is first inserted into the <code class=\"fn__code\">.temp</code> document under the inbox document, then moved to the end of the <code class=\"fn__code\">YYYY/MM/YYYY-MM-DD</code> document under it. Missing documents are created automatically. Messages that @ the bot are commands and are not written to the inbox, except messages that @ everyone. The group owner can send <code class=\"fn__code\">/openid</code> to the bot with an @ mention in the group to get the group_openid, which can also be found in the event log. The bound groups get an online notice when the plugin starts and an offline notice when it stops",
-                "placeholder": "7E1569E220555215CCBF5D1A85B1A123:20260930112233-abcdefg",
+                "add": "Add a binding",
+                "description": "Write group messages into inbox documents; a group can be bound to several documents",
+                "doc": "Inbox document ID",
+                "docPlaceholder": "20260930112233-abcdefg",
+                "enabled": "Enabled",
+                "group": "Group (group_openid)",
+                "groupPlaceholder": "7E1569E220555215CCBF5D1A85B1A123",
+                "remove": "Remove",
+                "reply": "Reply with the block link",
                 "title": "Bound groups"
             },
             "downloadAssets": {
-                "description": "When a message contains images, voice, videos or files, download them into the workspace with the SiYuan feature that converts network assets to local ones before moving the message",
+                "description": "Download the images, voice messages, videos and files of messages into the workspace",
                 "title": "Download assets"
             },
             "title": "Inbox"
         },
         "qqBotSettings": {
             "appid": {
-                "description": "AppID of the QQ bot, available in the development settings of the bot on the QQ Open Platform (q.qq.com)",
+                "description": "AppID of the bot on the QQ Open Platform",
                 "title": "AppID <code class=\"fn__code\">QQ_BOT_APPID</code>"
             },
             "device": {
                 "assigned": "Device running the bot",
                 "current": "This device",
-                "description": "When on, only this device connects to the QQ bot and writes the event log and the inbox; other devices disconnect from the gateway once the config syncs to them. When off, every device connects, and writing the inbox on several devices may create duplicate messages or sync conflicts",
+                "description": "When on, only this device connects to the bot",
                 "title": "Run on this device only",
                 "unassigned": "No device is set, every device connects"
             },
             "eventLog": {
-                "description": "Save every event pushed by the gateway as unindented JSON to <code class=\"fn__code\">data/storage/petal/im-bot/logs/events/&lt;event type&gt;/&lt;event ID&gt;.json</code> of the workspace, synced with your data. Events without an event ID (<code class=\"fn__code\">READY</code>, <code class=\"fn__code\">RESUMED</code>) are not saved",
+                "description": "Save received events in the workspace for troubleshooting",
                 "title": "Event log"
             },
             "intents": {
-                "description": "The gateway only pushes events of the subscribed categories. Received events are written to the kernel log, and the bot reconnects after a change. Categories other than guilds, guild members and guild @bot messages may need permission from the QQ Open Platform first; the gateway closes the connection (4014) when a subscribed category is not permitted. See <a href=\"https://bot.q.qq.com/wiki/develop/api-v2/dev-prepare/interface-framework/event-emit.html\">Event Subscription and Notification</a> for the events in each category",
+                "description": "Event categories the bot receives; the bot reconnects after a change",
                 "items": {
                     "AUDIO_ACTION": "Audio",
                     "DIRECT_MESSAGE": "Guild direct messages",
@@ -85,7 +92,7 @@
                 "title": "Subscribed events <code class=\"fn__code\">QQ_BOT_INTENTS</code>"
             },
             "secret": {
-                "description": "AppSecret of the QQ bot, used to get the access token. It is stored in plain text in <code class=\"fn__code\">data/storage/petal/im-bot/config.json</code> of the workspace and synced with your data",
+                "description": "AppSecret of the bot on the QQ Open Platform, stored in plain text and synced with your data",
                 "title": "AppSecret <code class=\"fn__code\">QQ_BOT_SECRET</code>"
             },
             "title": "QQ Bot"

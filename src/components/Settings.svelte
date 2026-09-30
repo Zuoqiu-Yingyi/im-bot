@@ -26,6 +26,7 @@
     import Panel from "@workspace/components/siyuan/setting/panel/Panel.svelte";
     import Panels from "@workspace/components/siyuan/setting/panel/Panels.svelte";
 
+    import { DEFAULT_INBOX_BINDING } from "@/configs/default";
     import { INTENTS } from "@/qq/constants";
 
     import type { ITab } from "@workspace/components/siyuan/setting/tab";
@@ -97,18 +98,25 @@
     // svelte-ignore state_referenced_locally
     let device = $state(config.qq.device); // 运行 QQ 机器人的设备 ID
 
-    /* 每行一条绑定 `group_openid:文档 ID`, 输入法输出的全角冒号也视为分隔符 */
-    function parseBindings(text: string): IQQInboxBinding[] {
-        const bindings: IQQInboxBinding[] = [];
-        for (const line of text.split("\n")) {
-            const separator = line.search(/[:：]/);
-            const group = line.slice(0, separator).trim();
-            const doc = line.slice(separator + 1).trim();
-            if (separator >= 0 && group && doc) {
-                bindings.push({ group, doc });
-            }
-        }
-        return bindings;
+    const bindingsTitle = `${i18n.settings.inboxSettings.bindings.title}<div class="b3-label__text">${i18n.settings.inboxSettings.bindings.description}</div>`;
+
+    /* 收集箱绑定; 旧版配置中的绑定没有 enabled 与 reply, 按默认值补全 */
+    // svelte-ignore state_referenced_locally
+    const bindings = $state<IQQInboxBinding[]>(config.qq.inbox.bindings.map((binding) => ({ ...DEFAULT_INBOX_BINDING, ...binding })));
+
+    async function saveBindings() {
+        config.qq.inbox.bindings = $state.snapshot(bindings);
+        await updated();
+    }
+
+    async function addBinding() {
+        bindings.push({ ...DEFAULT_INBOX_BINDING });
+        await saveBindings();
+    }
+
+    async function removeBinding(index: number) {
+        bindings.splice(index, 1);
+        await saveBindings();
     }
 </script>
 
@@ -255,26 +263,90 @@
 
         <!-- 收集箱设置面板 -->
         <Panel display={panels[2].key === focusPanel}>
-            <!-- 绑定群聊 -->
-            <Item
-                block={true}
-                text={i18n.settings.inboxSettings.bindings.description}
-                title={i18n.settings.inboxSettings.bindings.title}
-            >
-                {#snippet input()}
-                    <Input
-                        block={true}
-                        onChanged={async (e) => {
-                            config.qq.inbox.bindings = parseBindings(e.value);
-                            await updated();
-                        }}
-                        placeholder={i18n.settings.inboxSettings.bindings.placeholder}
-                        settingKey="bindings"
-                        settingValue={config.qq.inbox.bindings.map((binding) => `${binding.group}:${binding.doc}`).join("\n")}
-                        type={ItemType.textarea}
-                    />
-                {/snippet}
-            </Item>
+            <!-- 绑定群聊: 不能放进 Item 的 label 中, 否则点击空白处会切换第一个开关 -->
+            <div class="b3-label">
+                <!-- eslint-disable-next-line svelte/no-at-html-tags -->
+                {@html bindingsTitle}
+                {#each bindings as binding, index (binding)}
+                    <div class="fn__hr"></div>
+                    <div class="binding">
+                        <div class="binding__fields">
+                            <label class="binding__field">
+                                <span>{i18n.settings.inboxSettings.bindings.group}</span>
+                                <Input
+                                    block={true}
+                                    onChanged={async (e) => {
+                                        binding.group = e.value.trim();
+                                        await saveBindings();
+                                    }}
+                                    placeholder={i18n.settings.inboxSettings.bindings.groupPlaceholder}
+                                    settingKey="group"
+                                    settingValue={binding.group}
+                                    type={ItemType.text}
+                                />
+                            </label>
+                            <label class="binding__field">
+                                <span>{i18n.settings.inboxSettings.bindings.doc}</span>
+                                <Input
+                                    block={true}
+                                    onChanged={async (e) => {
+                                        binding.doc = e.value.trim();
+                                        await saveBindings();
+                                    }}
+                                    placeholder={i18n.settings.inboxSettings.bindings.docPlaceholder}
+                                    settingKey="doc"
+                                    settingValue={binding.doc}
+                                    type={ItemType.text}
+                                />
+                            </label>
+                        </div>
+                        <div class="fn__flex binding__switches">
+                            <label class="fn__flex">
+                                <span class="binding__switch">{i18n.settings.inboxSettings.bindings.enabled}</span>
+                                <span class="fn__space"></span>
+                                <Input
+                                    onChanged={async (e) => {
+                                        binding.enabled = e.value;
+                                        await saveBindings();
+                                    }}
+                                    settingKey="enabled"
+                                    settingValue={binding.enabled}
+                                    type={ItemType.checkbox}
+                                />
+                            </label>
+                            <span class="fn__space"></span>
+                            <span class="fn__space"></span>
+                            <label class="fn__flex">
+                                <span class="binding__switch">{i18n.settings.inboxSettings.bindings.reply}</span>
+                                <span class="fn__space"></span>
+                                <Input
+                                    onChanged={async (e) => {
+                                        binding.reply = e.value;
+                                        await saveBindings();
+                                    }}
+                                    settingKey="reply"
+                                    settingValue={binding.reply}
+                                    type={ItemType.checkbox}
+                                />
+                            </label>
+                            <span class="fn__flex-1"></span>
+                            <button
+                                class="b3-button b3-button--remove"
+                                onclick={() => removeBinding(index)}
+                            >
+                                {i18n.settings.inboxSettings.bindings.remove}
+                            </button>
+                        </div>
+                    </div>
+                {/each}
+                <div class="fn__hr"></div>
+                <button
+                    class="b3-button b3-button--outline"
+                    onclick={addBinding}
+                >
+                    {i18n.settings.inboxSettings.bindings.add}
+                </button>
+            </div>
 
             <!-- 下载资源文件 -->
             <Item
@@ -298,4 +370,32 @@
 </Panels>
 
 <style lang="less">
+    .binding {
+        border: 1px solid var(--b3-border-color);
+        border-radius: var(--b3-border-radius);
+        padding: 8px 12px;
+
+        // 两行输入框共用一列字段名, 字段名的长度随语言变化时也能对齐
+        &__fields {
+            display: grid;
+            gap: 8px;
+            grid-template-columns: max-content 1fr;
+        }
+
+        &__field {
+            align-items: center;
+            display: grid;
+            grid-column: 1 / -1;
+            grid-template-columns: subgrid;
+        }
+
+        &__switches {
+            align-items: center;
+            margin-top: 8px;
+        }
+
+        &__switch {
+            align-self: center;
+        }
+    }
 </style>

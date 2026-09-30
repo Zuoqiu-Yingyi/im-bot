@@ -41,34 +41,41 @@
         },
         "inboxSettings": {
             "bindings": {
-                "description": "每行一条绑定，格式为 <code class=\"fn__code\">group_openid:文档 ID</code>，即群聊的 group_openid 与收集箱文档的 ID 用冒号分隔。收到该群的消息后，先插入收集箱文档下的 <code class=\"fn__code\">.temp</code> 文档，再移动到其下 <code class=\"fn__code\">YYYY/MM/YYYY-MM-DD</code> 文档的末尾，缺少的文档会自动创建。@ 机器人的消息视为指令，不会写入收集箱，@ 全体成员的消息除外。群主在群聊中 @ 机器人发送 <code class=\"fn__code\">/openid</code> 可以查询 group_openid，也可以在事件日志中找到。插件启动和停止时，会向绑定的群发送上线和下线通知",
-                "placeholder": "7E1569E220555215CCBF5D1A85B1A123:20260930112233-abcdefg",
+                "add": "添加绑定",
+                "description": "把群聊消息写入收集箱文档，一个群可以绑定多篇文档",
+                "doc": "收集箱文档 ID",
+                "docPlaceholder": "20260930112233-abcdefg",
+                "enabled": "启用",
+                "group": "群聊（group_openid）",
+                "groupPlaceholder": "7E1569E220555215CCBF5D1A85B1A123",
+                "remove": "删除",
+                "reply": "回复块链接",
                 "title": "绑定群聊"
             },
             "downloadAssets": {
-                "description": "消息包含图片、语音、视频或文件时，在移动前调用思源的「转换网络资源文件为本地」把它们下载到工作空间",
+                "description": "把消息中的图片、语音、视频和文件下载到工作空间",
                 "title": "下载资源文件"
             },
             "title": "收集箱"
         },
         "qqBotSettings": {
             "appid": {
-                "description": "QQ 机器人的 AppID，在 QQ 开放平台（q.qq.com）的机器人开发设置中获取",
+                "description": "QQ 开放平台中机器人的 AppID",
                 "title": "AppID <code class=\"fn__code\">QQ_BOT_APPID</code>"
             },
             "device": {
                 "assigned": "当前运行设备 ID",
                 "current": "本设备 ID",
-                "description": "开启后只有这台设备连接 QQ 机器人，写入事件日志和收集箱；配置同步到其他设备后，那些设备会断开网关。关闭时每台设备都会连接，多台设备同时写入收集箱可能产生重复消息或同步冲突",
+                "description": "开启后只有本设备连接机器人",
                 "title": "只在此设备上运行",
                 "unassigned": "未指定运行设备，每台设备都会连接"
             },
             "eventLog": {
-                "description": "把网关推送的每个事件以不带缩进的 JSON 保存到工作空间的 <code class=\"fn__code\">data/storage/petal/im-bot/logs/events/&lt;事件类型&gt;/&lt;事件 ID&gt;.json</code>，会随数据同步。没有事件 ID 的事件（<code class=\"fn__code\">READY</code>、<code class=\"fn__code\">RESUMED</code>）不会保存",
+                "description": "把收到的事件保存到工作空间，便于排查问题",
                 "title": "事件日志"
             },
             "intents": {
-                "description": "网关只推送已订阅类别的事件，收到的事件会打印到内核日志，修改后会自动重新连接。频道、频道成员与频道 @ 机器人消息以外的类别可能需要先在 QQ 开放平台申请权限，订阅了没有权限的类别时网关会关闭连接（4014）。各类别包含的事件见 <a href=\"https://bot.q.qq.com/wiki/develop/api-v2/dev-prepare/interface-framework/event-emit.html\">事件订阅与通知</a>",
+                "description": "机器人要接收的事件类别，修改后自动重新连接",
                 "items": {
                     "AUDIO_ACTION": "音频",
                     "DIRECT_MESSAGE": "频道私信",
@@ -85,7 +92,7 @@
                 "title": "订阅事件 <code class=\"fn__code\">QQ_BOT_INTENTS</code>"
             },
             "secret": {
-                "description": "QQ 机器人的 AppSecret，用于获取接口调用凭证。以明文保存在工作空间的 <code class=\"fn__code\">data/storage/petal/im-bot/config.json</code> 中，会随数据同步",
+                "description": "QQ 开放平台中机器人的 AppSecret，以明文保存并随数据同步",
                 "title": "AppSecret <code class=\"fn__code\">QQ_BOT_SECRET</code>"
             },
             "title": "QQ 机器人"

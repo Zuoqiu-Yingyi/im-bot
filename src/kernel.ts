@@ -13,14 +13,12 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import { mergeIgnoreArray } from "@workspace/utils/misc/merge";
-
-import { DEFAULT_CONFIG } from "@/configs/default";
+import { mergeConfig } from "@/configs/default";
 import CONSTANTS from "@/constants";
 import { QQCommands } from "@/qq/commands";
 import { eventLogPath } from "@/qq/event-log";
 import { QQBotGateway } from "@/qq/gateway";
-import { QQInbox } from "@/qq/inbox";
+import { activeBindings, QQInbox } from "@/qq/inbox";
 import { QQNotices } from "@/qq/notices";
 import { QQOpenApi, resolveApiRequest, resolveCredentials } from "@/qq/openapi";
 import { QQPanels } from "@/qq/panels";
@@ -77,7 +75,7 @@ class ImBotKernelPlugin {
     private readonly panels: QQPanels;
     private readonly notices: QQNotices;
 
-    private config: IConfig = mergeIgnoreArray<IConfig>(DEFAULT_CONFIG);
+    private config: IConfig = mergeConfig();
     private device = ""; // 本机设备 ID
     private deviceName = ""; // 本机设备名称, 用于通知
     private running?: boolean; // 上次应用配置时本机是否运行 QQ 机器人
@@ -87,7 +85,7 @@ class ImBotKernelPlugin {
     constructor() {
         this.openapi = new QQOpenApi(this.siyuan);
         this.qq = new QQBotGateway(this.siyuan, this.openapi, this.onQQDispatch.bind(this));
-        this.inbox = new QQInbox(this.siyuan, () => this.config.qq.inbox);
+        this.inbox = new QQInbox(this.siyuan, this.openapi, () => this.config.qq);
         this.commands = new QQCommands(this.siyuan, this.openapi, () => this.config.qq);
         this.panels = new QQPanels(this.siyuan, this.openapi);
         this.notices = new QQNotices(this.siyuan, this.openapi);
@@ -177,10 +175,10 @@ class ImBotKernelPlugin {
         });
     }
 
-    /* 向绑定了收集箱的群发送上线或下线通知, 只在运行 QQ 机器人的设备上发送 */
+    /* 向有生效的收集箱绑定的群发送上线或下线通知, 只在运行 QQ 机器人的设备上发送 */
     private async notify(notice: TNotice): Promise<void> {
         const credentials = resolveCredentials(this.config.qq);
-        const groups = this.config.qq.inbox.bindings.map((binding) => binding.group);
+        const groups = activeBindings(this.config.qq.inbox).map((binding) => binding.group);
         if (!this.running || !credentials || groups.length === 0) {
             return;
         }
@@ -217,7 +215,7 @@ class ImBotKernelPlugin {
     private async loadConfig(): Promise<void> {
         try {
             const data = await this.siyuan.storage.get(CONSTANTS.GLOBAL_CONFIG_NAME);
-            this.config = mergeIgnoreArray<IConfig>(DEFAULT_CONFIG, await data.json());
+            this.config = mergeConfig(await data.json());
         }
         catch (error) {
             // 前端插件首次加载前还没有配置文件, 此时使用默认配置; 重新读取失败时保留当前配置
@@ -230,7 +228,7 @@ class ImBotKernelPlugin {
      * 前端插件调用: `await this.kernel.rpc.call[CONSTANTS.KERNEL_RPC_METHOD.UPDATE_CONFIG]?.(config)`
      */
     private async rpcUpdateConfig(config: IConfig): Promise<void> {
-        this.config = mergeIgnoreArray<IConfig>(DEFAULT_CONFIG, config);
+        this.config = mergeConfig(config);
         await this.applyConfig();
     }
 

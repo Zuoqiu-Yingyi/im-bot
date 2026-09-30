@@ -15,13 +15,15 @@
 
 import { GROUP_MESSAGE_EVENTS, MessageType } from "./constants";
 import { convertMessage, mentionsBot, sceneValue } from "./message";
+import { resolveCredentials } from "./openapi";
 
 import type * as kernel from "siyuan/kernel";
 
-import type { IQQInboxBinding, IQQInboxConfig } from "@/types/config";
+import type { IQQBotConfig, IQQInboxBinding, IQQInboxConfig } from "@/types/config";
 import type { IGroupMessage, IPayload } from "@/types/qq";
 
 import type { IMessageLabels } from "./message";
+import type { QQOpenApi } from "./openapi";
 
 /* 文档的位置, path 为 .sy 文件在笔记本中的路径, hpath 为文档标题组成的路径 */
 interface IDoc {
@@ -69,10 +71,16 @@ function blockDate(id: string): string {
     return `${id.slice(0, 4)}-${id.slice(4, 6)}-${id.slice(6, 8)}`;
 }
 
+/* 生效的绑定: 已启用, 且群与文档都已填写 */
+export function activeBindings(config: IQQInboxConfig): IQQInboxBinding[] {
+    return config.bindings.filter((binding) => binding.enabled && binding.group && binding.doc);
+}
+
 /**
  * 思源收集箱: 把绑定群聊的消息写入收集箱文档。提及机器人的消息都视为指令, 不写入收集箱 (见 mentionsBot)。
  * 每条消息先插入收集箱文档下的 .temp 文档, 需要时调用 netAssets2LocalAssets 下载资源文件,
  * 再移动到 YYYY/MM/YYYY-MM-DD 文档的末尾。消息逐条处理, 保证顺序, 也不会重复创建日期文档。
+ * 绑定开启回复时, 消息插入 .temp 后即向该消息被动回复其超级块的块超链接 (siyuan://blocks/ 加块 ID)。
  * Writes the messages of bound QQ groups into SiYuan documents, except messages
  * that mention the bot, which are commands: each message is inserted into the
  * .temp document, its assets are downloaded, and then it is moved to the end of
@@ -80,7 +88,8 @@ function blockDate(id: string): string {
  */
 export class QQInbox {
     private readonly siyuan: kernel.ISiyuan;
-    private readonly config: () => IQQInboxConfig;
+    private readonly openapi: QQOpenApi;
+    private readonly config: () => IQQBotConfig;
 
     private queue: Promise<void> = Promise.resolve();
     private readonly messages = new Map<string, string>(); // `${收集箱文档 ID} ${msg_idx}` → 消息块 ID
@@ -89,14 +98,16 @@ export class QQInbox {
 
     /**
      * @param siyuan - 内核插件全局对象
-     * @param config - 返回当前的收集箱配置
+     * @param openapi - 发送回复的 OpenAPI 客户端
+     * @param config - 返回当前的 QQ 机器人配置
      */
-    constructor(siyuan: kernel.ISiyuan, config: () => IQQInboxConfig) {
+    constructor(siyuan: kernel.ISiyuan, openapi: QQOpenApi, config: () => IQQBotConfig) {
         this.siyuan = siyuan;
+        this.openapi = openapi;
         this.config = config;
     }
 
-    /* 处理网关推送的事件, 只接收绑定了收集箱的群聊中没有 @ 机器人的消息 */
+    /* 处理网关推送的事件, 只接收有生效绑定的群聊中没有 @ 机器人的消息 */
     public handle(payload: IPayload): void {
         if (!payload.t || !GROUP_MESSAGE_EVENTS.has(payload.t)) {
             return;
@@ -105,15 +116,16 @@ export class QQInbox {
         if (mentionsBot(payload.t, message)) {
             return;
         }
-        const bindings = this.config().bindings.filter((binding) => binding.group === message.group_openid);
+        const bindings = activeBindings(this.config().inbox).filter((binding) => binding.group === message.group_openid);
         if (bindings.length === 0) {
             return;
         }
 
         this.queue = this.queue.then(async () => {
-            for (const binding of bindings) {
+            for (const [index, binding] of bindings.entries()) {
                 try {
-                    await this.write(binding, payload.id ?? "", message);
+                    // 写入多个收集箱的消息各回复一次, 相同的 msg_id 与 msg_seq 只能发送一次
+                    await this.write(binding, payload.id ?? "", message, index + 1);
                 }
                 catch (error) {
                     void this.siyuan.logger.warn(`[qq] [inbox] write the message ${message.id} of group ${binding.group} to ${binding.doc} failed:`, errorMessage(error));
@@ -122,7 +134,7 @@ export class QQInbox {
         });
     }
 
-    private async write(binding: IQQInboxBinding, eventId: string, message: IGroupMessage): Promise<void> {
+    private async write(binding: IQQInboxBinding, eventId: string, message: IGroupMessage, replySeq: number): Promise<void> {
         const inbox = binding.doc;
         if (!BLOCK_ID.test(inbox)) {
             throw new Error(`invalid document ID ${inbox}`);
@@ -148,8 +160,12 @@ export class QQInbox {
         if (msgIdx) {
             this.remember(inbox, msgIdx, block);
         }
+        if (binding.reply) {
+            // 被动回复只能在收到消息后 5 分钟内发送, 所以在下载资源文件与移动之前回复, 且不等待回复结束
+            void this.reply(message, block, replySeq);
+        }
 
-        if (converted.media > 0 && this.config().downloadAssets) {
+        if (converted.media > 0 && this.config().inbox.downloadAssets) {
             await this.downloadAssets(temp);
         }
         await this.moveToDate(inbox, block, messageDate(message.timestamp));
@@ -307,7 +323,7 @@ export class QQInbox {
             }
 
             void this.siyuan.logger.info(`[qq] [inbox] move ${leftovers.length} leftover message(s) out of ${temp}`);
-            if (this.config().downloadAssets) {
+            if (this.config().inbox.downloadAssets) {
                 await this.downloadAssets(temp);
             }
             for (const block of leftovers) {
@@ -316,6 +332,38 @@ export class QQInbox {
         }
         catch (error) {
             void this.siyuan.logger.warn(`[qq] [inbox] move the leftover messages of ${inbox} failed:`, errorMessage(error));
+        }
+    }
+
+    /**
+     * 向消息被动回复其超级块的块超链接, 失败时只记录日志
+     * @param message - 写入收集箱的消息
+     * @param block - 消息的超级块 ID
+     * @param seq - 回复序号 msg_seq
+     */
+    private async reply(message: IGroupMessage, block: string, seq: number): Promise<void> {
+        const credentials = resolveCredentials(this.config());
+        if (!credentials) {
+            return;
+        }
+        try {
+            const response = await this.openapi.request(credentials, {
+                url: `/v2/groups/${encodeURIComponent(message.group_openid)}/messages`,
+                method: "POST",
+                body: {
+                    msg_type: 0,
+                    content: `siyuan://blocks/${block}`,
+                    msg_id: message.id,
+                    msg_seq: seq,
+                },
+            });
+            if (response.status < 200 || response.status >= 300) {
+                throw new Error(`${response.status} ${JSON.stringify(response.body)}`);
+            }
+            void this.siyuan.logger.debug(`[qq] [inbox] replied to the message ${message.id} with the block ${block}`);
+        }
+        catch (error) {
+            void this.siyuan.logger.warn(`[qq] [inbox] reply to the message ${message.id} with the block ${block} failed:`, errorMessage(error));
         }
     }
 

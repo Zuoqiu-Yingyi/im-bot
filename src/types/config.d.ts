@@ -44,4 +44,6 @@ export interface IQQInboxConfig {
 export interface IQQInboxBinding {
     group: string; // group_openid
     doc: string; // 收集箱文档 ID
+    enabled: boolean; // 是否启用该绑定
+    reply: boolean; // 写入后是否向该消息回复其超级块的块超链接
 }
