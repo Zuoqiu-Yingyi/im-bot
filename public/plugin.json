@@ -4,7 +4,23 @@
     "url": "https://github.com/Zuoqiu-Yingyi/siyuan-plugin-im-bot",
     "version": "0.0.0",
     "minAppVersion": "3.7.3",
-    "keywords": [],
+    "disabledInPublish": true,
+    "keywords": [
+        "QQ",
+        "QQ 机器人",
+        "QQ 機器人",
+        "机器人",
+        "機器人",
+        "收集箱",
+        "群聊",
+        "消息",
+        "訊息",
+        "bot",
+        "chatbot",
+        "im",
+        "inbox",
+        "qqbot"
+    ],
     "kernels": [
         "all"
     ],
@@ -15,14 +31,14 @@
         "all"
     ],
     "displayName": {
-        "default": "",
-        "zh-CN": "",
-        "zh-TW": ""
+        "default": "IM Bot",
+        "zh-CN": "IM 机器人",
+        "zh-TW": "IM 機器人"
     },
     "description": {
-        "default": "",
-        "zh-CN": "",
-        "zh-TW": ""
+        "default": "Connect a QQ bot to SiYuan and record group messages in inbox documents",
+        "zh-CN": "把 QQ 机器人接入思源，将群聊消息记录到收集箱文档",
+        "zh-TW": "把 QQ 機器人接入思源，將群聊訊息記錄到收集箱文件"
     },
     "readme": {
         "default": "README.md",
