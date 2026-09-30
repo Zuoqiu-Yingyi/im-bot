@@ -71,6 +71,30 @@ From then on, the messages of the group are recorded in dated sub-documents of t
 
   - The plugin connects to the QQ bot over WebSocket from the SiYuan kernel and reconnects after a disconnect, waiting from 1 second up to 60 seconds between attempts.
   - Every received event is written to the kernel log, and also saved as a file with `QQ Bot > Event log` on.
+- Known groups and C2C users
+
+  - QQ has no API that lists the groups the bot is in or the users who chat with it, so the plugin records them from the received events in `data/storage/petal/im-bot/users.json` of the workspace (next to `config.json`, synced with your data), where you can look up group_openids and user_openids. These events belong to "Group and C2C chats" in `QQ Bot > Subscribed events`.
+  - Only groups and users that appear in events are recorded: a group the bot was in before the plugin started running shows up once it gets a new message.
+  - The records are kept per AppID of the bot (an OpenID is only valid for the same bot), with groups keyed by group_openid and C2C users by user_openid. Times come from the events and are in UTC.
+  - Group records
+
+    - `status`: `added` when the bot is in the group, `removed` after the bot was removed from it
+    - `firstSeen`: the time of the earliest recorded event
+    - `added`, `removed`: when the bot was last added to or removed from the group, and the member_openid of the member who did it
+    - `proactive`: whether a group admin last allowed or refused active messages from the bot (`allowed`), when and by whom
+    - `lastMessage`: the time of the latest group message
+    - `owner`: the member_openid and nickname of the group owner, from the latest message the owner sent
+  - C2C user records
+
+    - `status`: `added` when the user has added the bot, `removed` after the user deleted it
+    - `firstSeen`: the time of the earliest recorded event
+    - `unionOpenid`: the union_openid of the user
+    - `added`, `removed`: when the user last added or deleted the bot; `added` also has the scene value `scene` and the callback data of the share link `sceneParam`
+    - `proactive`: whether the user last allowed or refused active messages from the bot (`allowed`), and when
+    - `lastMessage`: the time of the latest C2C message and the nickname of the user (QQ may leave it out)
+  - `status` follows the latest of the bot being added, the bot being removed and the latest message, so a group that adds the bot back while the plugin is offline turns back to `added` with its next message.
+  - The changes are written 5 seconds after an event, together with the others in that time, and at once when the plugin stops. Each write reads the file again and merges into it, so fields you add by hand (such as a remark) are kept, and a group or user you delete by hand comes back only when it appears in an event again.
+  - When the file is not a valid JSON object, the plugin does not overwrite it and only logs a warning in the kernel log. After you fix or delete the file, the next related event writes the changes made in the meantime; they are lost if the plugin stops before that.
 - Inbox
 
   - Each message of a group becomes a super block. It is first inserted into the `.temp` document under the inbox document, its assets are downloaded when needed, and then it is moved to the end of the `YYYY/MM/YYYY-MM-DD` document under the inbox document. The date is the day the message was sent, in the time zone of the device running the SiYuan kernel. Missing documents are created automatically.
@@ -147,7 +171,7 @@ From then on, the messages of the group are recorded in dated sub-documents of t
     - On by default; a change applies to the events received afterwards
   - `Run on this device only`
 
-    - When on, only this device connects to the bot: it writes the event log and the inbox, answers commands, sends the online and offline notices and syncs the command panels. Other devices disconnect once the setting syncs to them
+    - When on, only this device connects to the bot: it writes the event log, the inbox and `users.json`, answers commands, sends the online and offline notices and syncs the command panels. Other devices disconnect once the setting syncs to them
     - When off, every device with this plugin connects to the bot
     - The IDs of this device and of the chosen device show under the switch
 - `Inbox`
@@ -156,7 +180,7 @@ From then on, the messages of the group are recorded in dated sub-documents of t
 
     - Each binding writes the messages of a group into an inbox document. A group can be bound to several documents, and a document to several groups
     - Click "Add a binding" to add a binding and "Remove" to remove one; changes are saved at once
-    - `Group Open ID`: the OpenID of the group (group_openid). The group owner can get it by sending `/openid` to the bot with an @ mention in the group, and it is also in the event log
+    - `Group Open ID`: the OpenID of the group (group_openid). The group owner can get it by sending `/openid` to the bot with an @ mention in the group, and it is also in `users.json` and the event log
     - `Inbox document ID`: the ID of the document that collects the messages. Right-click the document in the document tree and choose "Copy > Copy ID"
     - `Enabled`: when off, the binding writes no messages and sends no online or offline notices. A binding without a group or a document ID has no effect either
     - `Reply with the block link`: when on, the bot quotes each message written to the document in a reply with the block hyperlink of its super block, `siyuan://blocks/<block ID>`. A message written to several documents with this switch on gets one reply per document. Off by default; see Q & A for the limits

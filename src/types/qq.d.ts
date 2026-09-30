@@ -103,6 +103,32 @@ export interface IGroupMessage extends IMessage {
     mentions?: IMention[];
 }
 
+/**
+ * op=0, t=GROUP_ADD_ROBOT、GROUP_DEL_ROBOT、GROUP_MSG_RECEIVE 或 GROUP_MSG_REJECT:
+ * 机器人被添加到群或移出群, 群管理员开启或关闭机器人的主动消息
+ * REF: https://bot.q.qq.com/wiki/develop/api-v2/autogen/event/group_add_robot.html
+ */
+export interface IGroupOperationEvent {
+    group_openid: string;
+    op_member_openid?: string; // 操作人的群成员 OpenID
+    timestamp: number; // Unix 秒
+}
+
+/**
+ * op=0, t=FRIEND_ADD、FRIEND_DEL、C2C_MSG_RECEIVE 或 C2C_MSG_REJECT:
+ * 用户添加或删除机器人, 在机器人资料卡开启或关闭主动消息
+ * REF: https://bot.q.qq.com/wiki/develop/api-v2/autogen/event/friend_add.html
+ */
+export interface IFriendEvent {
+    openid: string; // 用户 OpenID, 即单聊中的 user_openid
+    timestamp: number; // Unix 秒
+    scene?: number; // 仅 FRIEND_ADD: 添加机器人的场景, 如 1001 为网络搜索, 2003 为开发者生成的分享链接
+    scene_param?: string; // 仅 FRIEND_ADD: 开发者在分享链接中设置的回调数据 (callback_data)
+    author?: {
+        union_openid?: string; // 仅 FRIEND_ADD
+    };
+}
+
 /* POST https://api.bot.qq.com/app/getAppAccessToken */
 export interface IAccessToken {
     access_token?: string;

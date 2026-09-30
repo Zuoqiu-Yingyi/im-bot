@@ -16,6 +16,8 @@
 export default {
     /* 插件配置文件名, 前端插件 saveData 与内核插件 siyuan.storage 都相对 data/storage/petal/im-bot/ */
     GLOBAL_CONFIG_NAME: "config.json",
+    /* 已知群与单聊用户的列表, 由内核插件维护, 与配置文件在同一目录 */
+    USERS_FILE_NAME: "users.json",
     /* 前端插件与内核插件共用的 RPC 方法名 */
     KERNEL_RPC_METHOD: {
         UPDATE_CONFIG: "update-config", // 更新配置, QQ 机器人配置变化时重新连接
