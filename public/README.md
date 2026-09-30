@@ -89,7 +89,7 @@ From then on, the messages of the group are recorded in dated sub-documents of t
     - Cards and other messages: shown as text.
   - Message blocks carry these custom attributes, which can be used in queries
 
-    - `custom-author-username`: the nickname of the sender
+    - `custom-author-username`: the nickname of the sender, shown above the message block
     - `custom-author-id`: the OpenID of the sender
     - `custom-msg-idx`: the index of the message in QQ
     - `custom-event-id`: the ID of the event that pushed the message

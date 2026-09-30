@@ -89,7 +89,7 @@
     - 卡片等其他消息：以文本显示。
   - 消息块带有以下自定义属性，可以用于查询
 
-    - `custom-author-username`：发送者的昵称
+    - `custom-author-username`：发送者的昵称，显示在消息块的左上角
     - `custom-author-id`：发送者的 OpenID
     - `custom-msg-idx`：消息在 QQ 中的索引
     - `custom-event-id`：推送该消息的事件的 ID

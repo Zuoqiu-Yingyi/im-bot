@@ -1,0 +1,35 @@
+// Copyright (C) 2026 Zuoqiu Yingyi
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Affero General Public License as
+// published by the Free Software Foundation, either version 3 of the
+// License, or (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU Affero General Public License for more details.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+/* 思源样式 */
+
+/* 收集箱消息超级块: 在块的左上角显示发送者昵称 */
+.protyle-wysiwyg {
+    .sb[data-node-id][custom-author-username] {
+        margin-top: 1em !important;
+
+        &::before {
+            content: attr(custom-author-username);
+            position: absolute;
+            top: -1.5em;
+            left: 0;
+            z-index: 1;
+
+            font-size: 0.75em;
+            color: var(--b3-theme-on-surface);
+            white-space: nowrap;
+        }
+    }
+}

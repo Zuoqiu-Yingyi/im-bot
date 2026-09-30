@@ -35,6 +35,8 @@ import type { I18N } from "./utils/i18n";
 
 import type { IApiDebuggerTabData } from "./components/ApiDebugger.svelte";
 
+import "./styles/siyuan.less";
+
 declare const _globalThis: ISiyuanGlobal;
 
 /* QQ 机器人接口调试页签 */
