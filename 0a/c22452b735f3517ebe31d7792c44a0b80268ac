@@ -1,0 +1,38 @@
+src/types/qq.d.ts
+  s_08bc93b2fa287c::t_b78f99683d2410 110
+  s_08bc93b2fa287c::t_685ad9ea8aeebc 103
+  s_08bc93b2fa287c::t_054c7ce78e2085 104-109,111-115
+src/qq/constants.ts
+  s_08bc93b2fa287c::t_9ed69dba0ea76a 24-38
+src/constants.ts
+  s_08bc93b2fa287c::t_3088e4d68c3692 22
+README.md
+  s_08bc93b2fa287c::t_3efeb194cc8945 53
+  s_08bc93b2fa287c::t_f171177aeab7bd 52,56-64
+src/qq/proxy.ts
+  s_08bc93b2fa287c::t_190594cf24885d 1-94
+src/kernel.ts
+  s_08bc93b2fa287c::t_d065526107f378 169-188
+  s_08bc93b2fa287c::t_a20acf69dd50a0 23,28,37,44-45,51,61-62,80,95
+src/qq/gateway.ts
+  s_08bc93b2fa287c::t_fa800a955d650e 387-388,390-391,393
+  s_08bc93b2fa287c::t_a0dc96efa1a8ff 25-26,31-33,48,51-53,57,78,81,83,144-145
+src/qq/openapi.ts
+  s_08bc93b2fa287c::t_87b4b4324043d6 1-178
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.45-trip",
+  "base_commit_sha": "0ac22452b735f3517ebe31d7792c44a0b80268ac",
+  "prompts": {},
+  "sessions": {
+    "s_08bc93b2fa287c": {
+      "agent_id": {
+        "tool": "chengxiaobang",
+        "id": "s_x2kvs9g65t5k",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Yingyi / 颖逸 <49649786+Zuoqiu-Yingyi@users.noreply.github.com>"
+    }
+  }
+}
