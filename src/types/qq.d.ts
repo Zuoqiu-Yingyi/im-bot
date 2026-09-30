@@ -100,7 +100,20 @@ export interface IGroupMessage {
 
 /* POST https://bots.qq.com/app/getAppAccessToken */
 export interface IAccessToken {
-    access_token: string;
+    access_token?: string;
+    expires_in?: number | string; // 有效时间 (s), 文档的字段表写的是 number, 示例是 string
+    code?: number; // 业务错误码, 失败时 HTTP 状态码仍为 200
+    message?: string;
+}
+
+/**
+ * RPC call-qq-api 的返回值: OpenAPI 的响应
+ * @typeParam T - JSON 响应体的类型
+ */
+export interface IApiResponse<T = unknown> {
+    status: number; // HTTP 状态码
+    headers: Record<string, string>; // 响应头
+    body: T; // JSON 响应体; 没有响应体时为 null, 不是 JSON 时为原始文本
 }
 
 /* GET /gateway/bot */

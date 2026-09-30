@@ -22,6 +22,23 @@ export const RECONNECT_BASE_DELAY = 1_000; // 重连退避的初始间隔 (ms)
 export const RECONNECT_MAX_DELAY = 60_000; // 重连退避的最大间隔 (ms)
 
 /**
+ * 凭证距过期不足该时长时重新获取 (ms)。
+ * 凭证有效期内重复获取会得到同一个凭证, 距过期 60 秒内获取才会得到新凭证, 旧凭证在这 60 秒内仍然有效。
+ * REF: https://bot.q.qq.com/wiki/develop/api-v2/dev-prepare/access-token.html
+ */
+export const ACCESS_TOKEN_REFRESH_WINDOW = 60_000;
+export const ACCESS_TOKEN_TOO_MANY_REQUESTS = 100001; // 获取凭证过于频繁, 该接口的业务错误都以 HTTP 200 返回
+
+/* RPC call-qq-api 允许的请求方法 */
+export const API_METHODS = new Set<string>([
+    "GET",
+    "POST",
+    "PUT",
+    "PATCH",
+    "DELETE",
+]);
+
+/**
  * 网关 opcode
  * REF: https://bot.q.qq.com/wiki/develop/api-v2/dev-prepare/interface-framework/event-emit.html
  */

@@ -14,22 +14,23 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import {
-    ACCESS_TOKEN_URL,
-    API_BASE_URL,
     DEFAULT_HEARTBEAT_INTERVAL,
     FATAL_CLOSE_CODES,
     IDENTIFY_CLOSE_CODES,
     OpCode,
-    PROXY_DIAL_TIMEOUT,
     RECONNECT_BASE_DELAY,
     RECONNECT_MAX_DELAY,
 } from "./constants";
 import { formatIntents, resolveIntents } from "./intents";
+import { FatalError } from "./openapi";
+import { encodeBase64Url } from "./proxy";
 
 import type * as kernel from "siyuan/kernel";
 
 import type { IQQBotConfig } from "@/types/config";
-import type { IAccessToken, IGatewayBot, IHelloData, IPayload, IReadyData } from "@/types/qq";
+import type { IGatewayBot, IHelloData, IPayload, IReadyData } from "@/types/qq";
+
+import type { QQOpenApi } from "./openapi";
 
 /* 生效中的连接参数 */
 interface IOptions {
@@ -38,56 +39,22 @@ interface IOptions {
     intents: number;
 }
 
-/* 经内核转发的 HTTP 请求 */
-interface IProxyRequest {
-    url: string;
-    method: "GET" | "POST";
-    headers?: Record<string, string[]>; // 转发给目标的请求头
-    json?: unknown; // JSON 请求体
-}
-
-/* 目标的响应 */
-interface IProxyResponse {
-    status: number;
-    body: string;
-}
-
-/* 重试无意义的错误 (如凭证错误), 抛出后停止重连 */
-class FatalError extends Error { }
-
 function errorMessage(error: unknown): string {
     return error instanceof Error ? error.message : String(error);
 }
 
-function parseJson<T>(text: string): T | undefined {
-    try {
-        return JSON.parse(text) as T;
-    }
-    catch {
-        return undefined;
-    }
-}
-
-/* /api/network/proxy 与 /ws/network/proxy 的 u、h 参数: 不带填充的 base64url */
-function encodeBase64Url(text: string): string {
-    // eslint-disable-next-line node/prefer-global/buffer
-    return Buffer.from(text, "utf8")
-        .toString("base64")
-        .replace(/\+/g, "-")
-        .replace(/\//g, "_")
-        .replace(/=+$/, "");
-}
-
 /**
  * QQ 机器人 WebSocket 网关客户端: 鉴权、心跳、断线 resume 与退避重连。
- * 内核插件的 siyuan.client 只能访问本机内核, 所以 HTTP 请求经 /api/network/proxy,
+ * 内核插件的 siyuan.client 只能访问本机内核, 所以凭证与接入点经 QQOpenApi (/api/network/proxy) 获取,
  * WebSocket 经 /ws/network/proxy 转发到 QQ 服务器。
  * QQ bot WebSocket gateway client: identify, heartbeat, resume and reconnect with backoff.
- * siyuan.client only reaches the local kernel, so HTTP goes through
- * /api/network/proxy and the WebSocket through /ws/network/proxy.
+ * siyuan.client only reaches the local kernel, so the access token and the
+ * gateway URL come from QQOpenApi (/api/network/proxy) and the WebSocket goes
+ * through /ws/network/proxy.
  */
 export class QQBotGateway {
     private readonly siyuan: kernel.ISiyuan;
+    private readonly openapi: QQOpenApi;
     private readonly onDispatch: (payload: IPayload) => void;
 
     private options?: IOptions; // undefined 表示未启动或已停止
@@ -108,10 +75,12 @@ export class QQBotGateway {
 
     /**
      * @param siyuan - 内核插件全局对象
+     * @param openapi - 获取凭证与接入点的 OpenAPI 客户端
      * @param onDispatch - 接收网关推送的每个事件 (op=0), 包括 READY 与 RESUMED
      */
-    constructor(siyuan: kernel.ISiyuan, onDispatch: (payload: IPayload) => void) {
+    constructor(siyuan: kernel.ISiyuan, openapi: QQOpenApi, onDispatch: (payload: IPayload) => void) {
         this.siyuan = siyuan;
+        this.openapi = openapi;
         this.onDispatch = onDispatch;
     }
 
@@ -172,8 +141,8 @@ export class QQBotGateway {
 
         const connection = ++this.connection;
         try {
-            const token = await this.fetchAccessToken(options);
-            const gateway = await this.fetchGateway(token);
+            const token = await this.openapi.accessToken(options);
+            const gateway = await this.fetchGateway(options);
             if (connection !== this.connection) {
                 return;
             }
@@ -414,65 +383,13 @@ export class QQBotGateway {
         }
     }
 
-    /* 只有 identify/resume 需要凭证, 每次连接前重新获取, 避免使用过期凭证 */
-    private async fetchAccessToken(options: IOptions): Promise<string> {
-        const response = await this.proxy({
-            url: ACCESS_TOKEN_URL,
-            method: "POST",
-            json: {
-                appId: options.appid,
-                clientSecret: options.secret,
-            },
-        });
-        const body = parseJson<IAccessToken>(response.body);
-        if (body?.access_token) {
-            return body.access_token;
-        }
-
-        const detail = `get access token failed: ${response.status} ${response.body}`;
-        if (response.status === 429 || response.status >= 500) {
-            throw new Error(detail);
-        }
-        throw new FatalError(`${detail}, check QQ_BOT_APPID and QQ_BOT_SECRET`);
-    }
-
     /* 获取带分片信息的 WebSocket 接入点 */
-    private async fetchGateway(token: string): Promise<IGatewayBot> {
-        const response = await this.proxy({
-            url: `${API_BASE_URL}/gateway/bot`,
-            method: "GET",
-            headers: { Authorization: [`QQBot ${token}`] },
-        });
-        const body = parseJson<IGatewayBot>(response.body);
-        if (body?.url) {
-            return body;
+    private async fetchGateway(options: IOptions): Promise<IGatewayBot> {
+        const response = await this.openapi.request(options, { url: "/gateway/bot", method: "GET" });
+        const body = response.body as null | Partial<IGatewayBot> | string;
+        if (typeof body === "object" && body?.url) {
+            return body as IGatewayBot;
         }
-        throw new Error(`get gateway failed: ${response.status} ${response.body}`);
-    }
-
-    /**
-     * 经内核 /api/network/proxy 发出 HTTP 请求。
-     * 内核把请求方法、请求体与 Content-Type 转发给 u 参数指定的目标, 其他请求头只能放在 h 参数中;
-     * 目标的响应一律以 application/octet-stream 返回, 其他媒体类型是内核自身的拒绝 (参数错误、无法连接目标等)。
-     */
-    private async proxy(request: IProxyRequest): Promise<IProxyResponse> {
-        const headers = request.headers
-            ? `&h=${encodeBase64Url(JSON.stringify(request.headers))}`
-            : "";
-        const response = await this.siyuan.client.fetch(`/api/network/proxy?u=${encodeBase64Url(request.url)}&t=${PROXY_DIAL_TIMEOUT}ms${headers}`, request.json === undefined
-            ? { method: request.method }
-            : {
-                    method: request.method,
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify(request.json),
-                });
-
-        const body = await response.text();
-        const contentType: string | undefined = response.headers["Content-Type"];
-        if (!contentType?.startsWith("application/octet-stream")) {
-            const failure = parseJson<{ msg?: string }>(body);
-            throw new Error(`proxy ${request.method} ${request.url} failed: ${response.status} ${failure?.msg ?? body}`);
-        }
-        return { status: response.status, body };
+        throw new Error(`get gateway failed: ${response.status} ${JSON.stringify(body)}`);
     }
 }

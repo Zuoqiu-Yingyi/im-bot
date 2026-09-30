@@ -20,11 +20,12 @@ import CONSTANTS from "@/constants";
 import { eventLogPath } from "@/qq/event-log";
 import { QQBotGateway } from "@/qq/gateway";
 import { QQInbox } from "@/qq/inbox";
+import { QQOpenApi, resolveApiRequest } from "@/qq/openapi";
 
 import type * as kernel from "siyuan/kernel";
 
 import type { IConfig } from "@/types/config";
-import type { IPayload } from "@/types/qq";
+import type { IApiResponse, IPayload } from "@/types/qq";
 
 const CONFIG_RELOAD_DELAY = 1_000; // 配置文件变化后重新读取的延迟 (ms), 合并一次写入产生的多个文件事件
 
@@ -33,18 +34,21 @@ const CONFIG_RELOAD_DELAY = 1_000; // 配置文件变化后重新读取的延迟
  * 运行在思源内核的 goja 运行时中 (没有 DOM), 只能通过全局对象 siyuan 调用内核能力。
  * 按插件配置接入 QQ 机器人 WebSocket 网关, 把网关推送的全部事件打印到内核日志, 开启事件日志时同时保存到 logs/events/,
  * 并把绑定群聊的消息写入收集箱文档。指定了运行设备时, 只有该设备连接网关。
+ * 前端可以通过 RPC call-qq-api 以机器人身份调用 QQ 开放平台的服务端接口。
  * kernel.js 以普通脚本 (非 ES module) 执行: 本文件不能 export, 也不能从 external 模块 (如 siyuan) 导入运行时值。
  * Kernel plugin, built to dist/kernel.js. Runs in the goja runtime of the
  * SiYuan kernel (no DOM) and uses the global `siyuan` object. Connects to the
  * QQ bot WebSocket gateway with the plugin config and writes every pushed
  * event to the kernel log, and to logs/events/ when the event log is on. Writes
  * the messages of bound groups into inbox documents. When a device is set,
- * only that device connects to the gateway.
+ * only that device connects to the gateway. The call-qq-api RPC method calls
+ * the QQ bot OpenAPI as the bot.
  * kernel.js is evaluated as a plain script, not an ES module: do not export
  * from this file or import runtime values from external modules (e.g. siyuan).
  */
 class ImBotKernelPlugin {
     private readonly siyuan: kernel.ISiyuan = siyuan;
+    private readonly openapi: QQOpenApi;
     private readonly qq: QQBotGateway;
     private readonly inbox: QQInbox;
 
@@ -54,7 +58,8 @@ class ImBotKernelPlugin {
     private reloadTimer?: ReturnType<typeof setTimeout>;
 
     constructor() {
-        this.qq = new QQBotGateway(this.siyuan, this.onQQDispatch.bind(this));
+        this.openapi = new QQOpenApi(this.siyuan);
+        this.qq = new QQBotGateway(this.siyuan, this.openapi, this.onQQDispatch.bind(this));
         this.inbox = new QQInbox(this.siyuan, () => this.config.qq.inbox);
         this.siyuan.event.handler = this.onEvent.bind(this);
 
@@ -72,6 +77,7 @@ class ImBotKernelPlugin {
 
         /* 绑定 RPC 方法 */
         await this.siyuan.rpc.bind(CONSTANTS.KERNEL_RPC_METHOD.UPDATE_CONFIG, this.rpcUpdateConfig.bind(this), "Update the plugin config and reconnect the QQ bot if its config changed.");
+        await this.siyuan.rpc.bind(CONSTANTS.KERNEL_RPC_METHOD.CALL_QQ_API, this.rpcCallQQApi.bind(this), "Call a QQ bot OpenAPI endpoint as the configured bot. Params: url (a path starting with /), method (GET, POST, PUT, PATCH or DELETE), body (optional, sent as JSON). Returns the response { status, headers, body }.");
 
         /* 其他设备修改的配置随数据同步到本机时, 前端不会调用 RPC, 需要监听配置文件 */
         await this.siyuan.storage.watcher.add(".");
@@ -86,6 +92,7 @@ class ImBotKernelPlugin {
     private async onunload(): Promise<void> {
         /* 解绑 RPC 方法 */
         await this.siyuan.rpc.unbind(CONSTANTS.KERNEL_RPC_METHOD.UPDATE_CONFIG);
+        await this.siyuan.rpc.unbind(CONSTANTS.KERNEL_RPC_METHOD.CALL_QQ_API);
 
         clearTimeout(this.reloadTimer);
         await this.qq.stop();
@@ -157,6 +164,26 @@ class ImBotKernelPlugin {
     private async rpcUpdateConfig(config: IConfig): Promise<void> {
         this.config = mergeIgnoreArray<IConfig>(DEFAULT_CONFIG, config);
         await this.applyConfig();
+    }
+
+    /**
+     * RPC: call-qq-api
+     * 以插件设置中的 QQ 机器人身份调用服务端接口 (OpenAPI), 不受运行设备限制。
+     * 前端插件调用: `await this.kernel.rpc.call[CONSTANTS.KERNEL_RPC_METHOD.CALL_QQ_API]?.("/v2/groups/{group_openid}/messages", "POST", { content: "...", msg_type: 0 })`
+     * @param url - 请求路径, 以 `/` 开头, 相对 https://api.bot.qq.com
+     * @param method - 请求方法: GET、POST、PUT、PATCH 或 DELETE, 不区分大小写
+     * @param body - 请求体, 以 JSON 发送; 省略或为 null 时不发送请求体
+     * @returns 目标的响应, 包括 4xx、5xx 等错误响应
+     * @throws 参数无效、未设置 AppID 或 AppSecret、获取凭证失败、内核无法转发或请求超时
+     */
+    private async rpcCallQQApi(url: unknown, method: unknown, body?: unknown): Promise<IApiResponse> {
+        const request = resolveApiRequest(url, method, body);
+        const appid = this.config.qq.appid.trim();
+        const secret = this.config.qq.secret.trim();
+        if (!appid || !secret) {
+            throw new Error("QQ_BOT_APPID or QQ_BOT_SECRET is not configured");
+        }
+        return this.openapi.request({ appid, secret }, request);
     }
 
     /* 打印 QQ 网关推送的事件, 开启事件日志时同时保存到文件, 绑定了收集箱的群聊消息写入收集箱 */
