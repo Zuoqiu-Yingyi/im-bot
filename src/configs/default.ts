@@ -38,5 +38,35 @@ export const DEFAULT_CONFIG: IConfig = {
             bindings: [],
             downloadAssets: true,
         },
+        panels: {
+            c2c: {
+                scope: "c2c",
+                target_type: "all",
+                panel: {
+                    items: [
+                        {
+                            type: "command",
+                            name: "openid",
+                            desc: "查询当前用户的 OpenID",
+                        },
+                    ],
+                    remark: "siyuan-plugin-im-bot-c2c",
+                },
+            },
+            group: {
+                scope: "group",
+                target_type: "all",
+                panel: {
+                    items: [
+                        {
+                            type: "command",
+                            name: "openid",
+                            desc: "查询当前用户与群组的 OpenID",
+                        },
+                    ],
+                    remark: "siyuan-plugin-im-bot-group",
+                },
+            },
+        },
     },
 };

@@ -14,6 +14,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import type { TIntent } from "@/qq/constants";
+import type { IPanelConfig } from "@/types/qq";
 
 export interface IConfig {
     qq: IQQBotConfig;
@@ -26,6 +27,13 @@ export interface IQQBotConfig {
     eventLog: boolean; // 事件日志: 是否把网关推送的事件保存到 logs/events/
     device: string; // 运行 QQ 机器人的设备 ID, 为空时每台设备都运行
     inbox: IQQInboxConfig; // 思源收集箱
+    panels: IQQPanelsConfig; // 指令面板
+}
+
+/* 指令面板, 内核插件按 panel.remark 查找 QQ 开放平台上对应的面板 */
+export interface IQQPanelsConfig {
+    c2c: IPanelConfig; // 单聊
+    group: IPanelConfig; // 群聊
 }
 
 export interface IQQInboxConfig {

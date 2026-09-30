@@ -64,6 +64,11 @@ export enum MessageType {
     REFERENCE = 103, // 引用消息
 }
 
+/* 机器人响应的指令, 用户以 `/指令名` 发送; 指令面板中 type=command 的元素名称应与之一致 */
+export const COMMANDS = {
+    OPENID: "openid", // 查询当前用户 (与群组) 的 OpenID
+} as const;
+
 /* 群消息事件: GROUP_AT_MESSAGE_CREATE 为 @ 机器人的消息, GROUP_MESSAGE_CREATE 为群主允许机器人接收的全部消息 */
 export const GROUP_MESSAGE_EVENTS = new Set<string>([
     "GROUP_AT_MESSAGE_CREATE",

@@ -16,6 +16,12 @@
         "url": "Request path",
         "urlPlaceholder": "Request path starting with /, relative to https://api.bot.qq.com, for example /gateway/bot"
     },
+    "commands": {
+        "openid": {
+            "group": "Group OpenID: {{1}}",
+            "user": "User OpenID: {{1}}"
+        }
+    },
     "inbox": {
         "quote": "Quoted message",
         "unavailable": "[Message not available]"
@@ -31,7 +37,7 @@
         },
         "inboxSettings": {
             "bindings": {
-                "description": "One binding per line in the form <code class=\"fn__code\">group_openid:document ID</code>, that is the group_openid of a group and the ID of an inbox document separated by a colon. Each message of the group is first inserted into the <code class=\"fn__code\">.temp</code> document under the inbox document, then moved to the end of the <code class=\"fn__code\">YYYY/MM/YYYY-MM-DD</code> document under it. Missing documents are created automatically. The group_openid can be found in the event log",
+                "description": "One binding per line in the form <code class=\"fn__code\">group_openid:document ID</code>, that is the group_openid of a group and the ID of an inbox document separated by a colon. Each message of the group is first inserted into the <code class=\"fn__code\">.temp</code> document under the inbox document, then moved to the end of the <code class=\"fn__code\">YYYY/MM/YYYY-MM-DD</code> document under it. Missing documents are created automatically. Send <code class=\"fn__code\">/openid</code> to the bot with an @ mention in the group to get the group_openid, which can also be found in the event log",
                 "placeholder": "7E1569E220555215CCBF5D1A85B1A123:20260930112233-abcdefg",
                 "title": "Bound groups"
             },

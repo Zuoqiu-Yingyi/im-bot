@@ -44,7 +44,8 @@ export interface IReadyData {
 /* 消息作者 */
 export interface IMessageAuthor {
     id: string;
-    member_openid?: string;
+    user_openid?: string; // 单聊中的用户 OpenID
+    member_openid?: string; // 群聊中的成员 OpenID
     union_openid?: string;
     username?: string;
     bot?: boolean;
@@ -81,21 +82,25 @@ export interface IMessageElement {
     attachments?: IAttachment[];
 }
 
-/* op=0, t=GROUP_AT_MESSAGE_CREATE 或 GROUP_MESSAGE_CREATE */
-export interface IGroupMessage {
-    id: string; // 消息 ID
+/* op=0, t=C2C_MESSAGE_CREATE 的单聊消息, 也是群聊消息共有的字段 */
+export interface IMessage {
+    id: string; // 消息 ID, 被动回复时作为 msg_id
     content: string;
     timestamp: string;
-    group_openid: string;
     message_type?: number;
     author: IMessageAuthor;
     attachments?: IAttachment[];
-    mentions?: IMention[];
     message_scene?: {
         source?: string;
         ext?: string[]; // 形如 msg_idx=..., ref_msg_idx=..., auth_token=...
     };
     msg_elements?: IMessageElement[];
+}
+
+/* op=0, t=GROUP_AT_MESSAGE_CREATE 或 GROUP_MESSAGE_CREATE */
+export interface IGroupMessage extends IMessage {
+    group_openid: string;
+    mentions?: IMention[];
 }
 
 /* POST https://api.bot.qq.com/app/getAppAccessToken */
@@ -114,6 +119,52 @@ export interface IApiResponse<T = unknown> {
     status: number; // HTTP 状态码
     headers: Record<string, string>; // 响应头
     body: T; // JSON 响应体; 没有响应体时为 null, 不是 JSON 时为原始文本
+}
+
+/**
+ * 指令面板的元素, 字段均可省略
+ * REF: https://bot.q.qq.com/wiki/develop/api-v2/autogen/api/v2_panels.post.html
+ */
+export interface IPanelItem {
+    type?: "command" | "link"; // 指令或链接跳转
+    name?: string; // 元素名称, 最多 14 个字符; type=command 时用户点击后该内容会填入聊天输入框
+    desc?: string; // 元素描述, 最多 30 个字符
+    only_admin?: boolean; // 是否仅管理员可操作
+    link?: string; // 跳转链接, 仅 type=link 时有效
+}
+
+/* 指令面板的内容 */
+export interface IPanel {
+    items?: IPanelItem[]; // 最多 20 个元素
+    remark?: string; // 备注, 不对用户展示, 最多 255 个字符
+    version?: number; // 版本号
+}
+
+/* POST /v2/panels 的请求体, 也是插件配置中的指令面板 */
+export interface IPanelConfig {
+    scope: "c2c" | "channel" | "dm" | "group"; // 生效场景
+    target_type?: "all" | "specific"; // 作用范围: 全部用户或群, 或者指定的用户或群
+    user_openids?: string[]; // 仅 scope=c2c 且 target_type=specific 时有效
+    group_openids?: string[]; // 仅 scope=group 且 target_type=specific 时有效
+    panel: IPanel;
+}
+
+/* GET /v2/panels 返回的一个面板 */
+export interface IPanelRecord {
+    panel_id: string;
+    scope: string;
+    target_type?: string;
+    panel?: IPanel;
+    created_at?: string;
+    updated_at?: string;
+    version?: number;
+}
+
+/* GET /v2/panels */
+export interface IPanelList {
+    records?: IPanelRecord[]; // 按设置时间倒序排列
+    next_cursor?: string; // 下一页的游标, 空串表示已到最后一页
+    is_end?: boolean; // 是否已到最后一页
 }
 
 /* GET /gateway/bot */

@@ -68,6 +68,13 @@ export function resolveApiRequest(url: unknown, method: unknown, body: unknown):
     return { url, method: upperMethod, body: body ?? undefined };
 }
 
+/* 插件配置中的凭证, AppID 或 AppSecret 为空时返回 undefined */
+export function resolveCredentials(config: TCredentials): TCredentials | undefined {
+    const appid = config.appid.trim();
+    const secret = config.secret.trim();
+    return appid && secret ? { appid, secret } : undefined;
+}
+
 /* 响应体: JSON 解析后的值; 没有响应体时为 null, 不是 JSON 时为原始文本 */
 function parseBody(text: string): unknown {
     if (!text) {

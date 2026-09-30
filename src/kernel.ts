@@ -17,10 +17,12 @@ import { mergeIgnoreArray } from "@workspace/utils/misc/merge";
 
 import { DEFAULT_CONFIG } from "@/configs/default";
 import CONSTANTS from "@/constants";
+import { QQCommands } from "@/qq/commands";
 import { eventLogPath } from "@/qq/event-log";
 import { QQBotGateway } from "@/qq/gateway";
 import { QQInbox } from "@/qq/inbox";
-import { QQOpenApi, resolveApiRequest } from "@/qq/openapi";
+import { QQOpenApi, resolveApiRequest, resolveCredentials } from "@/qq/openapi";
+import { QQPanels } from "@/qq/panels";
 
 import type * as kernel from "siyuan/kernel";
 
@@ -33,16 +35,17 @@ const CONFIG_RELOAD_DELAY = 1_000; // 配置文件变化后重新读取的延迟
  * 内核插件, 构建为 dist/kernel.js。
  * 运行在思源内核的 goja 运行时中 (没有 DOM), 只能通过全局对象 siyuan 调用内核能力。
  * 按插件配置接入 QQ 机器人 WebSocket 网关, 把网关推送的全部事件打印到内核日志, 开启事件日志时同时保存到 logs/events/,
- * 并把绑定群聊的消息写入收集箱文档。指定了运行设备时, 只有该设备连接网关。
+ * 把绑定群聊的消息写入收集箱文档, 响应 /openid 等指令, 并按配置同步指令面板。指定了运行设备时, 只有该设备连接网关并同步指令面板。
  * 前端可以通过 RPC call-qq-api 以机器人身份调用 QQ 开放平台的服务端接口。
  * kernel.js 以普通脚本 (非 ES module) 执行: 本文件不能 export, 也不能从 external 模块 (如 siyuan) 导入运行时值。
  * Kernel plugin, built to dist/kernel.js. Runs in the goja runtime of the
  * SiYuan kernel (no DOM) and uses the global `siyuan` object. Connects to the
  * QQ bot WebSocket gateway with the plugin config and writes every pushed
  * event to the kernel log, and to logs/events/ when the event log is on. Writes
- * the messages of bound groups into inbox documents. When a device is set,
- * only that device connects to the gateway. The call-qq-api RPC method calls
- * the QQ bot OpenAPI as the bot.
+ * the messages of bound groups into inbox documents, answers commands such as
+ * /openid and syncs the command panels with the config. When a device is set,
+ * only that device connects to the gateway and syncs the command panels. The
+ * call-qq-api RPC method calls the QQ bot OpenAPI as the bot.
  * kernel.js is evaluated as a plain script, not an ES module: do not export
  * from this file or import runtime values from external modules (e.g. siyuan).
  */
@@ -51,16 +54,21 @@ class ImBotKernelPlugin {
     private readonly openapi: QQOpenApi;
     private readonly qq: QQBotGateway;
     private readonly inbox: QQInbox;
+    private readonly commands: QQCommands;
+    private readonly panels: QQPanels;
 
     private config: IConfig = mergeIgnoreArray<IConfig>(DEFAULT_CONFIG);
     private device = ""; // 本机设备 ID
     private running?: boolean; // 上次应用配置时本机是否运行 QQ 机器人
+    private panelsSynced?: string; // 最近一次同步指令面板时的凭证与面板配置
     private reloadTimer?: ReturnType<typeof setTimeout>;
 
     constructor() {
         this.openapi = new QQOpenApi(this.siyuan);
         this.qq = new QQBotGateway(this.siyuan, this.openapi, this.onQQDispatch.bind(this));
         this.inbox = new QQInbox(this.siyuan, () => this.config.qq.inbox);
+        this.commands = new QQCommands(this.siyuan, this.openapi, () => this.config.qq);
+        this.panels = new QQPanels(this.siyuan, this.openapi);
         this.siyuan.event.handler = this.onEvent.bind(this);
 
         // 绑定生命周期钩子, 内核会等待钩子返回的 Promise 后再进入下一阶段。
@@ -114,10 +122,33 @@ class ImBotKernelPlugin {
 
         if (running) {
             await this.qq.update(this.config.qq);
+            this.syncPanels();
         }
         else {
             await this.qq.stop();
         }
+    }
+
+    /**
+     * 在后台同步指令面板: 内核插件开始运行时, 以及凭证或指令面板的配置变化后。
+     * 与网关一样只在运行设备上执行, 避免多台设备同时创建同一个面板; 同步失败时, 下次应用配置时重试
+     */
+    private syncPanels(): void {
+        const credentials = resolveCredentials(this.config.qq);
+        if (!credentials) {
+            return;
+        }
+        const panels = this.config.qq.panels;
+        const key = JSON.stringify([credentials, panels]);
+        if (key === this.panelsSynced) {
+            return;
+        }
+        this.panelsSynced = key;
+        void this.panels.sync(credentials, [panels.c2c, panels.group]).then((synced) => {
+            if (!synced && this.panelsSynced === key) {
+                this.panelsSynced = undefined;
+            }
+        });
     }
 
     /* 配置文件变化后 (包括数据同步) 重新读取并应用 */
@@ -178,21 +209,21 @@ class ImBotKernelPlugin {
      */
     private async rpcCallQQApi(url: unknown, method: unknown, body?: unknown): Promise<IApiResponse> {
         const request = resolveApiRequest(url, method, body);
-        const appid = this.config.qq.appid.trim();
-        const secret = this.config.qq.secret.trim();
-        if (!appid || !secret) {
+        const credentials = resolveCredentials(this.config.qq);
+        if (!credentials) {
             throw new Error("QQ_BOT_APPID or QQ_BOT_SECRET is not configured");
         }
-        return this.openapi.request({ appid, secret }, request);
+        return this.openapi.request(credentials, request);
     }
 
-    /* 打印 QQ 网关推送的事件, 开启事件日志时同时保存到文件, 绑定了收集箱的群聊消息写入收集箱 */
+    /* 打印 QQ 网关推送的事件, 开启事件日志时同时保存到文件, 绑定了收集箱的群聊消息写入收集箱, 并响应消息中的指令 */
     private onQQDispatch(payload: IPayload): void {
         void this.siyuan.logger.info("[qq] event", payload.t, payload);
         if (this.config.qq.eventLog) {
             void this.writeEventLog(payload);
         }
         this.inbox.handle(payload);
+        this.commands.handle(payload);
     }
 
     /**

@@ -29,7 +29,7 @@ import {
 import { parseChatRecord } from "./chat-record";
 import { MessageType } from "./constants";
 
-import type { IAttachment, IGroupMessage, IMention } from "@/types/qq";
+import type { IAttachment, IGroupMessage, IMention, IMessage } from "@/types/qq";
 
 import type { IChatRecordMessage } from "./chat-record";
 
@@ -71,10 +71,10 @@ const ANCHOR_LENGTH = 32;
 
 /**
  * message_scene.ext 中 `key=value` 形式的值
- * @param message - 群消息
+ * @param message - 单聊或群聊消息
  * @param key - 如 `msg_idx` (本条消息的索引)、`ref_msg_idx` (被引用消息的索引)
  */
-export function sceneValue(message: IGroupMessage, key: string): string | undefined {
+export function sceneValue(message: Pick<IMessage, "message_scene">, key: string): string | undefined {
     const prefix = `${key}=`;
     return message.message_scene?.ext?.find((item) => item.startsWith(prefix))?.slice(prefix.length);
 }
