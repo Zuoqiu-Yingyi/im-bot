@@ -1,0 +1,49 @@
+public/i18n/zh-CN.json
+  s_08bc93b2fa287c::t_1b09a5dbf0f223 19-24,40
+src/qq/openapi.ts
+  s_08bc93b2fa287c::t_491cc3470e1c98 71-77
+src/types/qq.d.ts
+  s_08bc93b2fa287c::t_4674822afbdff3 47-48,85-87,100-105,124-167
+src/qq/panels.ts
+  s_08bc93b2fa287c::t_05ffe8adbe677f 29
+  s_08bc93b2fa287c::t_f7a66204003d44 88,95-96,100
+  s_08bc93b2fa287c::t_cc7280e1193269 1-28,30-87,89-94,97-99,101-147
+src/types/config.d.ts
+  s_08bc93b2fa287c::t_f736a18329a8ef 17,30-36
+src/qq/message.ts
+  s_08bc93b2fa287c::t_5ebef3221bb207 32,74,77
+src/configs/default.ts
+  s_08bc93b2fa287c::t_637c70d8539ac8 41-70
+README.md
+  s_08bc93b2fa287c::t_3a281a17b5f952 67-69,72-81
+  s_08bc93b2fa287c::t_a8b227627ed664 70
+  s_08bc93b2fa287c::t_43860453b2328d 71
+public/i18n/en.json
+  s_08bc93b2fa287c::t_bf7dad58db7e07 19-24,40
+src/kernel.ts
+  s_08bc93b2fa287c::t_5d64a316ab8304 20,24-25,38,45-48,57-58,63,70-71,125,132-153,212-213,216,219,226
+public/i18n/zh-TW.json
+  s_08bc93b2fa287c::t_111dc38ecebc5c 19-24,40
+src/qq/constants.ts
+  s_08bc93b2fa287c::t_4636121941581f 67-71
+src/qq/commands.ts
+  s_08bc93b2fa287c::t_447e9d9b3f19ab 105-108,113
+  s_08bc93b2fa287c::t_fd3392bdcec198 1-64,66-104,109-112,114-189
+  s_08bc93b2fa287c::t_cdc7b8b139e0e9 65
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.45-trip",
+  "base_commit_sha": "a36e48a827d2198b459bd50b517aae572c0a7f5d",
+  "prompts": {},
+  "sessions": {
+    "s_08bc93b2fa287c": {
+      "agent_id": {
+        "tool": "chengxiaobang",
+        "id": "s_x2kvs9g65t5k",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Yingyi / 颖逸 <49649786+Zuoqiu-Yingyi@users.noreply.github.com>"
+    }
+  }
+}
