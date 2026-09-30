@@ -97,6 +97,8 @@ The plugin has two entries, both built into `dist/`:
 - On the first message for an inbox after the plugin starts, message blocks left in `.temp` (for example when SiYuan quit during a download) are downloaded and moved to the date document of their block ID's date.
 - The inbox document may be moved or renamed; the plugin caches only document IDs and looks up the parent path again before creating a document. When a cached `.temp` or date document has been deleted, the plugin clears the cache, looks the documents up again (creating them when missing) and retries once.
 - A failed message is logged as a warning and skipped; the gateway connection and the event log are not affected.
+- `src/qq/notices.ts` sends a notice to every bound group, once per group, as an active text message: `notices.online` when the kernel plugin starts running, and `notices.offline` when it unloads (the plugin is disabled, uninstalled or reloaded, for example after an update or when `kernel.js` changes, or SiYuan exits normally). The texts come from the i18n files in the language of the kernel; `{{1}}` is the device name (`conf.system.name`, or the device ID when the name is empty). Only the device that runs the bot sends them, and only with an AppID and an AppSecret.
+- The kernel waits for `onunload` before it stops the plugin, also when SiYuan exits, so the offline notice waits at most 5 s. A forced exit does not stop kernel plugins, so it sends no offline notice. Active messages count against the QQ limits (20 per minute and 1000 per day for each group) and fail when active messages are turned off; a failed notice is logged as a warning.
 
 ### RELEASE STEPS
 
