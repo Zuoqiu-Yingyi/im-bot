@@ -46,7 +46,7 @@
                 "doc": "收集箱文件 ID",
                 "docPlaceholder": "20260930112233-abcdefg",
                 "enabled": "啟用",
-                "group": "群聊（group_openid）",
+                "group": "群聊 Open ID",
                 "groupPlaceholder": "7E1569E220555215CCBF5D1A85B1A123",
                 "remove": "刪除",
                 "reply": "回覆區塊連結",
