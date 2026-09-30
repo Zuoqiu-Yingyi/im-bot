@@ -13,6 +13,10 @@
                 "description": "QQ 機器人的 AppID，在 QQ 開放平台（q.qq.com）的機器人開發設定中取得",
                 "title": "AppID <code class=\"fn__code\">QQ_BOT_APPID</code>"
             },
+            "eventLog": {
+                "description": "將閘道推送的每個事件以不帶縮排的 JSON 儲存到工作空間的 <code class=\"fn__code\">data/storage/petal/im-bot/logs/events/&lt;事件類型&gt;/&lt;事件 ID&gt;.json</code>，會隨資料同步。沒有事件 ID 的事件（<code class=\"fn__code\">READY</code>、<code class=\"fn__code\">RESUMED</code>）不會儲存",
+                "title": "事件日誌"
+            },
             "intents": {
                 "description": "閘道只推送已訂閱類別的事件，收到的事件會輸出到核心日誌，修改後會自動重新連線。頻道、頻道成員與頻道 @ 機器人訊息以外的類別可能需要先在 QQ 開放平台申請權限，訂閱了沒有權限的類別時閘道會關閉連線（4014）。各類別包含的事件見 <a href=\"https://bot.q.qq.com/wiki/develop/api-v2/dev-prepare/interface-framework/event-emit.html\">事件訂閱與通知</a>",
                 "items": {

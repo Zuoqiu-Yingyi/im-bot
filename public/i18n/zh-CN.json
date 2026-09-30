@@ -13,6 +13,10 @@
                 "description": "QQ 机器人的 AppID，在 QQ 开放平台（q.qq.com）的机器人开发设置中获取",
                 "title": "AppID <code class=\"fn__code\">QQ_BOT_APPID</code>"
             },
+            "eventLog": {
+                "description": "把网关推送的每个事件以不带缩进的 JSON 保存到工作空间的 <code class=\"fn__code\">data/storage/petal/im-bot/logs/events/&lt;事件类型&gt;/&lt;事件 ID&gt;.json</code>，会随数据同步。没有事件 ID 的事件（<code class=\"fn__code\">READY</code>、<code class=\"fn__code\">RESUMED</code>）不会保存",
+                "title": "事件日志"
+            },
             "intents": {
                 "description": "网关只推送已订阅类别的事件，收到的事件会打印到内核日志，修改后会自动重新连接。频道、频道成员与频道 @ 机器人消息以外的类别可能需要先在 QQ 开放平台申请权限，订阅了没有权限的类别时网关会关闭连接（4014）。各类别包含的事件见 <a href=\"https://bot.q.qq.com/wiki/develop/api-v2/dev-prepare/interface-framework/event-emit.html\">事件订阅与通知</a>",
                 "items": {

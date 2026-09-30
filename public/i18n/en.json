@@ -13,6 +13,10 @@
                 "description": "AppID of the QQ bot, available in the development settings of the bot on the QQ Open Platform (q.qq.com)",
                 "title": "AppID <code class=\"fn__code\">QQ_BOT_APPID</code>"
             },
+            "eventLog": {
+                "description": "Save every event pushed by the gateway as unindented JSON to <code class=\"fn__code\">data/storage/petal/im-bot/logs/events/&lt;event type&gt;/&lt;event ID&gt;.json</code> of the workspace, synced with your data. Events without an event ID (<code class=\"fn__code\">READY</code>, <code class=\"fn__code\">RESUMED</code>) are not saved",
+                "title": "Event log"
+            },
             "intents": {
                 "description": "The gateway only pushes events of the subscribed categories. Received events are written to the kernel log, and the bot reconnects after a change. Categories other than guilds, guild members and guild @bot messages may need permission from the QQ Open Platform first; the gateway closes the connection (4014) when a subscribed category is not permitted. See <a href=\"https://bot.q.qq.com/wiki/develop/api-v2/dev-prepare/interface-framework/event-emit.html\">Event Subscription and Notification</a> for the events in each category",
                 "items": {

@@ -32,5 +32,6 @@ export const DEFAULT_CONFIG: IConfig = {
             AUDIO_ACTION: false,
             PUBLIC_GUILD_MESSAGES: true,
         },
+        eventLog: true,
     },
 };

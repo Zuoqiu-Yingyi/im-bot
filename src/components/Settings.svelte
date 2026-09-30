@@ -181,6 +181,24 @@
                     </MiniItem>
                 {/each}
             </Group>
+
+            <!-- 事件日志 -->
+            <Item
+                text={i18n.settings.qqBotSettings.eventLog.description}
+                title={i18n.settings.qqBotSettings.eventLog.title}
+            >
+                {#snippet input()}
+                    <Input
+                        onChanged={async (e) => {
+                            config.qq.eventLog = e.value;
+                            await updated();
+                        }}
+                        settingKey="eventLog"
+                        settingValue={config.qq.eventLog}
+                        type={ItemType.checkbox}
+                    />
+                {/snippet}
+            </Item>
         </Panel>
     {/snippet}
 </Panels>
