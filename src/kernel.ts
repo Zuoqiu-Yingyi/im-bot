@@ -48,7 +48,7 @@ function waitAtMost(promise: Promise<unknown>, ms: number): Promise<void> {
  * 内核插件, 构建为 dist/kernel.js。
  * 运行在思源内核的 goja 运行时中 (没有 DOM), 只能通过全局对象 siyuan 调用内核能力。
  * 按插件配置接入 QQ 机器人 WebSocket 网关, 把网关推送的全部事件打印到内核日志, 开启事件日志时同时保存到 logs/events/,
- * 把绑定群聊中没有提及机器人的消息写入收集箱文档, 开始运行与卸载时向这些群发送通知,
+ * 把绑定群聊中没有提及机器人的消息写入收集箱文档, 开始运行与卸载时向开启了通知的绑定群聊发送通知,
  * 响应单聊中以及群主提及机器人发送的 /openid 等指令, 并按配置同步指令面板。
  * 指定了运行设备时, 只有该设备连接网关、发送通知并同步指令面板。
  * 前端可以通过 RPC call-qq-api 以机器人身份调用 QQ 开放平台的服务端接口。
@@ -58,11 +58,12 @@ function waitAtMost(promise: Promise<unknown>, ms: number): Promise<void> {
  * QQ bot WebSocket gateway with the plugin config and writes every pushed
  * event to the kernel log, and to logs/events/ when the event log is on. Writes
  * the messages of bound groups that do not mention the bot into inbox documents
- * and notifies these groups when it starts running and when it unloads, answers
- * commands such as /openid sent in C2C chats or by group owners who mention the
- * bot, and syncs the command panels with the config. When a device is set, only
- * that device connects to the gateway, sends the notices and syncs the command
- * panels. The call-qq-api RPC method calls the QQ bot OpenAPI as the bot.
+ * and notifies the groups whose bindings turn on notices when it starts running
+ * and when it unloads, answers commands such as /openid sent in C2C chats or by
+ * group owners who mention the bot, and syncs the command panels with the
+ * config. When a device is set, only that device connects to the gateway, sends
+ * the notices and syncs the command panels. The call-qq-api RPC method calls
+ * the QQ bot OpenAPI as the bot.
  * kernel.js is evaluated as a plain script, not an ES module: do not export
  * from this file or import runtime values from external modules (e.g. siyuan).
  */
@@ -175,10 +176,10 @@ class ImBotKernelPlugin {
         });
     }
 
-    /* 向有生效的收集箱绑定的群发送上线或下线通知, 只在运行 QQ 机器人的设备上发送 */
+    /* 向开启了通知的生效绑定所在的群发送上线或下线通知, 只在运行 QQ 机器人的设备上发送 */
     private async notify(notice: TNotice): Promise<void> {
         const credentials = resolveCredentials(this.config.qq);
-        const groups = activeBindings(this.config.qq.inbox).map((binding) => binding.group);
+        const groups = activeBindings(this.config.qq.inbox).filter((binding) => binding.notify).map((binding) => binding.group);
         if (!this.running || !credentials || groups.length === 0) {
             return;
         }

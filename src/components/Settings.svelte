@@ -100,7 +100,7 @@
 
     const bindingsTitle = `${i18n.settings.inboxSettings.bindings.title}<div class="b3-label__text">${i18n.settings.inboxSettings.bindings.description}</div>`;
 
-    /* 收集箱绑定; 旧版配置中的绑定没有 enabled 与 reply, 按默认值补全 */
+    /* 收集箱绑定; 旧版配置中的绑定没有 enabled、reply 与 notify, 按默认值补全 */
     // svelte-ignore state_referenced_locally
     const bindings = $state<IQQInboxBinding[]>(config.qq.inbox.bindings.map((binding) => ({ ...DEFAULT_INBOX_BINDING, ...binding })));
 
@@ -314,8 +314,6 @@
                                     type={ItemType.checkbox}
                                 />
                             </label>
-                            <span class="fn__space"></span>
-                            <span class="fn__space"></span>
                             <label class="fn__flex">
                                 <span class="binding__switch">{i18n.settings.inboxSettings.bindings.reply}</span>
                                 <span class="fn__space"></span>
@@ -329,9 +327,21 @@
                                     type={ItemType.checkbox}
                                 />
                             </label>
-                            <span class="fn__flex-1"></span>
+                            <label class="fn__flex">
+                                <span class="binding__switch">{i18n.settings.inboxSettings.bindings.notify}</span>
+                                <span class="fn__space"></span>
+                                <Input
+                                    onChanged={async (e) => {
+                                        binding.notify = e.value;
+                                        await saveBindings();
+                                    }}
+                                    settingKey="notify"
+                                    settingValue={binding.notify}
+                                    type={ItemType.checkbox}
+                                />
+                            </label>
                             <button
-                                class="b3-button b3-button--remove"
+                                class="b3-button b3-button--remove binding__remove"
                                 onclick={() => removeBinding(index)}
                             >
                                 {i18n.settings.inboxSettings.bindings.remove}
@@ -389,13 +399,21 @@
             grid-template-columns: subgrid;
         }
 
+        // 开关较多、设置面板较窄时整个开关换行, 而不是挤压开关的文字
         &__switches {
             align-items: center;
+            flex-wrap: wrap;
+            gap: 8px 16px;
             margin-top: 8px;
         }
 
         &__switch {
             align-self: center;
+        }
+
+        // 换行后也靠右
+        &__remove {
+            margin-left: auto;
         }
     }
 </style>

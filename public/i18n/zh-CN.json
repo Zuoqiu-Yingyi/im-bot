@@ -48,6 +48,7 @@
                 "enabled": "启用",
                 "group": "群聊 Open ID",
                 "groupPlaceholder": "7E1569E220555215CCBF5D1A85B1A123",
+                "notify": "上下线通知",
                 "remove": "删除",
                 "reply": "回复块链接",
                 "title": "绑定群聊"

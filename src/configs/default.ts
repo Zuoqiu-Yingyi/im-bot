@@ -80,11 +80,12 @@ export const DEFAULT_INBOX_BINDING: IQQInboxBinding = {
     doc: "",
     enabled: true,
     reply: false,
+    notify: false,
 };
 
 /**
  * 在默认配置上合并保存的配置, 数组整体覆盖默认值。
- * 收集箱的绑定逐条按 DEFAULT_INBOX_BINDING 补全: 旧版配置中的绑定没有 enabled 与 reply, 视为启用、不回复
+ * 收集箱的绑定逐条按 DEFAULT_INBOX_BINDING 补全: 旧版配置中的绑定没有 enabled、reply 与 notify, 视为启用、不回复、不通知
  * @param configs - 保存的配置, 后面的覆盖前面的
  */
 export function mergeConfig(...configs: Partial<IConfig>[]): IConfig {

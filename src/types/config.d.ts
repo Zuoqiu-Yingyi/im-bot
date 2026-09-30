@@ -46,4 +46,5 @@ export interface IQQInboxBinding {
     doc: string; // 收集箱文档 ID
     enabled: boolean; // 是否启用该绑定
     reply: boolean; // 写入后是否向该消息回复其超级块的块超链接
+    notify: boolean; // 内核插件开始运行与卸载时是否向该群发送上线与下线通知
 }

@@ -96,7 +96,7 @@ From then on, the messages of the group are recorded in dated sub-documents of t
   - When SiYuan quits while downloading assets, messages are left in `.temp`. After the plugin starts again, when the inbox gets its first message, the plugin moves them to the date documents of the time they were inserted into `.temp`.
 - Online and offline notices
 
-  - When the plugin starts running, each group with an active binding gets an "Inbox online" notice; when the plugin stops (disabled, uninstalled, reloaded after an update, or SiYuan exits normally), it gets an "Inbox offline" notice. The notices name the device.
+  - When "Online and offline notices" is on in a binding, the group gets an "Inbox online" notice when the plugin starts running, and an "Inbox offline" notice when the plugin stops (disabled, uninstalled, reloaded after an update, or SiYuan exits normally). The notices name the device. The switch is off by default.
   - Only the device that runs the bot sends them. When SiYuan exits, it waits at most 5 seconds for the offline notice; a forced exit, a crash or a kill sends no offline notice.
   - The notices are active QQ messages and count against the QQ limits (20 per minute and 1000 per day for each group). They fail when the bot has no permission to send active messages; the kernel log shows why a notice failed.
 - Commands
@@ -158,8 +158,9 @@ From then on, the messages of the group are recorded in dated sub-documents of t
     - Click "Add a binding" to add a binding and "Remove" to remove one; changes are saved at once
     - `Group Open ID`: the OpenID of the group (group_openid). The group owner can get it by sending `/openid` to the bot with an @ mention in the group, and it is also in the event log
     - `Inbox document ID`: the ID of the document that collects the messages. Right-click the document in the document tree and choose "Copy > Copy ID"
-    - `Enabled`: when off, the binding writes no messages, and a group without an active binding gets no online or offline notices. A binding without a group or a document ID has no effect either
+    - `Enabled`: when off, the binding writes no messages and sends no online or offline notices. A binding without a group or a document ID has no effect either
     - `Reply with the block link`: when on, each message written to the document gets a reply from the bot with the block hyperlink of its super block, `siyuan://blocks/<block ID>`. A message written to several documents with this switch on gets one reply per document. Off by default; see Q & A for the limits
+    - `Online and offline notices`: when on, the group gets the online and offline notices when the plugin starts running and stops; see "Online and offline notices". When several bindings of a group turn this on, the group gets one notice each time. Off by default
   - `Download assets`
 
     - When a message has images, voice messages, videos or files, download them into the workspace with the SiYuan feature that converts network assets to local ones. Other links to files in the message are downloaded too, and links to web pages stay as they are

@@ -48,6 +48,7 @@
                 "enabled": "Enabled",
                 "group": "Group Open ID",
                 "groupPlaceholder": "7E1569E220555215CCBF5D1A85B1A123",
+                "notify": "Online and offline notices",
                 "remove": "Remove",
                 "reply": "Reply with the block link",
                 "title": "Bound groups"

@@ -31,11 +31,11 @@ function errorMessage(error: unknown): string {
 }
 
 /**
- * 收集箱通知: 以主动消息向绑定了收集箱的群发送内核插件的上线与下线通知。
+ * 收集箱通知: 以主动消息向开启了通知的收集箱绑定所在的群发送内核插件的上线与下线通知。
  * 主动消息受 QQ 的频率限制, 用户或群关闭主动消息时会发送失败, 失败时只记录日志。
  * REF: https://bot.q.qq.com/wiki/develop/api-v2/server-inter/message/overview.html
- * Sends online and offline notices of the kernel plugin to the groups bound to
- * inbox documents as active messages; a failed notice is only logged.
+ * Sends online and offline notices of the kernel plugin as active messages to
+ * the groups whose inbox bindings turn on notices; a failed notice is only logged.
  */
 export class QQNotices {
     private readonly siyuan: kernel.ISiyuan;
