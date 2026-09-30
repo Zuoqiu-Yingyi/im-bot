@@ -113,11 +113,13 @@ export default class ImBotPlugin extends siyuan.Plugin {
             const config = await this.loadData(ImBotPlugin.GLOBAL_CONFIG_NAME);
             if (config) {
                 this.config = mergeIgnoreArray(DEFAULT_CONFIG, config) as IConfig;
-            } else {
+            }
+            else {
                 this.config = mergeIgnoreArray(DEFAULT_CONFIG);
                 this.updateConfig();
             }
-        } catch (error) {
+        }
+        catch (error) {
             this.logger.error(error);
         }
     }
