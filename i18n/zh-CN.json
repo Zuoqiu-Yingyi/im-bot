@@ -1,0 +1,151 @@
+{
+    "apiDebugger": {
+        "body": "请求体",
+        "bodyPlaceholder": "JSON 格式的请求体，留空时不发送请求体",
+        "duration": "耗时",
+        "error": "请求失败",
+        "headers": "响应头",
+        "invalidBody": "请求体不是有效的 JSON，未发送请求",
+        "method": "请求方法",
+        "noBody": "没有响应体",
+        "open": "打开 QQ 机器人接口调试",
+        "response": "响应",
+        "send": "发送",
+        "sending": "发送中...",
+        "title": "QQ 机器人接口调试",
+        "url": "请求路径",
+        "urlPlaceholder": "以 / 开头的请求路径，相对于 https://api.bot.qq.com，例如 /gateway/bot"
+    },
+    "commands": {
+        "openid": {
+            "group": "群组 OpenID：{{1}}",
+            "user": "用户 OpenID：{{1}}"
+        }
+    },
+    "inbox": {
+        "quote": "引用的消息",
+        "unavailable": "[无法显示的消息]"
+    },
+    "messenger": {
+        "content": "消息内容",
+        "contentPlaceholder": "要发送的消息，按 Ctrl+Enter（macOS 上为 ⌘+Enter）发送",
+        "duration": "耗时",
+        "empty": "还没有已知的群或用户。机器人被添加到群、收到消息、被用户添加等事件会记录到 users.json 中",
+        "error": "请求失败",
+        "firstSeen": "首次记录",
+        "groupAdded": "机器人在群中",
+        "groupRemoved": "机器人已被移出群",
+        "groups": "群聊",
+        "headers": "响应头",
+        "hintGroup": "向群发送主动消息，需要群主为机器人开启「机器人主动在群聊内发言」",
+        "hintUser": "向用户发送主动消息，需要用户在机器人资料卡中开启主动消息。互动召回消息只能在用户与机器人对话后的 30 天内发送，当天、1–3 天、3–7 天、7–30 天各 1 条",
+        "info": "群信息",
+        "infoClass": "群分类",
+        "infoMembers": "群成员数",
+        "infoMemo": "群简介",
+        "infoName": "群名称",
+        "infoTags": "群标签",
+        "infoWhitelist": "该接口仅对白名单机器人开放，需要向 QQ 开放平台申请权限",
+        "lastMessage": "最近消息",
+        "loadError": "读取已知的群与用户失败",
+        "loading": "加载中...",
+        "markdown": "Markdown",
+        "noBody": "没有响应体",
+        "open": "打开 QQ 机器人发送消息",
+        "owner": "群主",
+        "ownerOf": "群主：{{1}}",
+        "proactive": "主动消息",
+        "proactiveAllowed": "已开启（{{1}}）",
+        "proactiveRejected": "已关闭（{{1}}）",
+        "proactiveUnknown": "未知",
+        "query": "查询群信息",
+        "querying": "查询中...",
+        "refresh": "刷新",
+        "result": "发送给 {{1}} 的结果",
+        "send": "发送",
+        "sending": "发送中...",
+        "status": "状态",
+        "target": "发送对象",
+        "targetPlaceholder": "选择已知的群或用户",
+        "text": "文本",
+        "title": "QQ 机器人发送消息",
+        "type": "消息类型",
+        "userAdded": "用户已添加机器人",
+        "userRemoved": "用户已删除机器人",
+        "users": "单聊",
+        "wakeup": "互动召回"
+    },
+    "notices": {
+        "offline": "收集箱已下线，本群消息暂停记录（设备：{{1}}）",
+        "online": "收集箱已上线，本群消息将记录到思源笔记（设备：{{1}}）"
+    },
+    "settings": {
+        "generalSettings": {
+            "reset": {
+                "description": "重置所有设置选项为默认选项（重置后将刷新页面）",
+                "text": "重置",
+                "title": "重置设置选项"
+            },
+            "title": "常规设置"
+        },
+        "inboxSettings": {
+            "bindings": {
+                "add": "添加绑定",
+                "description": "把群聊消息写入收集箱文档，一个群可以绑定多篇文档",
+                "doc": "收集箱文档 ID",
+                "docPlaceholder": "20260930112233-abcdefg",
+                "enabled": "启用",
+                "group": "群聊 Open ID",
+                "groupPlaceholder": "7E1569E220555215CCBF5D1A85B1A123",
+                "notify": "上下线通知",
+                "remove": "删除",
+                "reply": "回复块链接",
+                "title": "绑定群聊"
+            },
+            "downloadAssets": {
+                "description": "把消息中的图片、语音、视频和文件下载到工作空间",
+                "title": "下载资源文件"
+            },
+            "title": "收集箱"
+        },
+        "qqBotSettings": {
+            "appid": {
+                "description": "QQ 开放平台中机器人的 AppID",
+                "title": "AppID <code class=\"fn__code\">QQ_BOT_APPID</code>"
+            },
+            "device": {
+                "assigned": "当前运行设备 ID",
+                "current": "本设备 ID",
+                "description": "开启后只有本设备连接机器人",
+                "title": "只在此设备上运行",
+                "unassigned": "未指定运行设备，每台设备都会连接"
+            },
+            "eventLog": {
+                "description": "把收到的事件保存到工作空间，便于排查问题",
+                "title": "事件日志"
+            },
+            "intents": {
+                "description": "机器人要接收的事件类别，修改后自动重新连接",
+                "items": {
+                    "AUDIO_ACTION": "音频",
+                    "DIRECT_MESSAGE": "频道私信",
+                    "FORUMS_EVENT": "论坛（仅私域）",
+                    "GROUP_AND_C2C_EVENT": "群聊与单聊",
+                    "GUILDS": "频道与子频道",
+                    "GUILD_MEMBERS": "频道成员",
+                    "GUILD_MESSAGES": "频道全部消息（仅私域）",
+                    "GUILD_MESSAGE_REACTIONS": "频道消息表态",
+                    "INTERACTION": "互动",
+                    "MESSAGE_AUDIT": "消息审核",
+                    "PUBLIC_GUILD_MESSAGES": "频道 @ 机器人消息"
+                },
+                "title": "订阅事件 <code class=\"fn__code\">QQ_BOT_INTENTS</code>"
+            },
+            "secret": {
+                "description": "QQ 开放平台中机器人的 AppSecret，以明文保存并随数据同步",
+                "title": "AppSecret <code class=\"fn__code\">QQ_BOT_SECRET</code>"
+            },
+            "title": "QQ 机器人"
+        }
+    }
+}
