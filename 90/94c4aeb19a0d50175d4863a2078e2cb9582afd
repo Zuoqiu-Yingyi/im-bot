@@ -1,0 +1,63 @@
+src/components/ApiDebugger.svelte
+  s_bb49b27415f6ba::t_b436c3802b1d5e 45,47,49,61,89,160-163
+src/qq/users.ts
+  s_bb49b27415f6ba::t_628cd3abe10f33 98-108,312-327
+src/utils/rpc.ts
+  s_bb49b27415f6ba::t_6e659a0d65c158 1-30
+public/README.md
+  s_bb49b27415f6ba::t_4ecdcca9fbb2bd 28,64,138-147
+src/types/qq.d.ts
+  s_bb49b27415f6ba::t_1addd8128fbf27 133
+  s_bb49b27415f6ba::t_aaa7dae80777d1 132,134-152
+public/i18n/zh-TW.json
+  s_bb49b27415f6ba::t_40d7708fddca52 29-40,42-77
+  s_bb49b27415f6ba::t_561f6a7664c5f1 41
+public/README.zh-CN.md
+  s_bb49b27415f6ba::t_4fc32ccdcc315f 28,64,138-147
+src/kernel.ts
+  s_bb49b27415f6ba::t_3d1a8e27549636 32,57,70-71,119,136,266-278
+src/components/ApiResult.svelte
+  s_bb49b27415f6ba::t_36ffe686510545 1-37,39-123
+  s_bb49b27415f6ba::t_4f21f0cf6ecde4 38
+public/i18n/zh-CN.json
+  s_bb49b27415f6ba::t_5a20f9e651102c 29-40,42-77
+  s_bb49b27415f6ba::t_14b4ca3842c112 41
+public/i18n/en.json
+  s_bb49b27415f6ba::t_ea843ab72584ef 41
+  s_bb49b27415f6ba::t_0b01637f93c5da 29-40,42-77
+src/index.ts
+  s_bb49b27415f6ba::t_3cd3fd9eb12399 249
+  s_bb49b27415f6ba::t_07f834f5dba51f 28,35,39,51-56,60,71,83,105-122,142-147,222-248
+src/components/Messenger.svelte
+  s_bb49b27415f6ba::t_fa92c6c8ab5e44 270,447-448
+  s_bb49b27415f6ba::t_0d7dae8f0a3c4f 46,65,68,89,175-179,201,214,218
+  s_bb49b27415f6ba::t_946f6705c4389b 52-64,66-67,69-88,90-96
+  s_bb49b27415f6ba::t_5f0b5f78d680a8 372-422
+  s_bb49b27415f6ba::t_69bd41027d41f0 261-264
+  s_bb49b27415f6ba::t_104a038969f68c 151-174,180-200,202-213,215
+  s_bb49b27415f6ba::t_6c8e3602a82d01 1-45,47-51
+  s_bb49b27415f6ba::t_f1e361194633f0 266-269,271-319
+  s_bb49b27415f6ba::t_9ca04091bba383 320-371
+  s_bb49b27415f6ba::t_e96b9ebafacadd 423-446,449-472
+  s_bb49b27415f6ba::t_76721ae94f1916 473-519
+  s_bb49b27415f6ba::t_d9a98f19640f15 216-217,219-260,265
+  s_bb49b27415f6ba::t_86be1c86083dc3 97-150
+src/constants.ts
+  s_bb49b27415f6ba::t_f9c1258e0e0b94 25
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.45-trip",
+  "base_commit_sha": "9094c4aeb19a0d50175d4863a2078e2cb9582afd",
+  "prompts": {},
+  "sessions": {
+    "s_bb49b27415f6ba": {
+      "agent_id": {
+        "tool": "chengxiaobang",
+        "id": "s_ylq1xoabc7mg",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Yingyi / 颖逸 <49649786+Zuoqiu-Yingyi@users.noreply.github.com>"
+    }
+  }
+}
