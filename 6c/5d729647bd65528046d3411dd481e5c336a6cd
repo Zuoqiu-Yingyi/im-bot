@@ -1,0 +1,23 @@
+public/README.zh-CN.md
+  s_bb49b27415f6ba::t_2305b1556a588c 145
+public/README.md
+  s_bb49b27415f6ba::t_46a313697cb123 145
+src/components/Messenger.svelte
+  s_bb49b27415f6ba::t_62368c06734ae3 98-102,131,161,168-181,183,188,234,238-239,243-244,258,452
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.45-trip",
+  "base_commit_sha": "6c5d729647bd65528046d3411dd481e5c336a6cd",
+  "prompts": {},
+  "sessions": {
+    "s_bb49b27415f6ba": {
+      "agent_id": {
+        "tool": "chengxiaobang",
+        "id": "s_ylq1xoabc7mg",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Yingyi / 颖逸 <49649786+Zuoqiu-Yingyi@users.noreply.github.com>"
+    }
+  }
+}
