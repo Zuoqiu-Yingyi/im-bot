@@ -95,6 +95,11 @@
         Object.assign(tab.data, $state.snapshot(draft));
     });
 
+    /* 把值填入界面文本中的 {{1}}; 用函数替换, 昵称与群名称中的美元符号才不会被当作替换模式 */
+    function fill(template: string, value: string): string {
+        return template.replaceAll("{{1}}", () => value);
+    }
+
     /* 时刻的毫秒数, 没有或无法解析时为 0 */
     function timeOf(time: unknown): number {
         const ms = typeof time === "string" ? Date.parse(time) : Number.NaN;
@@ -123,7 +128,7 @@
             return info.info.group_name;
         }
         const owner = item.record.owner?.username;
-        return owner ? i18n.ownerOf.replaceAll("{{1}}", owner) : "";
+        return owner ? fill(i18n.ownerOf, owner) : "";
     }
 
     function statusOf(item: TTarget): string {
@@ -153,24 +158,34 @@
         if (typeof setting?.allowed !== "boolean") {
             return i18n.proactiveUnknown;
         }
-        return (setting.allowed ? i18n.proactiveAllowed : i18n.proactiveRejected).replaceAll("{{1}}", formatTime(setting.time));
+        return fill(setting.allowed ? i18n.proactiveAllowed : i18n.proactiveRejected, formatTime(setting.time));
     }
 
     function formatTags(tags: unknown): string {
         return Array.isArray(tags) && tags.length > 0 ? tags.join(", ") : "-";
     }
 
+    /**
+     * 响应体中的错误码, 没有或为 0 时为 undefined。
+     * 文档建议按 err_code 判断请求是否失败, 部分接口的错误码在 code 中
+     * REF: https://bot.q.qq.com/wiki/develop/api-v2/dev-prepare/api-call-guide.html
+     */
+    function errorCode(body: unknown): number | undefined {
+        if (typeof body !== "object" || body === null) {
+            return undefined;
+        }
+        const error = body as IApiError;
+        return [error.err_code, error.code].find((code) => typeof code === "number" && code !== 0);
+    }
+
+    /* 请求是否成功: 状态码为 2xx, 且响应体中没有错误码; 状态码为 201 与 202 时响应体中也可能有错误 */
     function isSuccess(response: IApiResponse): boolean {
-        return response.status >= 200 && response.status < 300;
+        return response.status >= 200 && response.status < 300 && errorCode(response.body) === undefined;
     }
 
     /* 接口是否因为机器人不在白名单中而拒绝 */
     function isWhitelistError(result: TApiResult): boolean {
-        if (!("response" in result)) {
-            return false;
-        }
-        const body = result.response.body as IApiError | null;
-        return body?.err_code === WHITELIST_ERROR || body?.code === WHITELIST_ERROR;
+        return "response" in result && errorCode(result.response.body) === WHITELIST_ERROR;
     }
 
     const groups = $derived(toTargets("group", known?.groups));
@@ -216,16 +231,17 @@
 
     /**
      * 发送主动消息: 群聊为 `POST /v2/groups/{group_openid}/messages`, 单聊为 `POST /v2/users/{user_openid}/messages`。
-     * 发送成功后清空消息内容, 失败时保留
+     * 发送成功后清空消息内容; 发送失败, 或者等待响应时消息内容被修改, 则保留
      */
     async function send(): Promise<void> {
         const current = target;
-        if (!current || !draft.content.trim() || sending) {
+        const content = draft.content;
+        if (!current || !content.trim() || sending) {
             return;
         }
         const body: Record<string, unknown> = draft.type === "markdown"
-            ? { msg_type: 2, markdown: { content: draft.content } }
-            : { msg_type: 0, content: draft.content };
+            ? { msg_type: 2, markdown: { content } }
+            : { msg_type: 0, content };
         if (current.scope === "c2c" && draft.wakeup) {
             body.is_wakeup = true;
         }
@@ -239,7 +255,7 @@
         try {
             const response = await plugin.callQQApi(url, "POST", body);
             sent = { label, result: { duration: performance.now() - start, response } };
-            if (isSuccess(response)) {
+            if (isSuccess(response) && draft.content === content) {
                 draft.content = "";
             }
         }
@@ -433,7 +449,7 @@
 
             <!-- 发送结果 -->
             {#if sent}
-                <span class="title">{i18n.result.replaceAll("{{1}}", sent.label)}</span>
+                <span class="title">{fill(i18n.result, sent.label)}</span>
             {/if}
             <ApiResult
                 labels={i18n}
