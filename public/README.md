@@ -25,7 +25,7 @@
 
 # SiYuan IM Bot
 
-A plugin for [SiYuan Note](https://github.com/siyuan-note/siyuan) that connects a QQ bot to SiYuan: it records the messages of QQ groups in inbox documents, and provides a command to look up OpenIDs and a debugger for the QQ bot API.
+A plugin for [SiYuan Note](https://github.com/siyuan-note/siyuan) that connects a QQ bot to SiYuan: it records the messages of QQ groups in inbox documents, and provides a command to look up OpenIDs, a tab that sends messages to the known groups and users, and a debugger for the QQ bot API.
 
 The main features run in the SiYuan kernel, so they work while SiYuan is running, without its interface open. Requires SiYuan 3.7.3 or later.
 
@@ -61,7 +61,7 @@ From then on, the messages of the group are recorded in dated sub-documents of t
 - Is the AppSecret safe?
 
   - The AppSecret is stored in plain text in `data/storage/petal/im-bot/config.json` of the workspace and syncs with your data. Any program that can call the kernel API of this workspace, including other plugins, can read this file.
-  - The kernel method this plugin provides (the RPC method `call-qq-api`) calls the QQ bot API as the bot, and the same programs can use it too; it never returns the AppSecret or the access token.
+  - The kernel methods this plugin provides (the RPC method `call-qq-api`, which calls the QQ bot API as the bot, and `get-users`, which returns the known groups and C2C users) can be used by the same programs too; they never return the AppSecret or the access token.
 
 ## INTRODUCTION
 
@@ -135,6 +135,16 @@ From then on, the messages of the group are recorded in dated sub-documents of t
 
   - When the plugin starts running, it creates or updates the command panels of C2C and group chats on the QQ Open Platform (shown when you type `/` in the QQ input box). By default they list the `openid` command, and in groups only admins can use it.
   - The panels are not in the settings panel. Advanced users can edit `qq.panels` in `data/storage/petal/im-bot/config.json`, in the format of the QQ documentation [creating a panel](https://bot.q.qq.com/wiki/develop/api-v2/autogen/api/v2_panels.post.html). `panel.remark` must not be empty, because the plugin finds the panel by it.
+- Messenger
+
+  - Run "Open the QQ bot messenger" in the Command Palette (desktop only) to open a tab that sends active messages as the bot to the known groups and C2C users.
+  - Choose the recipient from `users.json` (see "Known groups and C2C users"). Groups the bot is still in and users who still have the bot come first, the most recently active first; groups that removed the bot and users who deleted it are marked. Click "Refresh" to read the list again, including the changes not written to `users.json` yet.
+  - The tab shows the status of the chosen recipient, its active message setting, the group owner or the union_openid, and the times of the latest message and the first record.
+  - For a group, click "Query the group info" to get its name, description, category, tags and number of members; the name then also shows in the recipient list. This API is only open to allowlisted bots; otherwise the tab says that you need to apply for it on the QQ Open Platform.
+  - Choose text or Markdown as the message type. For a C2C user, turn on "Wake-up message" to send it as a wake-up message (`is_wakeup`).
+  - Click "Send" or press Ctrl+Enter (⌘+Enter on macOS) to send the message and see the status code, the time, the response headers and the response body. The message is cleared after it is sent and kept when sending fails; the error code in the response body tells why.
+  - QQ limits active messages: a group needs the group owner to turn on 「机器人主动在群聊内发言」 (the bot may speak in the group) for the bot, and a user needs to turn on active messages on the profile card of the bot. Each group or user receives at most 20 per minute and 1000 per day. Wake-up messages can only be sent within 30 days after the user chats with the bot, one each on the same day, in days 1–3, 3–7 and 7–30.
+  - Messages are really sent to the groups and users. The messenger works on every device, regardless of "Run on this device only".
 - QQ bot API debugger
 
   - Run "Open the QQ bot API debugger" in the Command Palette (desktop only) to open a tab that calls the [QQ bot server API](https://bot.q.qq.com/wiki/develop/api-v2/dev-prepare/api-call-guide.html) as the bot.

@@ -25,15 +25,18 @@ import { DEFAULT_CONFIG } from "./configs/default";
 import CONSTANTS from "./constants";
 
 import ApiDebugger from "./components/ApiDebugger.svelte";
+import Messenger from "./components/Messenger.svelte";
 import Settings from "./components/Settings.svelte";
 
 import type { ISiyuanGlobal } from "@workspace/types/siyuan";
 
 import type { IConfig } from "./types/config";
 import type { IApiResponse } from "./types/qq";
+import type { IBotUsers } from "./types/users";
 import type { I18N } from "./utils/i18n";
 
 import type { IApiDebuggerTabData } from "./components/ApiDebugger.svelte";
+import type { IMessengerTabData } from "./components/Messenger.svelte";
 
 import "./styles/siyuan.less";
 
@@ -45,9 +48,16 @@ export interface IApiDebuggerTab extends siyuan.Custom {
     component?: ReturnType<typeof mount>;
 }
 
+/* 向已知的群与单聊用户发送消息的页签 */
+export interface IMessengerTab extends siyuan.Custom {
+    data: IMessengerTabData;
+    component?: ReturnType<typeof mount>;
+}
+
 export default class ImBotPlugin extends siyuan.Plugin {
     public static readonly GLOBAL_CONFIG_NAME = CONSTANTS.GLOBAL_CONFIG_NAME;
     public static readonly API_DEBUGGER_TAB_TYPE = "-api-debugger";
+    public static readonly MESSENGER_TAB_TYPE = "-messenger";
 
     // @ts-expect-error ignore original type
     declare public readonly i18n: I18N;
@@ -58,6 +68,7 @@ export default class ImBotPlugin extends siyuan.Plugin {
 
     protected readonly SETTINGS_DIALOG_ID: string;
     protected readonly API_DEBUGGER_TAB_ID: string;
+    protected readonly MESSENGER_TAB_ID: string;
 
     protected config: IConfig = mergeIgnoreArray(DEFAULT_CONFIG);
 
@@ -69,6 +80,7 @@ export default class ImBotPlugin extends siyuan.Plugin {
 
         this.SETTINGS_DIALOG_ID = `${this.name}-settings-dialog`;
         this.API_DEBUGGER_TAB_ID = `${this.name}${ImBotPlugin.API_DEBUGGER_TAB_TYPE}`;
+        this.MESSENGER_TAB_ID = `${this.name}${ImBotPlugin.MESSENGER_TAB_TYPE}`;
 
         // eslint-disable-next-line ts/no-this-alias
         const plugin = this;
@@ -84,6 +96,24 @@ export default class ImBotPlugin extends siyuan.Plugin {
                 });
             },
             destroy(this: IApiDebuggerTab) {
+                if (this.component) {
+                    void unmount(this.component);
+                    delete this.component;
+                }
+            },
+        });
+        this.addTab({
+            type: ImBotPlugin.MESSENGER_TAB_TYPE,
+            init(this: IMessengerTab) {
+                this.component = mount(Messenger, {
+                    target: this.element,
+                    props: {
+                        plugin,
+                        tab: this,
+                    },
+                });
+            },
+            destroy(this: IMessengerTab) {
                 if (this.component) {
                     void unmount(this.component);
                     delete this.component;
@@ -108,6 +138,12 @@ export default class ImBotPlugin extends siyuan.Plugin {
                 langText: this.i18n.apiDebugger.open,
                 hotkey: "",
                 callback: () => this.openApiDebugger(),
+            });
+            this.addCommand({
+                langKey: "openMessenger",
+                langText: this.i18n.messenger.open,
+                hotkey: "",
+                callback: () => this.openMessenger(),
             });
         }
 
@@ -181,6 +217,36 @@ export default class ImBotPlugin extends siyuan.Plugin {
             keepCursor: false,
             removeCurrentTab: false,
         });
+    }
+
+    /* 打开向已知的群与单聊用户发送消息的页签, 已有未编辑过的该页签时切换到该页签 */
+    public openMessenger(): void {
+        const data: IMessengerTabData = {
+            target: "",
+            type: "text",
+            content: "",
+            wakeup: false,
+        };
+        void siyuan.openTab({
+            app: this.app,
+            custom: {
+                icon: "iconSend",
+                title: this.i18n.messenger.title,
+                id: this.MESSENGER_TAB_ID,
+                data,
+            },
+            keepCursor: false,
+            removeCurrentTab: false,
+        });
+    }
+
+    /**
+     * 通过内核插件的 RPC get-users, 获取插件设置中的 QQ 机器人已知的群与单聊用户, 包括还没写入 users.json 的变化
+     * @returns 以 group_openid 与 user_openid 为键的群与单聊用户
+     * @throws 未设置 AppID、users.json 不是 JSON 对象或内核插件没有运行时以 JSON-RPC 错误拒绝
+     */
+    public async getUsers(): Promise<IBotUsers> {
+        return this.kernel.rpc.call[CONSTANTS.KERNEL_RPC_METHOD.GET_USERS]?.();
     }
 
     /**

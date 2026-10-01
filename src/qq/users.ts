@@ -95,6 +95,17 @@ function objectAt<T>(object: unknown, key: string): T | undefined {
     return isObject(value) ? value as T : undefined;
 }
 
+/* 对象中值为对象的项, 跳过 users.json 中被改坏的记录 */
+function records<T>(object: Record<string, unknown> | undefined): Record<string, T> {
+    const result: Record<string, T> = {};
+    for (const [key, value] of Object.entries(object ?? {})) {
+        if (isObject(value)) {
+            result[key] = value as T;
+        }
+    }
+    return result;
+}
+
 /* 合并同一个群的两份记录, base 中的其他字段 (如手动添加的备注) 保留 */
 function mergeGroup(base: IGroupRecord | undefined, update: TGroupUpdate): IGroupRecord {
     const added = latest(base?.added, update.added);
@@ -296,6 +307,24 @@ export class QQUsers {
         this.timer = undefined;
         this.queue = this.queue.then(() => this.write());
         return this.queue;
+    }
+
+    /**
+     * 一个机器人已知的群与单聊用户: users.json 与还没写入的变化合并后的结果。
+     * 与写入排在同一个队列中, 所以不会漏掉正在写入的变化; 不是对象的记录不会返回
+     * @param appid - 机器人的 AppID
+     * @throws users.json 不是 JSON 对象
+     */
+    public list(appid: string): Promise<IBotUsers> {
+        const task = this.queue.then(async () => {
+            const bot = objectAt<IBotUsers>(mergeUsers(await this.read(), this.pending), appid);
+            return {
+                groups: records<IGroupRecord>(objectAt(bot, "groups")),
+                users: records<IUserRecord>(objectAt(bot, "users")),
+            };
+        });
+        this.queue = task.then(() => undefined, () => undefined);
+        return task;
     }
 
     private async write(): Promise<void> {

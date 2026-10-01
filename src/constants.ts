@@ -22,5 +22,6 @@ export default {
     KERNEL_RPC_METHOD: {
         UPDATE_CONFIG: "update-config", // 更新配置, QQ 机器人配置变化时重新连接
         CALL_QQ_API: "call-qq-api", // 以 QQ 机器人身份调用服务端接口 (OpenAPI), 参数为 (url, method, body?)
+        GET_USERS: "get-users", // 获取 QQ 机器人已知的群与单聊用户
     } as const,
 } as const;

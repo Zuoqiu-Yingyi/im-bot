@@ -129,6 +129,27 @@ export interface IFriendEvent {
     };
 }
 
+/**
+ * `GET /v2/groups/{group_openid}/info`, 仅白名单机器人可用, 否则返回 11253
+ * REF: https://bot.q.qq.com/wiki/develop/api-v2/autogen/api/v2_groups_group_openid_info.get.html
+ */
+export interface IGroupInfo {
+    group_openid?: string;
+    group_name?: string; // 群名称
+    group_finger_memo?: string; // 群简介
+    group_class_text?: string; // 群分类
+    group_tags?: string[]; // 群标签
+    group_member_num?: number; // 群成员人数
+}
+
+/* OpenAPI 调用失败时的响应体, 应按错误码而不是 message 判断错误 */
+export interface IApiError {
+    err_code?: number;
+    code?: number; // 部分接口的错误码在 code 中
+    message?: string;
+    trace_id?: string;
+}
+
 /* POST https://api.bot.qq.com/app/getAppAccessToken */
 export interface IAccessToken {
     access_token?: string;

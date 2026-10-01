@@ -29,6 +29,7 @@ import type * as kernel from "siyuan/kernel";
 import type { TNotice } from "@/qq/notices";
 import type { IConfig } from "@/types/config";
 import type { IApiResponse, IPayload } from "@/types/qq";
+import type { IBotUsers } from "@/types/users";
 
 const CONFIG_RELOAD_DELAY = 1_000; // 配置文件变化后重新读取的延迟 (ms), 合并一次写入产生的多个文件事件
 const OFFLINE_NOTICE_TIMEOUT = 5_000; // 卸载时等待下线通知的最长时间 (ms): 内核会等待 onunload 结束, 退出思源时也是如此
@@ -53,7 +54,7 @@ function waitAtMost(promise: Promise<unknown>, ms: number): Promise<void> {
  * 响应单聊中以及群主提及机器人发送的 /openid 等指令, 并按配置同步指令面板,
  * 把群与单聊用户的事件汇总到 users.json (已知的群与单聊用户及其状态)。
  * 指定了运行设备时, 只有该设备连接网关、发送通知并同步指令面板。
- * 前端可以通过 RPC call-qq-api 以机器人身份调用 QQ 开放平台的服务端接口。
+ * 前端可以通过 RPC call-qq-api 以机器人身份调用 QQ 开放平台的服务端接口, 通过 RPC get-users 获取已知的群与单聊用户。
  * kernel.js 以普通脚本 (非 ES module) 执行: 本文件不能 export, 也不能从 external 模块 (如 siyuan) 导入运行时值。
  * Kernel plugin, built to dist/kernel.js. Runs in the goja runtime of the
  * SiYuan kernel (no DOM) and uses the global `siyuan` object. Connects to the
@@ -66,7 +67,8 @@ function waitAtMost(promise: Promise<unknown>, ms: number): Promise<void> {
  * and keeps the known groups and C2C users with their status in users.json
  * from the events. When a device is set, only that device connects to the
  * gateway, sends the notices and syncs the command panels. The call-qq-api RPC
- * method calls the QQ bot OpenAPI as the bot.
+ * method calls the QQ bot OpenAPI as the bot, and get-users returns the known
+ * groups and C2C users.
  * kernel.js is evaluated as a plain script, not an ES module: do not export
  * from this file or import runtime values from external modules (e.g. siyuan).
  */
@@ -114,6 +116,7 @@ class ImBotKernelPlugin {
         /* 绑定 RPC 方法 */
         await this.siyuan.rpc.bind(CONSTANTS.KERNEL_RPC_METHOD.UPDATE_CONFIG, this.rpcUpdateConfig.bind(this), "Update the plugin config and reconnect the QQ bot if its config changed.");
         await this.siyuan.rpc.bind(CONSTANTS.KERNEL_RPC_METHOD.CALL_QQ_API, this.rpcCallQQApi.bind(this), "Call a QQ bot OpenAPI endpoint as the configured bot. Params: url (a path starting with /), method (GET, POST, PUT, PATCH or DELETE), body (optional, sent as JSON). Returns the response { status, headers, body }.");
+        await this.siyuan.rpc.bind(CONSTANTS.KERNEL_RPC_METHOD.GET_USERS, this.rpcGetUsers.bind(this), "Get the known groups and C2C users of the configured bot from users.json, including the changes not written yet. Returns { groups, users }, keyed by group_openid and user_openid.");
 
         /* 其他设备修改的配置随数据同步到本机时, 前端不会调用 RPC, 需要监听配置文件 */
         await this.siyuan.storage.watcher.add(".");
@@ -130,6 +133,7 @@ class ImBotKernelPlugin {
         /* 解绑 RPC 方法 */
         await this.siyuan.rpc.unbind(CONSTANTS.KERNEL_RPC_METHOD.UPDATE_CONFIG);
         await this.siyuan.rpc.unbind(CONSTANTS.KERNEL_RPC_METHOD.CALL_QQ_API);
+        await this.siyuan.rpc.unbind(CONSTANTS.KERNEL_RPC_METHOD.GET_USERS);
 
         clearTimeout(this.reloadTimer);
         await waitAtMost(this.notify("offline"), OFFLINE_NOTICE_TIMEOUT);
@@ -257,6 +261,21 @@ class ImBotKernelPlugin {
             throw new Error("QQ_BOT_APPID or QQ_BOT_SECRET is not configured");
         }
         return this.openapi.request(credentials, request);
+    }
+
+    /**
+     * RPC: get-users
+     * 插件设置中的机器人已知的群与单聊用户, 包括还没写入 users.json 的变化, 不受运行设备限制。
+     * 前端插件调用: `await this.kernel.rpc.call[CONSTANTS.KERNEL_RPC_METHOD.GET_USERS]()`
+     * @returns 以 group_openid 与 user_openid 为键的群与单聊用户, 没有记录时都为空
+     * @throws 未设置 AppID, 或 users.json 不是 JSON 对象
+     */
+    private async rpcGetUsers(): Promise<IBotUsers> {
+        const appid = this.config.qq.appid.trim();
+        if (!appid) {
+            throw new Error("QQ_BOT_APPID is not configured");
+        }
+        return this.users.list(appid);
     }
 
     /* 打印 QQ 网关推送的事件, 开启事件日志时同时保存到文件; 群聊中 @ 机器人的消息作为指令处理, 其余消息写入绑定的收集箱; 群与单聊用户的事件汇总到 users.json */

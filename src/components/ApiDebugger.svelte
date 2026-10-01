@@ -42,11 +42,11 @@
     import { preventDefault } from "@workspace/utils/svelte/event";
 
     import { API_METHODS } from "@/qq/constants";
+    import { formatRpcError } from "@/utils/rpc";
 
-    import type { IApiResponse } from "@/types/qq";
+    import ApiResult from "./ApiResult.svelte";
 
-    /* 一次请求的结果: 目标的响应, 或者请求未能发出时的错误 */
-    type TResult = { duration: number } & ({ error: string } | { response: IApiResponse });
+    import type { TApiResult } from "./ApiResult.svelte";
 
     const { plugin, tab }: IProps = $props();
 
@@ -58,25 +58,12 @@
     const request = $state({ ...tab.data }); // 正在编辑的请求
     let bodyError = $state(""); // 请求体的 JSON 解析错误
     let sending = $state(false); // 是否正在等待响应
-    let result = $state.raw<TResult>(); // 最近一次请求的结果
+    let result = $state.raw<TApiResult>(); // 最近一次请求的结果
 
     /* 编辑的请求写回页签数据, 思源保存界面布局时一并保存 */
     $effect(() => {
         Object.assign(tab.data, $state.snapshot(request));
     });
-
-    /* 前端的 kernel.rpc.call 以 JsonRpcError 拒绝: message 为 JSON-RPC 的错误类型, data 为内核插件抛出的错误 */
-    function formatError(error: unknown): string {
-        if (!(error instanceof Error)) {
-            return String(error);
-        }
-        const { code, data } = error as Error & { code?: number; data?: unknown };
-        const lines = [code === undefined ? String(error) : `${code} ${error.message}`];
-        if (data !== undefined) {
-            lines.push(typeof data === "string" ? data : JSON.stringify(data, undefined, 4));
-        }
-        return lines.join("\n");
-    }
 
     /* 解析请求体后通过内核插件发送请求, 请求体不是有效的 JSON 时不发送 */
     async function send(): Promise<void> {
@@ -99,31 +86,13 @@
             result = { duration: performance.now() - start, response };
         }
         catch (error) {
-            result = { duration: performance.now() - start, error: formatError(error) };
+            result = { duration: performance.now() - start, error: formatRpcError(error) };
         }
         finally {
             sending = false;
         }
     }
 
-    /* 状态码标签的样式: 2xx 为成功, 4xx 与 5xx 为错误 */
-    function statusClass(status: number): string {
-        if (status >= 200 && status < 300) {
-            return "b3-chip--success";
-        }
-        return status >= 400 ? "b3-chip--error" : "b3-chip--info";
-    }
-
-    function formatHeaders(headers: Record<string, string>): string {
-        return Object.entries(headers)
-            .map(([name, value]) => `${name}: ${value}`)
-            .join("\n");
-    }
-
-    /* JSON 响应体格式化后显示, 不是 JSON 的响应体原样显示 */
-    function formatBody(body: unknown): string {
-        return typeof body === "string" ? body : JSON.stringify(body, undefined, 4);
-    }
 </script>
 
 <Tab>
@@ -188,34 +157,10 @@
             {#if result}
                 <span class="title">{i18n.response}</span>
             {/if}
-            <div
-                class="summary"
-                aria-live="polite"
-            >
-                {#if result}
-                    {#if "response" in result}
-                        <span class="b3-chip b3-chip--middle {statusClass(result.response.status)}">{result.response.status}</span>
-                    {:else}
-                        <span class="b3-chip b3-chip--middle b3-chip--error">{i18n.error}</span>
-                    {/if}
-                    <span class="ft__on-surface">{i18n.duration} {Math.round(result.duration)} ms</span>
-                {/if}
-            </div>
-            {#if result}
-                {#if "response" in result}
-                    <details>
-                        <summary>{i18n.headers}</summary>
-                        <pre class="code">{formatHeaders(result.response.headers)}</pre>
-                    </details>
-                    {#if result.response.body === null}
-                        <span class="ft__on-surface">{i18n.noBody}</span>
-                    {:else}
-                        <pre class="code">{formatBody(result.response.body)}</pre>
-                    {/if}
-                {:else}
-                    <pre class="code ft__error">{result.error}</pre>
-                {/if}
-            {/if}
+            <ApiResult
+                labels={i18n}
+                {result}
+            />
         </div>
     {/snippet}
 </Tab>
@@ -242,35 +187,11 @@
         font-weight: bold;
     }
 
-    .summary {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-
-        &:empty {
-            display: none;
-        }
-    }
-
     .code {
         font-family: var(--b3-font-family-code);
     }
 
     textarea {
         resize: vertical;
-    }
-
-    pre {
-        margin: 0;
-        padding: 8px;
-        overflow: auto;
-        white-space: pre-wrap;
-        overflow-wrap: anywhere;
-        border-radius: var(--b3-border-radius);
-        background-color: var(--b3-theme-surface);
-    }
-
-    details > pre {
-        margin-top: 8px;
     }
 </style>
