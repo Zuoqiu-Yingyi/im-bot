@@ -1,0 +1,66 @@
+src/weixin/constants.ts
+  s_dc742167056c5d::t_b8172e7981c558 19,33
+src/weixin/media.ts
+  s_dc742167056c5d::t_dd0514d63a05e7 119
+  s_dc742167056c5d::t_0a54caf760729e 212,232-233,245-249,251,253-261
+  s_dc742167056c5d::t_df1c575a67af8e 38-45,229,266-270
+  s_dc742167056c5d::t_f33c37df0fe9f6 183,204,207
+  s_dc742167056c5d::t_edc954d352517b 1-37,46-118,120-182,184-203,205-206,208-211,213-228,230-231,234-244,250,252,262-265,271-330
+src/configs/default.ts
+  s_dc742167056c5d::t_36b7f3fd0f71b4 81
+public/i18n/zh-CN.json
+  s_dc742167056c5d::t_57e445ddd84c5a 196-198
+public/i18n/zh-TW.json
+  s_dc742167056c5d::t_87c1915cd02f69 196-198
+public/i18n/en.json
+  s_dc742167056c5d::t_5776ad190b9c04 196-198
+docs/ilink-api.md
+  s_dc742167056c5d::t_6fd45684965dac 415-418,437-439,473-475,478-483
+  s_dc742167056c5d::t_f22b41f68a3746 555,572,581,596
+  s_dc742167056c5d::t_5371efe56de7a9 573-580,582-595,597-601
+src/kernel.ts
+  s_dc742167056c5d::t_2153b84f233ca7 30,95,132,162-163
+  s_dc742167056c5d::t_03549fe19f9284 96,113-115
+public/README.zh-CN.md
+  s_dc742167056c5d::t_5f6fada3424816 80-81,185-187,256-259
+src/utils/asset.ts
+  s_dc742167056c5d::t_d08a4ac6445a12 1-21,23-25,27-34,36-77
+  s_dc742167056c5d::t_fc4bb6e9316d06 26,35
+src/types/config.d.ts
+  s_dc742167056c5d::t_36c821da2d96bc 34
+src/utils/proxy.ts
+  s_dc742167056c5d::t_e1c5fad091e321 75-77
+  s_dc742167056c5d::t_acc529ed646836 31,34,59,64,71,73-74,78-79,83,94-120
+  s_dc742167056c5d::t_88be6c573728d4 60,80
+public/README.md
+  s_dc742167056c5d::t_7c4518a233c0d6 80-81,185-187,256-259
+src/weixin/message.ts
+  s_dc742167056c5d::t_53c874dda9533c 20-21,25,45,49-51,74,101-104,108-115,117-125,154,157-158,164-170,176
+  s_dc742167056c5d::t_bfad3bfe8de8e2 116
+  s_dc742167056c5d::t_1aa80353683f82 105-107
+src/weixin/inbox.ts
+  s_dc742167056c5d::t_fb1bd2b26f98f2 23,28-29,46,48,50-51,57,66,69,73,82-83,89,92,97-98,111,116-117,125,128-130,134-145
+  s_dc742167056c5d::t_dcf84b17a66f3e 33,47
+  s_dc742167056c5d::t_755c732e55f58e 39-43,114
+src/components/Settings.svelte
+  s_dc742167056c5d::t_3a39ece2229579 454,457-463,465-470
+  s_dc742167056c5d::t_788fe161ae3bf7 453,455-456,464
+src/utils/inbox.ts
+  s_dc742167056c5d::t_de10caaeb75981 185-189
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.45-trip",
+  "base_commit_sha": "82fccc184d039ceca2ff27d9ece70c39f01306bf",
+  "prompts": {},
+  "sessions": {
+    "s_dc742167056c5d": {
+      "agent_id": {
+        "tool": "chengxiaobang",
+        "id": "s_jhkdvn9hrano",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Yingyi / 颖逸 <49649786+Zuoqiu-Yingyi@users.noreply.github.com>"
+    }
+  }
+}
