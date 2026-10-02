@@ -17,9 +17,12 @@ import {
     blockquote,
     blockRef,
     escapeText,
+    image,
+    link,
     paragraph,
     superBlock,
     textWithLinks,
+    video,
 } from "@/utils/kramdown";
 
 import { MessageItemType } from "./constants";
@@ -39,8 +42,12 @@ export interface IWeixinMessageLabels {
 export interface IConvertOptions {
     reference?: string; // 被引用的消息所在的块 ID
     referenceText?: string; // 被引用的消息所在块的纯文本, 消息没有带上被引用的内容时用作块引用的锚文本
+    assets?: (string | undefined)[]; // 与 item_list 一一对应的资源文件路径, 没有保存的媒体显示为占位文本
     labels: IWeixinMessageLabels;
 }
+
+/* 消息项的内容: 段落中的行内内容, 或不能与行内内容放在同一段落中的块 (视频块) */
+type TContent = { block: string } | { inline: string };
 
 const ANCHOR_LENGTH = 32;
 
@@ -64,7 +71,7 @@ export function referenceId(message: IWeixinMessage): string | undefined {
         || undefined;
 }
 
-/* 消息项的纯文本; 暂不下载媒体, 图片、语音、文件与视频显示为占位文本 */
+/* 消息项的纯文本, 图片、语音、文件与视频显示为占位文本 */
 function plainText(item: IMessageItem, labels: IWeixinMessageLabels): string {
     switch (item.type) {
         case MessageItemType.TEXT:
@@ -91,11 +98,31 @@ export function messageText(message: IWeixinMessage, labels: IWeixinMessageLabel
         .join(" ");
 }
 
-/* 消息项的行内内容: 文本中的网址转为超链接, 其余文字按原样显示 */
-function inlineContent(item: IMessageItem, labels: IWeixinMessageLabels): string {
-    return item.type === MessageItemType.TEXT
-        ? textWithLinks(item.text_item?.text ?? "")
-        : escapeText(plainText(item, labels));
+/**
+ * 消息项的内容: 文本中的网址转为超链接。
+ * 已保存为资源文件的媒体: 图片转为图片, 视频转为视频块; 语音的占位文本与文件名转为指向资源文件的超链接,
+ * 语音是微信的 SILK 格式, 浏览器无法播放, 所以不转为音频块。其余媒体显示为占位文本
+ * @param item - 消息项
+ * @param labels - 占位文本
+ * @param asset - 媒体的资源文件路径, 没有保存时为 undefined
+ */
+function itemContent(item: IMessageItem, labels: IWeixinMessageLabels, asset: string | undefined): TContent {
+    if (item.type === MessageItemType.TEXT) {
+        return { inline: textWithLinks(item.text_item?.text ?? "") };
+    }
+    if (asset) {
+        switch (item.type) {
+            case MessageItemType.IMAGE:
+                return { inline: image(asset, labels.image) };
+            case MessageItemType.VOICE:
+                return { inline: `${link(labels.voice, asset)} ${escapeText(item.voice_item?.text ?? "")}` };
+            case MessageItemType.FILE:
+                return { inline: `${escapeText(labels.file)} ${link(item.file_item?.file_name?.trim() || asset.replace(/^.*\//, ""), asset)}` };
+            case MessageItemType.VIDEO:
+                return { block: video(asset) };
+        }
+    }
+    return { inline: escapeText(plainText(item, labels)) };
 }
 
 /**
@@ -124,23 +151,29 @@ function anchorText(text: string): string {
  * 块引用的锚文本优先取消息中带的被引用的文本, 没有时取被引用的块的文本
  */
 export function convertMessage(message: IWeixinMessage, options: IConvertOptions): string {
-    const { labels, reference, referenceText } = options;
+    const { assets, labels, reference, referenceText } = options;
     const blocks: string[] = [];
     const contents = (message.item_list ?? [])
-        .map((item) => inlineContent(item, labels))
-        .filter((content) => paragraph(content));
+        .map((item, index) => itemContent(item, labels, assets?.[index]))
+        .filter((content) => "block" in content || paragraph(content.inline));
 
     if (referenceItem(message)) {
         const quoted = quotedText(message, labels);
         if (reference) {
             const anchor = anchorText(quoted) || anchorText(referenceText ?? "") || labels.quote;
-            contents[0] = `${blockRef(reference, anchor)} ${contents[0] ?? ""}`;
+            const first = contents[0];
+            if (first && "inline" in first) {
+                first.inline = `${blockRef(reference, anchor)} ${first.inline}`;
+            }
+            else {
+                contents.unshift({ inline: blockRef(reference, anchor) });
+            }
         }
         else {
             blocks.push(blockquote([escapeText(quoted || labels.quote)]));
         }
     }
-    blocks.push(...contents.map(paragraph));
+    blocks.push(...contents.map((content) => "block" in content ? content.block : paragraph(content.inline)));
 
     return superBlock(
         blocks.length > 0 ? blocks : [escapeText(labels.unavailable)],

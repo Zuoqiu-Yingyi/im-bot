@@ -77,7 +77,8 @@ From then on, the messages you send to this ClawBot in WeChat are recorded in da
 - What are the limits of the WeChat ClawBot?
 
   - It only chats one-on-one with the WeChat user who scanned the QR code. It cannot join group chats, and nobody else can add it.
-  - Images, voice messages, files and videos are only recorded as placeholder text for now (voice messages come with the WeChat transcription); they are not downloaded.
+  - Images, voice messages, files and videos are stored encrypted on the WeChat CDN. They are decrypted and saved into the workspace only when the SiYuan kernel provides `siyuan.crypto` with AES-ECB; otherwise they are recorded as placeholder text (voice messages come with the WeChat transcription).
+  - Voice messages are saved in the WeChat SILK format, which SiYuan cannot play, so the transcription stays in the message. Media over 100 MB are not downloaded.
   - "Reply with the block link" replies right after a message arrives. WeChat does not publish the limits of replies; the community has observed at most about 10 replies after each message. When a reply succeeds without a message ID, it may not have been delivered, and the kernel log shows a warning. Messages the bot starts on its own are even less reliable, so the plugin does not send online and offline notices to WeChat.
   - The plugin uses the same API (the iLink Bot API) as the official OpenClaw WeChat plugin. WeChat has not said whether other clients may use it.
 - Is the WeChat login safe?
@@ -181,7 +182,9 @@ From then on, the messages you send to this ClawBot in WeChat are recorded in da
   - Received messages are written into the document in `WeChat Bot > Inbox document ID` the same way as the QQ inbox: inserted into `.temp` first, then moved to the end of the `YYYY/MM/YYYY-MM-DD` document. The same document can also be the inbox of QQ groups.
   - How messages are converted
 
-    - Each message becomes a super block with one paragraph per message item: text shows as it is, with web addresses turned into links; voice messages show as `[Voice]` followed by the transcription; images, files and videos show as `[Image]`, `[File] <file name>` and `[Video]`.
+    - Each message becomes a super block with one paragraph per message item: text shows as it is, with web addresses turned into links; images, voice messages, files and videos first show as `[Image]`, `[Voice]` followed by the transcription, `[File] <file name>` and `[Video]`.
+    - When `WeChat Bot > Download assets` is on and the SiYuan kernel can decrypt them, the plugin downloads the media from the WeChat CDN after the reply, decrypts them with AES-128-ECB, saves them as assets and replaces the placeholders: images show as images, videos as video blocks, and voice messages and files as links to their assets (voice messages keep the transcription). The message block keeps its ID, so the block link already sent and the block references to it still work.
+    - Media that fail to download or decrypt keep their placeholders, with a warning in the kernel log. When a message carries the MD5 of a file or a video, the plugin checks it and only logs a warning on a mismatch; the file is still saved.
     - Quotes: when the quoted message is already in the inbox, the quote becomes a block reference to it; otherwise a blockquote shows the quoted content.
     - Messages sent by the bot itself are not written, and a message received more than once is written only once.
   - Message blocks have the custom attributes `custom-author-id` (the WeChat user ID of the sender) and `custom-msg-id` (the message ID).
@@ -250,6 +253,10 @@ From then on, the messages you send to this ClawBot in WeChat are recorded in da
   - `Reply with the block link`
 
     - When on, the bot replies to each message written into the inbox with the block hyperlink of its super block, `siyuan://blocks/<block ID>`. Off by default; see Q & A for the limits
+  - `Download assets`
+
+    - When on, decrypts the images, voice messages, videos and files of messages and saves them as assets in the workspace; see "How messages are converted". When the SiYuan kernel cannot decrypt them (no `siyuan.crypto`, or no AES-ECB), they stay placeholders
+    - On by default; a change applies to the messages received afterwards
   - `Event log`
 
     - When on, saves each received message as a JSON file `data/storage/petal/im-bot/logs/weixin/messages/<message ID>.json` in the workspace

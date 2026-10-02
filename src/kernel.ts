@@ -27,6 +27,7 @@ import { InboxWriter } from "@/utils/inbox";
 import { WeixinApi } from "@/weixin/api";
 import { WeixinInbox } from "@/weixin/inbox";
 import { WeixinLogin } from "@/weixin/login";
+import { WeixinMedia } from "@/weixin/media";
 import { messageId } from "@/weixin/message";
 import { WeixinPoller } from "@/weixin/poller";
 
@@ -91,7 +92,8 @@ function waitAtMost(promise: Promise<unknown>, ms: number): Promise<void> {
  * 响应单聊中以及群主提及机器人发送的 /openid 等指令, 并按配置同步指令面板,
  * 把群与单聊用户的事件汇总到 users.json (已知的群与单聊用户及其状态)。
  * 指定了运行设备时, 只有该设备连接网关、发送通知并同步指令面板。
- * 微信 ClawBot 扫码登录后 (RPC weixin-login-*), 在扫码登录的设备上以长轮询接收消息并写入收集箱, 登录信息保存在 weixin.json 中。
+ * 微信 ClawBot 扫码登录后 (RPC weixin-login-*), 在扫码登录的设备上以长轮询接收消息并写入收集箱, 登录信息保存在 weixin.json 中;
+ * 内核的 siyuan.crypto 支持 AES-ECB 时, 消息中的媒体解密后保存为资源文件, 否则显示为占位文本。
  * 前端可以通过 RPC call-qq-api 以机器人身份调用 QQ 开放平台的服务端接口, 通过 RPC get-users 获取已知的群与单聊用户。
  * kernel.js 以普通脚本 (非 ES module) 执行: 本文件不能 export, 也不能从 external 模块 (如 siyuan) 导入运行时值。
  * Kernel plugin, built to dist/kernel.js. Runs in the goja runtime of the
@@ -108,7 +110,9 @@ function waitAtMost(promise: Promise<unknown>, ms: number): Promise<void> {
  * method calls the QQ bot OpenAPI as the bot, and get-users returns the known
  * groups and C2C users. After a WeChat ClawBot QR code login (weixin-login-*
  * RPC methods), the device that logged in long-polls its messages into the
- * inbox; the login is kept in weixin.json.
+ * inbox; the login is kept in weixin.json. When siyuan.crypto of the kernel
+ * supports AES-ECB, the media of the messages are decrypted and saved as
+ * assets, otherwise they are written as placeholders.
  * kernel.js is evaluated as a plain script, not an ES module: do not export
  * from this file or import runtime values from external modules (e.g. siyuan).
  */
@@ -125,6 +129,7 @@ class ImBotKernelPlugin {
     private readonly weixinApi: WeixinApi;
     private readonly weixinLogin: WeixinLogin;
     private readonly weixinPoller: WeixinPoller;
+    private readonly weixinMedia: WeixinMedia;
     private readonly weixinInbox: WeixinInbox;
 
     private config: IConfig = mergeConfig();
@@ -154,7 +159,8 @@ class ImBotKernelPlugin {
         this.weixinApi = new WeixinApi(this.siyuan);
         this.weixinLogin = new WeixinLogin(this.siyuan, this.weixinApi, this.onWeixinLogin.bind(this));
         this.weixinPoller = new WeixinPoller(this.siyuan, this.weixinApi, this.onWeixinMessage.bind(this), this.onWeixinExpired.bind(this));
-        this.weixinInbox = new WeixinInbox(this.siyuan, this.weixinApi, this.writer, () => this.config.weixin);
+        this.weixinMedia = new WeixinMedia(this.siyuan);
+        this.weixinInbox = new WeixinInbox(this.siyuan, this.weixinApi, this.writer, this.weixinMedia, () => this.config.weixin);
         this.siyuan.event.handler = this.onEvent.bind(this);
 
         // 绑定生命周期钩子, 内核会等待钩子返回的 Promise 后再进入下一阶段。

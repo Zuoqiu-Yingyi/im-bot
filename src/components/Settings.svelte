@@ -450,6 +450,24 @@
                 {/snippet}
             </Item>
 
+            <!-- 下载资源文件 -->
+            <Item
+                text={i18n.settings.weixinBotSettings.inboxDownloadAssets.description}
+                title={i18n.settings.weixinBotSettings.inboxDownloadAssets.title}
+            >
+                {#snippet input()}
+                    <Input
+                        onChanged={async (e) => {
+                            config.weixin.inbox.downloadAssets = e.value;
+                            await updated();
+                        }}
+                        settingKey="weixinInboxDownloadAssets"
+                        settingValue={config.weixin.inbox.downloadAssets}
+                        type={ItemType.checkbox}
+                    />
+                {/snippet}
+            </Item>
+
             <!-- 事件日志 -->
             <Item
                 text={i18n.settings.weixinBotSettings.eventLog.description}

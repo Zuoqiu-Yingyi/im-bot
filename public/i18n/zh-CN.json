@@ -193,6 +193,10 @@
                 "placeholder": "20260930112233-abcdefg",
                 "title": "收集箱文档 ID"
             },
+            "inboxDownloadAssets": {
+                "description": "把消息中的图片、语音、视频和文件解密后保存到工作空间，当前思源版本不支持解密时仍显示为占位文本",
+                "title": "下载资源文件"
+            },
             "inboxEnabled": {
                 "description": "关闭后只记录日志，不写入收集箱",
                 "title": "写入收集箱"

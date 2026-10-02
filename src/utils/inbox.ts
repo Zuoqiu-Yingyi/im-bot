@@ -182,6 +182,11 @@ export class InboxWriter {
         await this.waitForSync(temp);
     }
 
+    /* 用新的 kramdown 替换消息块: 块 ID 不变, 指向它的块引用仍然有效; 属性取自 kramdown 的 IAL, 子块会换成新的块 */
+    public async updateBlock(block: string, kramdown: string): Promise<void> {
+        await this.request("/api/block/updateBlock", { id: block, dataType: "markdown", data: kramdown });
+    }
+
     /* 把消息块移动到日期文档末尾; 缓存的文档可能已被删除, 失败时重新查找一次 */
     public async moveToDate(inbox: string, block: string, date: string): Promise<void> {
         try {

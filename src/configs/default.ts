@@ -78,6 +78,7 @@ export const DEFAULT_CONFIG: IConfig = {
             doc: "",
             enabled: true,
             reply: false,
+            downloadAssets: true,
         },
     },
 };

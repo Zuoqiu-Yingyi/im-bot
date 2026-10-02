@@ -408,14 +408,14 @@ interface WeixinMessage {
 
 ### `MessageItem`
 
-| `type`      | 字段                                             | 内容                                                                             |
-| ----------- | ------------------------------------------------ | -------------------------------------------------------------------------------- |
-| `1`         | `text_item.text`                                 | 纯文本                                                                           |
-| `2`         | `image_item`                                     | 图片，含缩略图与原图的 CDN 引用                                                  |
-| `3`         | `voice_item`                                     | 语音；`voice_item.text` 可能带微信侧的转写文本；实测 `encode_type` 为 4（speex） |
-| `4`         | `file_item`                                      | 文件；`file_name`、`len`（明文字节数的字符串）                                   |
-| `5`         | `video_item`                                     | 视频，含缩略图                                                                   |
-| `11` / `12` | `tool_call_start_item` / `tool_call_result_item` | 工具调用进度（用于向用户展示 Agent 执行中间状态，可选）                          |
+| `type`      | 字段                                             | 内容                                                                         |
+| ----------- | ------------------------------------------------ | ---------------------------------------------------------------------------- |
+| `1`         | `text_item.text`                                 | 纯文本                                                                       |
+| `2`         | `image_item`                                     | 图片，含缩略图与原图的 CDN 引用                                              |
+| `3`         | `voice_item`                                     | 语音；`voice_item.text` 可能带微信侧的转写文本；实测文件为 SILK v3（见下文） |
+| `4`         | `file_item`                                      | 文件；`file_name`、`len`（明文字节数的字符串）                               |
+| `5`         | `video_item`                                     | 视频，含缩略图                                                               |
+| `11` / `12` | `tool_call_start_item` / `tool_call_result_item` | 工具调用进度（用于向用户展示 Agent 执行中间状态，可选）                      |
 
 每个 `MessageItem` 还可能带 `ref_msg`（引用/回复的消息），新版微信客户端的引用
 可能只给出被引用消息的 `svr_id`，拿不到引用内容本身，需要客户端自行维护一份
@@ -434,7 +434,9 @@ interface WeixinMessage {
   客户端自己保存的消息里找。
 - 多出来的字段：消息项上有 `button_item_list`、`at_bot_username_list`（都是空数组），消息上有
   `root_id`、`parent_id`（都是 0）。`session_id` 与 `group_id` 为空字符串。
-- 语音：`encode_type: 4`（speex）、`sample_rate: 16000`、`playtime` 以毫秒计，`text` 带转写文本。
+- 语音：`encode_type: 4`、`sample_rate: 16000`、`playtime` 以毫秒计，`text` 带转写文本。
+  官方类型定义里 4 表示 speex，但解密后的文件以 `\x02#!SILK_V3` 开头，实际是微信的 SILK v3
+  格式；官方插件也不看 `encode_type`，语音一律按 SILK 转成 WAV（`silk-wasm`），转不了就保存原始 SILK。
 - 图片：`image_item` 同时有 `aeskey`（32 位 hex）与 `media.aes_key`（base64）、
   `media.encrypt_query_param`、`media.full_url`，以及 `mid_size`、`hd_size`、缩略图尺寸。
 - 5 条回复（`sendmessage`，带各自的 `context_token`）都返回了 `message_id`。
@@ -468,9 +470,17 @@ interface CDNMedia {
 1. 优先使用 `full_url`；没有则用 `encrypt_query_param` 拼接
    `<cdn_base_url>/download?encrypted_query_param=<URL 编码后的值>`。
 2. `GET` 下载密文字节。
-3. 取 `aeskey`（优先用条目自带的 hex 字符串形式，否则用 `media.aes_key` 的
-   base64 形式解出相同的 16 字节密钥），用 AES-128-ECB + PKCS#7 填充解密。
+3. 取密钥：优先用条目自带的 `aeskey`（32 位 hex）；没有时用 `media.aes_key`。它是 base64，
+   官方插件的 `parseAesKey` 规定解出 16 字节就直接作为密钥，解出 32 个 hex 字符就再按 hex
+   解码。然后用 AES-128-ECB + PKCS#7 填充解密。
 4. 没有任何可用密钥时，把下载内容当明文直接使用（兜底，理论上不应该发生）。
+
+2026-10-02 用一条图片消息和一条语音消息实测：
+
+- `full_url` 直接 `GET` 即可，不需要任何鉴权头，返回 200，响应没有 `Content-Type`。
+- 两条消息的 `media.aes_key` 解出的都是 32 个 hex 字符；图片的 `media.aes_key` 与 `aeskey`
+  是同一个密钥。
+- 解密后图片 228537 字节，等于 `mid_size` 与 `hd_size`，是 JPEG；语音 4891 字节，是 SILK v3。
 
 **加密算法注意**：AES-128-ECB **不需要 IV**，但安全性弱于 CBC/GCM——这是微信
 侧的既定协议，客户端没有选择空间；在实现时不要和企业微信智能机器人用的
@@ -542,7 +552,7 @@ token 裸调同样被服务端拒绝）。`openclaw-weixin` issue #202（2026-06
 
 `getupdates` 的服务端 hold 时间约 35 秒，小于思源内核 `siyuan.client.fetch`
 固定的 1 分钟超时，可以直接走现有的 `/api/network/proxy` 转发（参考
-`src/qq/proxy.ts` 的 `proxyFetch`），不需要额外处理。和 QQ 侧的 WebSocket 网关
+`src/utils/proxy.ts` 的 `proxyFetch`），不需要额外处理。和 QQ 侧的 WebSocket 网关
 （`src/qq/gateway.ts`，经 `/ws/network/proxy`）相比，iLink 不需要维护连接状态
 机、心跳、重连退避，实现上更简单。
 
@@ -559,14 +569,36 @@ token 裸调同样被服务端拒绝）。`openclaw-weixin` issue #202（2026-06
   （非 CSPRNG，对这个场景风险可接受，但要在代码注释里写清楚原因）。
 - 文本收发（不涉及媒体）完全不受此限制，可以先只实现文本通道。
 
-### 3. 现有 proxy 辅助函数只处理 JSON 文本
+思源 PR [#20042](https://github.com/siyuan-note/siyuan/pull/20042)（2026-10 尚未合并）为内核插件提供了
+`siyuan.crypto`（Web Crypto 接口），并在 Web Crypto 之外提供了 `AES-ECB` 与 `MD5` 两个扩展算法。
+2026-10-02 用该分支构建的 3.8.7-alpha.2 内核实测：
 
-`src/qq/proxy.ts` 的 `proxyFetch` 假定目标的响应是 JSON（通过
-`Content-Type: application/octet-stream` 判断是否为目标的真实响应，再
-`response.text()` 读取），媒体上传/下载需要传输二进制。petal 的
-`IRequestInit.body` 支持 `ArrayBuffer`，响应对象也有 `arrayBuffer()`，内核转发
-层本身没有障碍，但 `proxyFetch` 需要扩展一个二进制版本（`request.body` 支持
-`ArrayBuffer`，返回值也用 `arrayBuffer()` 而不是 `text()`）。
+- `importKey("raw", key, { name: "AES-ECB" }, false, ["decrypt"])` 与 `decrypt({ name: "AES-ECB" }, key, data)`
+  直接完成 AES-128-ECB + PKCS#7 解密，内核会校验并去掉填充（填充无效报 `OperationError`）。NIST SP 800-38A
+  的 ECB 向量、与 Node `aes-*-ecb` 的 36 组随机数据互操作、「五」中实测的两条真实媒体都逐字节一致；
+  解密 228 KB 的图片不到 1 ms。`encrypt` 同样可用，可用于上传。
+- `digest("MD5", data)` 与 RFC 1321 的向量一致，HMAC、HKDF、PBKDF2 也接受 MD5，签名算法拒绝它。
+- `getRandomValues` 可用，生成 AES 密钥不必再退化为 `Math.random`。
+- 合并前的早期版本只有 Web Crypto 规范内的算法，那时只能用 AES-CBC 间接完成 ECB 解密（在密文末尾
+  追加一个构造的分组，使 CBC 解密的最后一块恰为填充分组，再逐块与前一个密文分组异或）。
+
+im-bot 的实现（`src/weixin/media.ts`）：
+
+- 收到媒体消息后先以占位文本写入，回复之后再下载。第一次处理媒体时检查内核：没有 `siyuan.crypto`，
+  或者用全零密钥导入 `AES-ECB` 失败，就只在日志中记一条，之后的媒体都保留占位文本。
+- 下载经 `/api/network/proxy`（`proxyFetchBinary`），解密后用 `/api/asset/upload` 上传为资源文件，再用
+  `/api/block/updateBlock` 替换消息超级块：块 ID 与块属性不变，指向它的块引用仍然有效，子块会换成新的块。
+- 文件与视频带 `md5`、`video_md5` 时用 MD5 校验明文，不一致只记录警告：还没有真实的文件与视频消息
+  来确认这两个字段是不是明文的 MD5。
+- goja 的 `Buffer` 只支持 `hex`、`utf8`、`base64` 与 `base64Url` 编码，不支持 `latin1`、`ascii`。
+
+### 3. 二进制的请求与响应
+
+`src/utils/proxy.ts` 的 `proxyFetch` 以文本读取目标的响应（通过
+`Content-Type: application/octet-stream` 判断是否为目标的真实响应），媒体下载改用以
+`arrayBuffer()` 读取的 `proxyFetchBinary`。上传资源文件时，`siyuan.client.fetch` 的请求体只能是字符串
+或 `ArrayBuffer`，所以 `src/utils/asset.ts` 手动拼接 multipart/form-data。媒体上传到微信 CDN
+（发送媒体消息）还没有实现，届时请求体也要用 `ArrayBuffer`。
 
 ### 4. 配置模型
 

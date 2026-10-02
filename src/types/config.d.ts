@@ -31,6 +31,7 @@ export interface IWeixinInboxConfig {
     doc: string; // 收集箱文档 ID
     enabled: boolean; // 是否写入收集箱
     reply: boolean; // 写入后是否向该消息回复其超级块的块超链接
+    downloadAssets: boolean; // 是否把消息中的媒体解密后保存为资源文件, 内核没有 siyuan.crypto 或不支持 AES-ECB 时始终显示为占位文本
 }
 
 export interface IQQBotConfig {

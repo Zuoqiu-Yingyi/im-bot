@@ -28,10 +28,10 @@ export interface IProxyRequest {
 }
 
 /* 目标的响应 */
-export interface IProxyResponse {
+export interface IProxyResponse<T = string> {
     status: number;
     headers: Record<string, string>; // 目标的响应头
-    body: string;
+    body: T;
 }
 
 /* 内核把目标的响应头加上该前缀后转发 */
@@ -56,30 +56,31 @@ export function encodeBase64Url(text: string): string {
         .replace(/=+$/, "");
 }
 
-/**
- * 经内核 /api/network/proxy 发出 HTTP 请求。
- * 内核把请求方法、请求体与 Content-Type 转发给 u 参数指定的目标, 其他请求头只能放在 h 参数中;
- * 目标的响应一律以 application/octet-stream 返回, 其他媒体类型是内核自身的拒绝 (参数错误、无法连接目标等)。
- * @param siyuan - 内核插件全局对象
- * @param request - 发给目标的请求
- * @returns 目标的响应, 任何状态码都会返回
- * @throws 内核拒绝转发或请求超时 (siyuan.client.fetch 的超时为 1 分钟)
- */
-export async function proxyFetch(siyuan: kernel.ISiyuan, request: IProxyRequest): Promise<IProxyResponse> {
+/* 把请求交给内核转发 */
+function forward(siyuan: kernel.ISiyuan, request: IProxyRequest): Promise<kernel.IFetchResponse> {
     const headers = request.headers
         ? `&h=${encodeBase64Url(JSON.stringify(request.headers))}`
         : "";
-    const response = await siyuan.client.fetch(`/api/network/proxy?u=${encodeBase64Url(request.url)}&t=${PROXY_DIAL_TIMEOUT}ms${headers}`, request.json === undefined
+    return siyuan.client.fetch(`/api/network/proxy?u=${encodeBase64Url(request.url)}&t=${PROXY_DIAL_TIMEOUT}ms${headers}`, request.json === undefined
         ? { method: request.method }
         : {
                 method: request.method,
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(request.json),
             });
+}
 
-    const body = await response.text();
+/**
+ * 取出目标的响应头
+ * @param request - 发给目标的请求
+ * @param response - 内核的响应
+ * @param text - 返回响应体的文本, 用于内核拒绝转发时的错误信息
+ * @throws 响应不是 application/octet-stream, 即内核拒绝了转发
+ */
+function targetHeaders(request: IProxyRequest, response: kernel.IFetchResponse, text: () => string): Record<string, string> {
     const contentType: string | undefined = response.headers["Content-Type"];
     if (!contentType?.startsWith("application/octet-stream")) {
+        const body = text();
         const failure = parseJson<{ msg?: string }>(body);
         throw new Error(`proxy ${request.method} ${request.url} failed: ${response.status} ${failure?.msg ?? body}`);
     }
@@ -90,5 +91,31 @@ export async function proxyFetch(siyuan: kernel.ISiyuan, request: IProxyRequest)
             forwarded[name.slice(FORWARDED_HEADER_PREFIX.length)] = value;
         }
     }
-    return { status: response.status, headers: forwarded, body };
+    return forwarded;
+}
+
+/**
+ * 经内核 /api/network/proxy 发出 HTTP 请求。
+ * 内核把请求方法、请求体与 Content-Type 转发给 u 参数指定的目标, 其他请求头只能放在 h 参数中;
+ * 目标的响应一律以 application/octet-stream 返回, 其他媒体类型是内核自身的拒绝 (参数错误、无法连接目标等)。
+ * @param siyuan - 内核插件全局对象
+ * @param request - 发给目标的请求
+ * @returns 目标的响应, 任何状态码都会返回
+ * @throws 内核拒绝转发或请求超时 (siyuan.client.fetch 的超时为 1 分钟)
+ */
+export async function proxyFetch(siyuan: kernel.ISiyuan, request: IProxyRequest): Promise<IProxyResponse> {
+    const response = await forward(siyuan, request);
+    const body = await response.text();
+    return { status: response.status, headers: targetHeaders(request, response, () => body), body };
+}
+
+/**
+ * 与 proxyFetch 相同, 但以二进制读取目标的响应体, 用于下载文件
+ * @throws 内核拒绝转发或请求超时 (siyuan.client.fetch 的超时为 1 分钟)
+ */
+export async function proxyFetchBinary(siyuan: kernel.ISiyuan, request: IProxyRequest): Promise<IProxyResponse<ArrayBuffer>> {
+    const response = await forward(siyuan, request);
+    const body = await response.arrayBuffer();
+    // eslint-disable-next-line node/prefer-global/buffer
+    return { status: response.status, headers: targetHeaders(request, response, () => Buffer.from(body).toString("utf8")), body };
 }
