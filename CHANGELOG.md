@@ -1,5 +1,25 @@
 # Changelog
 
+## [0.2.0](https://github.com/Zuoqiu-Yingyi/siyuan-plugin-im-bot/compare/v0.1.1...v0.2.0) (2026-10-02)
+
+
+### Miscellaneous
+
+* release `v0.2.0` ([cdd239e](https://github.com/Zuoqiu-Yingyi/siyuan-plugin-im-bot/commit/cdd239e3d9933f7846bc92a648010ecce81464ee))
+* **release:** release v0.2.0 ([947ce01](https://github.com/Zuoqiu-Yingyi/siyuan-plugin-im-bot/commit/947ce01753320a5c95c1effe25b32e34f991a648))
+
+
+### Features
+
+* add online switches, QQ connection state and settings tabs ([58b1629](https://github.com/Zuoqiu-Yingyi/siyuan-plugin-im-bot/commit/58b1629a710e0db9dbe257c8f802ee77b1e548c1))
+* **weixin:** connect a WeChat ClawBot via the iLink Bot API ([3ded399](https://github.com/Zuoqiu-Yingyi/siyuan-plugin-im-bot/commit/3ded39935ea2fb04841b9b6fe07cda047a186b3c))
+* **weixin:** save the media of messages as assets ([82fccc1](https://github.com/Zuoqiu-Yingyi/siyuan-plugin-im-bot/commit/82fccc184d039ceca2ff27d9ece70c39f01306bf))
+
+
+### Bug Fixes
+
+* **qq:** sync the command panels only when their config changes ([4ebb141](https://github.com/Zuoqiu-Yingyi/siyuan-plugin-im-bot/commit/4ebb14193c821ab26902523a3e29142a1a5f037a))
+
 ## [0.1.1](https://github.com/Zuoqiu-Yingyi/siyuan-plugin-im-bot/compare/v0.1.1...v0.1.1) (2026-10-01)
 
 
