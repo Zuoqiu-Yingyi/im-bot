@@ -1,0 +1,19 @@
+src/kernel.ts
+  s_dc742167056c5d::t_63ae1ca4df5224 75-90
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.45-trip",
+  "base_commit_sha": "4ebb14193c821ab26902523a3e29142a1a5f037a",
+  "prompts": {},
+  "sessions": {
+    "s_dc742167056c5d": {
+      "agent_id": {
+        "tool": "chengxiaobang",
+        "id": "s_jhkdvn9hrano",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Yingyi / 颖逸 <49649786+Zuoqiu-Yingyi@users.noreply.github.com>"
+    }
+  }
+}
