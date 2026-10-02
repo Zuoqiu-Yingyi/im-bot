@@ -72,6 +72,23 @@ function resolveWeixinAccount(data: unknown): IWeixinAccount {
     };
 }
 
+/**
+ * 按键名排序的 JSON, 用作比较的键。
+ * 前端经 RPC 传来的配置在 goja 中是 Go map, 键的遍历顺序是随机的, 直接 JSON.stringify 的结果每次都可能不同
+ */
+function sortedJson(value: unknown): string {
+    return JSON.stringify(value, (_key, item: unknown) => {
+        if (!item || typeof item !== "object" || Array.isArray(item)) {
+            return item;
+        }
+        const sorted: Record<string, unknown> = {};
+        for (const key of Object.keys(item).sort()) {
+            sorted[key] = (item as Record<string, unknown>)[key];
+        }
+        return sorted;
+    });
+}
+
 /* 等待 promise 结束 (兑现或拒绝), 最多等待 ms 毫秒 */
 function waitAtMost(promise: Promise<unknown>, ms: number): Promise<void> {
     return new Promise((resolve) => {
@@ -259,7 +276,7 @@ class ImBotKernelPlugin {
             return;
         }
         const panels = this.config.qq.panels;
-        const key = JSON.stringify([credentials, panels]);
+        const key = sortedJson([credentials, panels]);
         if (key === this.panelsSynced) {
             return;
         }
