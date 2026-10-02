@@ -25,10 +25,12 @@
     import MiniItem from "@workspace/components/siyuan/setting/item/MiniItem.svelte";
     import Panel from "@workspace/components/siyuan/setting/panel/Panel.svelte";
     import Panels from "@workspace/components/siyuan/setting/panel/Panels.svelte";
+    import Tabs from "@workspace/components/siyuan/setting/tab/Tabs.svelte";
 
     import { DEFAULT_INBOX_BINDING } from "@/configs/default";
     import { INTENTS } from "@/qq/constants";
 
+    import QQConnection from "./QQConnection.svelte";
     import WeixinAccount from "./WeixinAccount.svelte";
 
     import type { ITab } from "@workspace/components/siyuan/setting/tab";
@@ -64,9 +66,13 @@
 
     const PanelKey = {
         general: "general", // 常规设置
-        inbox: "inbox", // 收集箱设置
         qq: "qq", // QQ 机器人设置
         weixin: "weixin", // 微信机器人设置
+    } as const;
+
+    const TabKey = {
+        bot: "bot", // 机器人
+        inbox: "inbox", // 收集箱
     } as const;
 
     const panels_focus_key = PanelKey.general;
@@ -76,12 +82,6 @@
             text: i18n.settings.generalSettings.title,
             name: i18n.settings.generalSettings.title,
             icon: "#iconSettings",
-        },
-        {
-            key: PanelKey.inbox,
-            text: i18n.settings.inboxSettings.title,
-            name: i18n.settings.inboxSettings.title,
-            icon: "#iconInbox",
         },
         {
             key: PanelKey.qq,
@@ -97,6 +97,37 @@
         },
     ] as const satisfies ITab[];
 
+    /* QQ 与微信机器人面板中的页签: 机器人本身的设置与收集箱的设置 */
+    const tabs_focus_key = TabKey.bot;
+    const qqTabs = [
+        {
+            key: TabKey.bot,
+            text: i18n.settings.qqBotSettings.tabs.bot,
+            name: i18n.settings.qqBotSettings.tabs.bot,
+            icon: "⚙",
+        },
+        {
+            key: TabKey.inbox,
+            text: i18n.settings.qqBotSettings.tabs.inbox,
+            name: i18n.settings.qqBotSettings.tabs.inbox,
+            icon: "📥",
+        },
+    ] as const satisfies ITab[];
+    const weixinTabs = [
+        {
+            key: TabKey.bot,
+            text: i18n.settings.weixinBotSettings.tabs.bot,
+            name: i18n.settings.weixinBotSettings.tabs.bot,
+            icon: "⚙",
+        },
+        {
+            key: TabKey.inbox,
+            text: i18n.settings.weixinBotSettings.tabs.inbox,
+            name: i18n.settings.weixinBotSettings.tabs.inbox,
+            icon: "📥",
+        },
+    ] as const satisfies ITab[];
+
     const intents = Object.keys(INTENTS) as TIntent[];
     const intentsTitle = `${i18n.settings.qqBotSettings.intents.title}<div class="b3-label__text">${i18n.settings.qqBotSettings.intents.description}</div>`;
 
@@ -104,7 +135,10 @@
     // svelte-ignore state_referenced_locally
     let device = $state(config.qq.device); // 运行 QQ 机器人的设备 ID
 
-    const bindingsTitle = `${i18n.settings.inboxSettings.bindings.title}<div class="b3-label__text">${i18n.settings.inboxSettings.bindings.description}</div>`;
+    // svelte-ignore state_referenced_locally
+    let weixinOnline = $state(config.weixin.online); // 内核插件已应用的微信上线开关, 变化后微信账号重新获取接收状态
+
+    const bindingsTitle = `${i18n.settings.qqBotSettings.inboxBindings.title}<div class="b3-label__text">${i18n.settings.qqBotSettings.inboxBindings.description}</div>`;
 
     /* 收集箱绑定; 旧版配置中的绑定没有 enabled、reply 与 notify, 按默认值补全 */
     // svelte-ignore state_referenced_locally
@@ -149,342 +183,425 @@
             </Item>
         </Panel>
 
-        <!-- 收集箱设置面板 -->
+        <!-- QQ 机器人设置面板: 机器人与收集箱两个页签 -->
         <Panel display={panels[1].key === focusPanel}>
-            <!-- 绑定群聊: 不能放进 Item 的 label 中, 否则点击空白处会切换第一个开关 -->
-            <div class="b3-label">
-                <!-- eslint-disable-next-line svelte/no-at-html-tags -->
-                {@html bindingsTitle}
-                {#each bindings as binding, index (binding)}
-                    <div class="fn__hr"></div>
-                    <div class="binding">
-                        <div class="binding__fields">
-                            <label class="binding__field">
-                                <span>{i18n.settings.inboxSettings.bindings.group}</span>
+            <Tabs
+                focus={tabs_focus_key}
+                tabs={qqTabs}
+            >
+                {#snippet children(focusTab)}
+                    <!-- 标签页 1 - 机器人 -->
+                    <div
+                        class:fn__none={qqTabs[0].key !== focusTab}
+                        data-type={qqTabs[0].name}
+                    >
+                        <!-- 上线 -->
+                        <Item
+                            text={i18n.settings.qqBotSettings.online.description}
+                            title={i18n.settings.qqBotSettings.online.title}
+                        >
+                            {#snippet input()}
                                 <Input
-                                    block={true}
                                     onChanged={async (e) => {
-                                        binding.group = e.value.trim();
-                                        await saveBindings();
+                                        config.qq.online = e.value;
+                                        await updated();
                                     }}
-                                    placeholder={i18n.settings.inboxSettings.bindings.groupPlaceholder}
-                                    settingKey="group"
-                                    settingValue={binding.group}
-                                    type={ItemType.text}
+                                    settingKey="online"
+                                    settingValue={config.qq.online}
+                                    type={ItemType.checkbox}
                                 />
-                            </label>
-                            <label class="binding__field">
-                                <span>{i18n.settings.inboxSettings.bindings.doc}</span>
-                                <Input
-                                    block={true}
-                                    onChanged={async (e) => {
-                                        binding.doc = e.value.trim();
-                                        await saveBindings();
-                                    }}
-                                    placeholder={i18n.settings.inboxSettings.bindings.docPlaceholder}
-                                    settingKey="doc"
-                                    settingValue={binding.doc}
-                                    type={ItemType.text}
-                                />
-                            </label>
+                            {/snippet}
+                        </Item>
+
+                        <!-- 连接状态 -->
+                        <div class="b3-label">
+                            {i18n.settings.qqBotSettings.connection.title}
+                            <div class="b3-label__text">{i18n.settings.qqBotSettings.connection.description}</div>
+                            <div class="fn__hr"></div>
+                            <QQConnection {plugin} />
                         </div>
-                        <div class="fn__flex binding__switches">
-                            <label class="fn__flex">
-                                <span class="binding__switch">{i18n.settings.inboxSettings.bindings.enabled}</span>
-                                <span class="fn__space"></span>
+
+                        <!-- AppID -->
+                        <Item
+                            block={true}
+                            text={i18n.settings.qqBotSettings.appid.description}
+                            title={i18n.settings.qqBotSettings.appid.title}
+                        >
+                            {#snippet input()}
+                                <Input
+                                    block={true}
+                                    onChanged={async (e) => {
+                                        config.qq.appid = e.value;
+                                        await updated();
+                                    }}
+                                    placeholder="QQ_BOT_APPID"
+                                    settingKey="appid"
+                                    settingValue={config.qq.appid}
+                                    type={ItemType.text}
+                                />
+                            {/snippet}
+                        </Item>
+
+                        <!-- AppSecret -->
+                        <Item
+                            block={true}
+                            text={i18n.settings.qqBotSettings.secret.description}
+                            title={i18n.settings.qqBotSettings.secret.title}
+                        >
+                            {#snippet input()}
+                                <Input
+                                    block={true}
+                                    onChanged={async (e) => {
+                                        config.qq.secret = e.value;
+                                        await updated();
+                                    }}
+                                    placeholder="QQ_BOT_SECRET"
+                                    settingKey="secret"
+                                    settingValue={config.qq.secret}
+                                    type={ItemType.text}
+                                />
+                            {/snippet}
+                        </Item>
+
+                        <!-- 订阅事件 -->
+                        <Group title={intentsTitle}>
+                            {#each intents as intent (intent)}
+                                <MiniItem
+                                    marginRight="1em"
+                                    minWidth="18em"
+                                >
+                                    {#snippet title()}
+                                        {i18n.settings.qqBotSettings.intents.items[intent]}
+                                        <div class="b3-label__text">
+                                            <code class="fn__code">{intent}</code>
+                                        </div>
+                                    {/snippet}
+                                    {#snippet input()}
+                                        <Input
+                                            onChanged={async (e) => {
+                                                config.qq.intents[intent] = e.value;
+                                                await updated();
+                                            }}
+                                            settingKey={intent}
+                                            settingValue={config.qq.intents[intent]}
+                                            type={ItemType.checkbox}
+                                        />
+                                    {/snippet}
+                                </MiniItem>
+                            {/each}
+                        </Group>
+
+                        <!-- 事件日志 -->
+                        <Item
+                            text={i18n.settings.qqBotSettings.eventLog.description}
+                            title={i18n.settings.qqBotSettings.eventLog.title}
+                        >
+                            {#snippet input()}
                                 <Input
                                     onChanged={async (e) => {
-                                        binding.enabled = e.value;
-                                        await saveBindings();
+                                        config.qq.eventLog = e.value;
+                                        await updated();
                                     }}
-                                    settingKey="enabled"
-                                    settingValue={binding.enabled}
+                                    settingKey="eventLog"
+                                    settingValue={config.qq.eventLog}
                                     type={ItemType.checkbox}
                                 />
-                            </label>
-                            <label class="fn__flex">
-                                <span class="binding__switch">{i18n.settings.inboxSettings.bindings.reply}</span>
-                                <span class="fn__space"></span>
+                            {/snippet}
+                        </Item>
+
+                        <!-- 运行设备 -->
+                        <Item title={i18n.settings.qqBotSettings.device.title}>
+                            {#snippet textSlot()}
+                                {i18n.settings.qqBotSettings.device.description}
+                                <br />
+                                {i18n.settings.qqBotSettings.device.current} <code class="fn__code">{currentDevice}</code>
+                                <br />
+                                {#if device}
+                                    {i18n.settings.qqBotSettings.device.assigned} <code class="fn__code">{device}</code>
+                                {:else}
+                                    {i18n.settings.qqBotSettings.device.unassigned}
+                                {/if}
+                            {/snippet}
+                            {#snippet input()}
                                 <Input
                                     onChanged={async (e) => {
-                                        binding.reply = e.value;
-                                        await saveBindings();
+                                        device = e.value ? currentDevice : "";
+                                        config.qq.device = device;
+                                        await updated();
                                     }}
-                                    settingKey="reply"
-                                    settingValue={binding.reply}
+                                    settingKey="device"
+                                    settingValue={device === currentDevice}
                                     type={ItemType.checkbox}
                                 />
-                            </label>
-                            <label class="fn__flex">
-                                <span class="binding__switch">{i18n.settings.inboxSettings.bindings.notify}</span>
-                                <span class="fn__space"></span>
-                                <Input
-                                    onChanged={async (e) => {
-                                        binding.notify = e.value;
-                                        await saveBindings();
-                                    }}
-                                    settingKey="notify"
-                                    settingValue={binding.notify}
-                                    type={ItemType.checkbox}
-                                />
-                            </label>
+                            {/snippet}
+                        </Item>
+                    </div>
+
+                    <!-- 标签页 2 - 收集箱 -->
+                    <div
+                        class:fn__none={qqTabs[1].key !== focusTab}
+                        data-type={qqTabs[1].name}
+                    >
+                        <!-- 绑定群聊: 不能放进 Item 的 label 中, 否则点击空白处会切换第一个开关 -->
+                        <div class="b3-label">
+                            <!-- eslint-disable-next-line svelte/no-at-html-tags -->
+                            {@html bindingsTitle}
+                            {#each bindings as binding, index (binding)}
+                                <div class="fn__hr"></div>
+                                <div class="binding">
+                                    <div class="binding__fields">
+                                        <label class="binding__field">
+                                            <span>{i18n.settings.qqBotSettings.inboxBindings.group}</span>
+                                            <Input
+                                                block={true}
+                                                onChanged={async (e) => {
+                                                    binding.group = e.value.trim();
+                                                    await saveBindings();
+                                                }}
+                                                placeholder={i18n.settings.qqBotSettings.inboxBindings.groupPlaceholder}
+                                                settingKey="group"
+                                                settingValue={binding.group}
+                                                type={ItemType.text}
+                                            />
+                                        </label>
+                                        <label class="binding__field">
+                                            <span>{i18n.settings.qqBotSettings.inboxBindings.doc}</span>
+                                            <Input
+                                                block={true}
+                                                onChanged={async (e) => {
+                                                    binding.doc = e.value.trim();
+                                                    await saveBindings();
+                                                }}
+                                                placeholder={i18n.settings.qqBotSettings.inboxBindings.docPlaceholder}
+                                                settingKey="doc"
+                                                settingValue={binding.doc}
+                                                type={ItemType.text}
+                                            />
+                                        </label>
+                                    </div>
+                                    <div class="fn__flex binding__switches">
+                                        <label class="fn__flex">
+                                            <span class="binding__switch">{i18n.settings.qqBotSettings.inboxBindings.enabled}</span>
+                                            <span class="fn__space"></span>
+                                            <Input
+                                                onChanged={async (e) => {
+                                                    binding.enabled = e.value;
+                                                    await saveBindings();
+                                                }}
+                                                settingKey="enabled"
+                                                settingValue={binding.enabled}
+                                                type={ItemType.checkbox}
+                                            />
+                                        </label>
+                                        <label class="fn__flex">
+                                            <span class="binding__switch">{i18n.settings.qqBotSettings.inboxBindings.reply}</span>
+                                            <span class="fn__space"></span>
+                                            <Input
+                                                onChanged={async (e) => {
+                                                    binding.reply = e.value;
+                                                    await saveBindings();
+                                                }}
+                                                settingKey="reply"
+                                                settingValue={binding.reply}
+                                                type={ItemType.checkbox}
+                                            />
+                                        </label>
+                                        <label class="fn__flex">
+                                            <span class="binding__switch">{i18n.settings.qqBotSettings.inboxBindings.notify}</span>
+                                            <span class="fn__space"></span>
+                                            <Input
+                                                onChanged={async (e) => {
+                                                    binding.notify = e.value;
+                                                    await saveBindings();
+                                                }}
+                                                settingKey="notify"
+                                                settingValue={binding.notify}
+                                                type={ItemType.checkbox}
+                                            />
+                                        </label>
+                                        <button
+                                            class="b3-button b3-button--remove binding__remove"
+                                            onclick={() => removeBinding(index)}
+                                        >
+                                            {i18n.settings.qqBotSettings.inboxBindings.remove}
+                                        </button>
+                                    </div>
+                                </div>
+                            {/each}
+                            <div class="fn__hr"></div>
                             <button
-                                class="b3-button b3-button--remove binding__remove"
-                                onclick={() => removeBinding(index)}
+                                class="b3-button b3-button--outline"
+                                onclick={addBinding}
                             >
-                                {i18n.settings.inboxSettings.bindings.remove}
+                                {i18n.settings.qqBotSettings.inboxBindings.add}
                             </button>
                         </div>
+
+                        <!-- 下载资源文件 -->
+                        <Item
+                            text={i18n.settings.qqBotSettings.inboxDownloadAssets.description}
+                            title={i18n.settings.qqBotSettings.inboxDownloadAssets.title}
+                        >
+                            {#snippet input()}
+                                <Input
+                                    onChanged={async (e) => {
+                                        config.qq.inbox.downloadAssets = e.value;
+                                        await updated();
+                                    }}
+                                    settingKey="downloadAssets"
+                                    settingValue={config.qq.inbox.downloadAssets}
+                                    type={ItemType.checkbox}
+                                />
+                            {/snippet}
+                        </Item>
                     </div>
-                {/each}
-                <div class="fn__hr"></div>
-                <button
-                    class="b3-button b3-button--outline"
-                    onclick={addBinding}
-                >
-                    {i18n.settings.inboxSettings.bindings.add}
-                </button>
-            </div>
-
-            <!-- 下载资源文件 -->
-            <Item
-                text={i18n.settings.inboxSettings.downloadAssets.description}
-                title={i18n.settings.inboxSettings.downloadAssets.title}
-            >
-                {#snippet input()}
-                    <Input
-                        onChanged={async (e) => {
-                            config.qq.inbox.downloadAssets = e.value;
-                            await updated();
-                        }}
-                        settingKey="downloadAssets"
-                        settingValue={config.qq.inbox.downloadAssets}
-                        type={ItemType.checkbox}
-                    />
                 {/snippet}
-            </Item>
+            </Tabs>
         </Panel>
 
-        <!-- QQ 机器人设置面板 -->
+        <!-- 微信机器人设置面板: 机器人与收集箱两个页签 -->
         <Panel display={panels[2].key === focusPanel}>
-            <!-- AppID -->
-            <Item
-                block={true}
-                text={i18n.settings.qqBotSettings.appid.description}
-                title={i18n.settings.qqBotSettings.appid.title}
+            <Tabs
+                focus={tabs_focus_key}
+                tabs={weixinTabs}
             >
-                {#snippet input()}
-                    <Input
-                        block={true}
-                        onChanged={async (e) => {
-                            config.qq.appid = e.value;
-                            await updated();
-                        }}
-                        placeholder="QQ_BOT_APPID"
-                        settingKey="appid"
-                        settingValue={config.qq.appid}
-                        type={ItemType.text}
-                    />
-                {/snippet}
-            </Item>
-
-            <!-- AppSecret -->
-            <Item
-                block={true}
-                text={i18n.settings.qqBotSettings.secret.description}
-                title={i18n.settings.qqBotSettings.secret.title}
-            >
-                {#snippet input()}
-                    <Input
-                        block={true}
-                        onChanged={async (e) => {
-                            config.qq.secret = e.value;
-                            await updated();
-                        }}
-                        placeholder="QQ_BOT_SECRET"
-                        settingKey="secret"
-                        settingValue={config.qq.secret}
-                        type={ItemType.text}
-                    />
-                {/snippet}
-            </Item>
-
-            <!-- 订阅事件 -->
-            <Group title={intentsTitle}>
-                {#each intents as intent (intent)}
-                    <MiniItem
-                        marginRight="1em"
-                        minWidth="18em"
+                {#snippet children(focusTab)}
+                    <!-- 标签页 1 - 机器人 -->
+                    <div
+                        class:fn__none={weixinTabs[0].key !== focusTab}
+                        data-type={weixinTabs[0].name}
                     >
-                        {#snippet title()}
-                            {i18n.settings.qqBotSettings.intents.items[intent]}
-                            <div class="b3-label__text">
-                                <code class="fn__code">{intent}</code>
-                            </div>
-                        {/snippet}
-                        {#snippet input()}
-                            <Input
-                                onChanged={async (e) => {
-                                    config.qq.intents[intent] = e.value;
-                                    await updated();
-                                }}
-                                settingKey={intent}
-                                settingValue={config.qq.intents[intent]}
-                                type={ItemType.checkbox}
+                        <!-- 上线 -->
+                        <Item
+                            text={i18n.settings.weixinBotSettings.online.description}
+                            title={i18n.settings.weixinBotSettings.online.title}
+                        >
+                            {#snippet input()}
+                                <Input
+                                    onChanged={async (e) => {
+                                        config.weixin.online = e.value;
+                                        await updated();
+                                        weixinOnline = e.value; // 内核插件应用配置后, 微信账号再重新获取接收状态
+                                    }}
+                                    settingKey="weixinOnline"
+                                    settingValue={config.weixin.online}
+                                    type={ItemType.checkbox}
+                                />
+                            {/snippet}
+                        </Item>
+
+                        <!-- 微信账号: 含多个控件, 不能放进 Item 的 label 中 -->
+                        <div class="b3-label">
+                            {i18n.settings.weixinBotSettings.account.title}
+                            <div class="b3-label__text">{i18n.settings.weixinBotSettings.account.description}</div>
+                            <div class="fn__hr"></div>
+                            <WeixinAccount
+                                online={weixinOnline}
+                                {plugin}
                             />
-                        {/snippet}
-                    </MiniItem>
-                {/each}
-            </Group>
+                        </div>
 
-            <!-- 事件日志 -->
-            <Item
-                text={i18n.settings.qqBotSettings.eventLog.description}
-                title={i18n.settings.qqBotSettings.eventLog.title}
-            >
-                {#snippet input()}
-                    <Input
-                        onChanged={async (e) => {
-                            config.qq.eventLog = e.value;
-                            await updated();
-                        }}
-                        settingKey="eventLog"
-                        settingValue={config.qq.eventLog}
-                        type={ItemType.checkbox}
-                    />
-                {/snippet}
-            </Item>
+                        <!-- 事件日志 -->
+                        <Item
+                            text={i18n.settings.weixinBotSettings.eventLog.description}
+                            title={i18n.settings.weixinBotSettings.eventLog.title}
+                        >
+                            {#snippet input()}
+                                <Input
+                                    onChanged={async (e) => {
+                                        config.weixin.eventLog = e.value;
+                                        await updated();
+                                    }}
+                                    settingKey="weixinEventLog"
+                                    settingValue={config.weixin.eventLog}
+                                    type={ItemType.checkbox}
+                                />
+                            {/snippet}
+                        </Item>
+                    </div>
 
-            <!-- 运行设备 -->
-            <Item title={i18n.settings.qqBotSettings.device.title}>
-                {#snippet textSlot()}
-                    {i18n.settings.qqBotSettings.device.description}
-                    <br />
-                    {i18n.settings.qqBotSettings.device.current} <code class="fn__code">{currentDevice}</code>
-                    <br />
-                    {#if device}
-                        {i18n.settings.qqBotSettings.device.assigned} <code class="fn__code">{device}</code>
-                    {:else}
-                        {i18n.settings.qqBotSettings.device.unassigned}
-                    {/if}
-                {/snippet}
-                {#snippet input()}
-                    <Input
-                        onChanged={async (e) => {
-                            device = e.value ? currentDevice : "";
-                            config.qq.device = device;
-                            await updated();
-                        }}
-                        settingKey="device"
-                        settingValue={device === currentDevice}
-                        type={ItemType.checkbox}
-                    />
-                {/snippet}
-            </Item>
-        </Panel>
+                    <!-- 标签页 2 - 收集箱 -->
+                    <div
+                        class:fn__none={weixinTabs[1].key !== focusTab}
+                        data-type={weixinTabs[1].name}
+                    >
+                        <!-- 收集箱文档 -->
+                        <Item
+                            block={true}
+                            text={i18n.settings.weixinBotSettings.inboxDoc.description}
+                            title={i18n.settings.weixinBotSettings.inboxDoc.title}
+                        >
+                            {#snippet input()}
+                                <Input
+                                    block={true}
+                                    onChanged={async (e) => {
+                                        config.weixin.inbox.doc = e.value.trim();
+                                        await updated();
+                                    }}
+                                    placeholder={i18n.settings.weixinBotSettings.inboxDoc.placeholder}
+                                    settingKey="weixinInboxDoc"
+                                    settingValue={config.weixin.inbox.doc}
+                                    type={ItemType.text}
+                                />
+                            {/snippet}
+                        </Item>
 
-        <!-- 微信机器人设置面板 -->
-        <Panel display={panels[3].key === focusPanel}>
-            <!-- 微信账号: 含多个控件, 不能放进 Item 的 label 中 -->
-            <div class="b3-label">
-                {i18n.settings.weixinBotSettings.account.title}
-                <div class="b3-label__text">{i18n.settings.weixinBotSettings.account.description}</div>
-                <div class="fn__hr"></div>
-                <WeixinAccount {plugin} />
-            </div>
+                        <!-- 写入收集箱 -->
+                        <Item
+                            text={i18n.settings.weixinBotSettings.inboxEnabled.description}
+                            title={i18n.settings.weixinBotSettings.inboxEnabled.title}
+                        >
+                            {#snippet input()}
+                                <Input
+                                    onChanged={async (e) => {
+                                        config.weixin.inbox.enabled = e.value;
+                                        await updated();
+                                    }}
+                                    settingKey="weixinInboxEnabled"
+                                    settingValue={config.weixin.inbox.enabled}
+                                    type={ItemType.checkbox}
+                                />
+                            {/snippet}
+                        </Item>
 
-            <!-- 收集箱文档 -->
-            <Item
-                block={true}
-                text={i18n.settings.weixinBotSettings.inboxDoc.description}
-                title={i18n.settings.weixinBotSettings.inboxDoc.title}
-            >
-                {#snippet input()}
-                    <Input
-                        block={true}
-                        onChanged={async (e) => {
-                            config.weixin.inbox.doc = e.value.trim();
-                            await updated();
-                        }}
-                        placeholder={i18n.settings.weixinBotSettings.inboxDoc.placeholder}
-                        settingKey="weixinInboxDoc"
-                        settingValue={config.weixin.inbox.doc}
-                        type={ItemType.text}
-                    />
-                {/snippet}
-            </Item>
+                        <!-- 回复块链接 -->
+                        <Item
+                            text={i18n.settings.weixinBotSettings.inboxReply.description}
+                            title={i18n.settings.weixinBotSettings.inboxReply.title}
+                        >
+                            {#snippet input()}
+                                <Input
+                                    onChanged={async (e) => {
+                                        config.weixin.inbox.reply = e.value;
+                                        await updated();
+                                    }}
+                                    settingKey="weixinInboxReply"
+                                    settingValue={config.weixin.inbox.reply}
+                                    type={ItemType.checkbox}
+                                />
+                            {/snippet}
+                        </Item>
 
-            <!-- 写入收集箱 -->
-            <Item
-                text={i18n.settings.weixinBotSettings.inboxEnabled.description}
-                title={i18n.settings.weixinBotSettings.inboxEnabled.title}
-            >
-                {#snippet input()}
-                    <Input
-                        onChanged={async (e) => {
-                            config.weixin.inbox.enabled = e.value;
-                            await updated();
-                        }}
-                        settingKey="weixinInboxEnabled"
-                        settingValue={config.weixin.inbox.enabled}
-                        type={ItemType.checkbox}
-                    />
+                        <!-- 下载资源文件 -->
+                        <Item
+                            text={i18n.settings.weixinBotSettings.inboxDownloadAssets.description}
+                            title={i18n.settings.weixinBotSettings.inboxDownloadAssets.title}
+                        >
+                            {#snippet input()}
+                                <Input
+                                    onChanged={async (e) => {
+                                        config.weixin.inbox.downloadAssets = e.value;
+                                        await updated();
+                                    }}
+                                    settingKey="weixinInboxDownloadAssets"
+                                    settingValue={config.weixin.inbox.downloadAssets}
+                                    type={ItemType.checkbox}
+                                />
+                            {/snippet}
+                        </Item>
+                    </div>
                 {/snippet}
-            </Item>
-
-            <!-- 回复块链接 -->
-            <Item
-                text={i18n.settings.weixinBotSettings.inboxReply.description}
-                title={i18n.settings.weixinBotSettings.inboxReply.title}
-            >
-                {#snippet input()}
-                    <Input
-                        onChanged={async (e) => {
-                            config.weixin.inbox.reply = e.value;
-                            await updated();
-                        }}
-                        settingKey="weixinInboxReply"
-                        settingValue={config.weixin.inbox.reply}
-                        type={ItemType.checkbox}
-                    />
-                {/snippet}
-            </Item>
-
-            <!-- 下载资源文件 -->
-            <Item
-                text={i18n.settings.weixinBotSettings.inboxDownloadAssets.description}
-                title={i18n.settings.weixinBotSettings.inboxDownloadAssets.title}
-            >
-                {#snippet input()}
-                    <Input
-                        onChanged={async (e) => {
-                            config.weixin.inbox.downloadAssets = e.value;
-                            await updated();
-                        }}
-                        settingKey="weixinInboxDownloadAssets"
-                        settingValue={config.weixin.inbox.downloadAssets}
-                        type={ItemType.checkbox}
-                    />
-                {/snippet}
-            </Item>
-
-            <!-- 事件日志 -->
-            <Item
-                text={i18n.settings.weixinBotSettings.eventLog.description}
-                title={i18n.settings.weixinBotSettings.eventLog.title}
-            >
-                {#snippet input()}
-                    <Input
-                        onChanged={async (e) => {
-                            config.weixin.eventLog = e.value;
-                            await updated();
-                        }}
-                        settingKey="weixinEventLog"
-                        settingValue={config.weixin.eventLog}
-                        type={ItemType.checkbox}
-                    />
-                {/snippet}
-            </Item>
+            </Tabs>
         </Panel>
     {/snippet}
 </Panels>

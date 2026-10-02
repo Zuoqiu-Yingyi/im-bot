@@ -29,6 +29,28 @@ export interface IHelloData {
     heartbeat_interval: number; // 心跳间隔 (ms)
 }
 
+/* 本设备上 QQ 机器人的连接状态 */
+export type TQQConnectionStatus
+    = | "connected" // 已连接: 收到了 READY 或 RESUMED
+        | "connecting" // 正在获取凭证与接入点, 或等待鉴权
+        | "failed" // 遇到不能自动恢复的错误 (凭证错误、没有权限的事件类别等), 已停止连接
+        | "no-intents" // 没有订阅任何事件, 不连接
+        | "offline" // 上线开关已关闭
+        | "other-device" // 只在其他设备上运行
+        | "reconnecting" // 连接已断开, 等待重新连接
+        | "stopped" // 没有运行
+        | "unconfigured"; // 没有填写 AppID 或 AppSecret, 不连接
+
+/* RPC qq-get-state 的返回值 */
+export interface IQQConnectionState {
+    status: TQQConnectionStatus;
+    since?: string; // 进入该状态的时间 (ISO 8601)
+    username?: string; // connected: 机器人的名称
+    error?: string; // reconnecting 与 failed: 断开或停止的原因
+    retryAt?: string; // reconnecting: 下次连接的时间 (ISO 8601)
+    device?: string; // other-device: 运行 QQ 机器人的设备 ID
+}
+
 /* op=0 (DISPATCH), t=READY */
 export interface IReadyData {
     version: number;

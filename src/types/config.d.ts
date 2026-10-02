@@ -23,6 +23,7 @@ export interface IConfig {
 
 /* 微信机器人 (ClawBot); 登录信息不在配置中, 由内核插件保存在 weixin.json 中 */
 export interface IWeixinBotConfig {
+    online: boolean; // 是否上线: 关闭时所有设备都不接收消息 (下线)
     eventLog: boolean; // 事件日志: 是否把收到的消息保存到 logs/weixin/messages/
     inbox: IWeixinInboxConfig; // 思源收集箱
 }
@@ -37,6 +38,7 @@ export interface IWeixinInboxConfig {
 export interface IQQBotConfig {
     appid: string; // QQ_BOT_APPID
     secret: string; // QQ_BOT_SECRET
+    online: boolean; // 是否上线: 关闭时所有设备都不连接网关 (下线)
     intents: Record<TIntent, boolean>; // QQ_BOT_INTENTS: 各类事件是否订阅
     eventLog: boolean; // 事件日志: 是否把网关推送的事件保存到 logs/events/
     device: string; // 运行 QQ 机器人的设备 ID, 为空时每台设备都运行

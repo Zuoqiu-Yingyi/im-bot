@@ -92,8 +92,40 @@
             },
             "title": "General"
         },
-        "inboxSettings": {
-            "bindings": {
+        "qqBotSettings": {
+            "appid": {
+                "description": "AppID of the bot on the QQ Open Platform",
+                "title": "AppID <code class=\"fn__code\">QQ_BOT_APPID</code>"
+            },
+            "connection": {
+                "connected": "Connected since {{1}}",
+                "connecting": "Connecting...",
+                "description": "The connection of the bot to QQ on this device, refreshed automatically",
+                "failed": "Stopped connecting. Check the AppID, the AppSecret and the subscribed events; the bot connects again after a change",
+                "loading": "Loading...",
+                "noIntents": "Not connected: no event is subscribed",
+                "offline": "Offline. Turn on Online to connect",
+                "otherDevice": "Runs on device {{1}} only, this device does not connect",
+                "reason": "Reason",
+                "reconnecting": "Disconnected, connecting again at {{1}}",
+                "status": "Status",
+                "stopped": "Not connected",
+                "title": "Connection",
+                "unconfigured": "Not connected: the AppID or the AppSecret is empty",
+                "username": "Bot"
+            },
+            "device": {
+                "assigned": "Device running the bot",
+                "current": "This device",
+                "description": "When on, only this device connects to the bot",
+                "title": "Run on this device only",
+                "unassigned": "No device is set, every device connects"
+            },
+            "eventLog": {
+                "description": "Save received events in the workspace for troubleshooting",
+                "title": "Event log"
+            },
+            "inboxBindings": {
                 "add": "Add a binding",
                 "description": "Write group messages into inbox documents; a group can be bound to several documents",
                 "doc": "Inbox document ID",
@@ -106,27 +138,9 @@
                 "reply": "Reply with the block link",
                 "title": "Bound groups"
             },
-            "downloadAssets": {
+            "inboxDownloadAssets": {
                 "description": "Download the images, voice messages, videos and files of messages into the workspace",
                 "title": "Download assets"
-            },
-            "title": "Inbox"
-        },
-        "qqBotSettings": {
-            "appid": {
-                "description": "AppID of the bot on the QQ Open Platform",
-                "title": "AppID <code class=\"fn__code\">QQ_BOT_APPID</code>"
-            },
-            "device": {
-                "assigned": "Device running the bot",
-                "current": "This device",
-                "description": "When on, only this device connects to the bot",
-                "title": "Run on this device only",
-                "unassigned": "No device is set, every device connects"
-            },
-            "eventLog": {
-                "description": "Save received events in the workspace for troubleshooting",
-                "title": "Event log"
             },
             "intents": {
                 "description": "Event categories the bot receives; the bot reconnects after a change",
@@ -145,9 +159,17 @@
                 },
                 "title": "Subscribed events <code class=\"fn__code\">QQ_BOT_INTENTS</code>"
             },
+            "online": {
+                "description": "When on, the bot connects to QQ, records the messages of bound groups and answers commands; when off, it disconnects",
+                "title": "Online"
+            },
             "secret": {
                 "description": "AppSecret of the bot on the QQ Open Platform, stored in plain text and synced with your data",
                 "title": "AppSecret <code class=\"fn__code\">QQ_BOT_SECRET</code>"
+            },
+            "tabs": {
+                "bot": "Bot",
+                "inbox": "Inbox"
             },
             "title": "QQ Bot"
         },
@@ -169,6 +191,7 @@
                 "needVerifyCode": "Enter the number shown in WeChat on your phone",
                 "notLoggedIn": "Not logged in",
                 "notRunning": "This device has not started receiving messages yet",
+                "offline": "Offline. Turn on Online to receive messages",
                 "otherDevice": "Another device receives the messages. Scan the QR code again on this device to receive them here",
                 "qrcode": "WeChat login QR code",
                 "qrcodeExpired": "The QR code expired, scan a new one",
@@ -204,6 +227,14 @@
             "inboxReply": {
                 "description": "Reply in WeChat with the block link of the message super block after writing it",
                 "title": "Reply with the block link"
+            },
+            "online": {
+                "description": "When on, the device where you scanned the QR code receives the messages sent to the ClawBot; when off, it stops receiving them",
+                "title": "Online"
+            },
+            "tabs": {
+                "bot": "Bot",
+                "inbox": "Inbox"
             },
             "title": "WeChat Bot"
         }

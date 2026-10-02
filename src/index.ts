@@ -33,7 +33,7 @@ import Settings from "./components/Settings.svelte";
 import type { ISiyuanGlobal } from "@workspace/types/siyuan";
 
 import type { IConfig } from "./types/config";
-import type { IApiResponse } from "./types/qq";
+import type { IApiResponse, IQQConnectionState } from "./types/qq";
 import type { IBotUsers } from "./types/users";
 import type { IWeixinAccountState, IWeixinLoginState } from "./types/weixin";
 import type { I18N } from "./utils/i18n";
@@ -173,15 +173,22 @@ export default class ImBotPlugin extends siyuan.Plugin {
     public override onunload(): void {}
 
     public override openSetting(): void {
+        let settings: ReturnType<typeof mount> | undefined;
         const dialog = new siyuan.Dialog({
             title: `${this.displayName} <code class="fn__code">${this.name}</code>`,
             content: `<div id="${this.SETTINGS_DIALOG_ID}" class="fn__flex-column" />`,
             width: FLAG_MOBILE ? "92vw" : "720px",
             height: FLAG_MOBILE ? undefined : "640px",
+            // 关闭对话框时卸载设置面板, 停止其中的定时刷新
+            destroyCallback: () => {
+                if (settings) {
+                    void unmount(settings);
+                }
+            },
         });
         const target = dialog.element.querySelector(`#${this.SETTINGS_DIALOG_ID}`);
         if (target) {
-            mount(Settings, {
+            settings = mount(Settings, {
                 target,
                 props: {
                     config: this.config,
@@ -265,6 +272,14 @@ export default class ImBotPlugin extends siyuan.Plugin {
      */
     public async callQQApi(url: string, method: string, body?: unknown): Promise<IApiResponse> {
         return this.kernel.rpc.call[CONSTANTS.KERNEL_RPC_METHOD.CALL_QQ_API]?.(url, method, body);
+    }
+
+    /**
+     * 通过内核插件的 RPC qq-get-state, 获取本设备上 QQ 机器人的连接状态
+     * @throws 内核插件没有运行时以 JSON-RPC 错误拒绝
+     */
+    public async getQQConnectionState(): Promise<IQQConnectionState | null> {
+        return this.kernel.rpc.call[CONSTANTS.KERNEL_RPC_METHOD.QQ_GET_STATE]?.() ?? null;
     }
 
     /**

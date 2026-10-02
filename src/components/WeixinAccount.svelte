@@ -24,12 +24,13 @@
     import type Plugin from "@/index";
 
     export interface IProps {
+        online: boolean; // 内核插件已应用的上线开关, 变化后重新获取登录信息以显示新的接收状态
         plugin: InstanceType<typeof Plugin>; // 插件实例
     }
 </script>
 
 <script lang="ts">
-    import { onDestroy, onMount } from "svelte";
+    import { onDestroy, onMount, untrack } from "svelte";
     import { renderSVG } from "uqr";
 
     import { preventDefault } from "@workspace/utils/svelte/event";
@@ -38,7 +39,7 @@
 
     import type { IWeixinAccountState, IWeixinLoginState, TWeixinLoginStatus } from "@/types/weixin";
 
-    const { plugin }: IProps = $props();
+    const { online, plugin }: IProps = $props();
 
     // svelte-ignore state_referenced_locally
     const i18n = plugin.i18n.settings.weixinBotSettings.account;
@@ -175,8 +176,14 @@
         );
     }
 
+    // 挂载时以及上线开关变化后获取登录信息, 其中的 running 是内核插件当前是否在接收消息
+    $effect(() => {
+        void online;
+        untrack(() => void loadAccount());
+    });
+
     onMount(() => {
-        void loadAccount().then(poll);
+        void poll();
     });
 
     // 关闭设置面板时不取消登录: 已扫码的登录仍会由内核插件在后台完成, 再次打开设置面板时继续显示
@@ -207,6 +214,8 @@
             <dd>
                 {#if account.expiredAt}
                     <span class="ft__error">{fill(i18n.expired, formatTime(account.expiredAt))}</span>
+                {:else if !online}
+                    {i18n.offline}
                 {:else if account.device !== currentDevice}
                     {i18n.otherDevice}
                 {:else if account.running}
