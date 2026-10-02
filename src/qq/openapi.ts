@@ -13,6 +13,8 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+import { parseJson, proxyFetch } from "@/utils/proxy";
+
 import {
     ACCESS_TOKEN_REFRESH_WINDOW,
     ACCESS_TOKEN_TOO_MANY_REQUESTS,
@@ -20,7 +22,6 @@ import {
     API_BASE_URL,
     API_METHODS,
 } from "./constants";
-import { parseJson, proxyFetch } from "./proxy";
 
 import type * as kernel from "siyuan/kernel";
 

@@ -18,11 +18,27 @@ import type { IPanelConfig } from "@/types/qq";
 
 export interface IConfig {
     qq: IQQBotConfig;
+    weixin: IWeixinBotConfig;
+}
+
+/* 微信机器人 (ClawBot); 登录信息不在配置中, 由内核插件保存在 weixin.json 中 */
+export interface IWeixinBotConfig {
+    online: boolean; // 是否上线: 关闭时所有设备都不接收消息 (下线)
+    eventLog: boolean; // 事件日志: 是否把收到的消息保存到 logs/weixin/messages/
+    inbox: IWeixinInboxConfig; // 思源收集箱
+}
+
+export interface IWeixinInboxConfig {
+    doc: string; // 收集箱文档 ID
+    enabled: boolean; // 是否写入收集箱
+    reply: boolean; // 写入后是否向该消息回复其超级块的块超链接
+    downloadAssets: boolean; // 是否把消息中的媒体解密后保存为资源文件, 内核没有 siyuan.crypto 或不支持 AES-ECB 时始终显示为占位文本
 }
 
 export interface IQQBotConfig {
     appid: string; // QQ_BOT_APPID
     secret: string; // QQ_BOT_SECRET
+    online: boolean; // 是否上线: 关闭时所有设备都不连接网关 (下线)
     intents: Record<TIntent, boolean>; // QQ_BOT_INTENTS: 各类事件是否订阅
     eventLog: boolean; // 事件日志: 是否把网关推送的事件保存到 logs/events/
     device: string; // 运行 QQ 机器人的设备 ID, 为空时每台设备都运行

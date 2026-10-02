@@ -13,6 +13,8 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+import { encodeBase64Url } from "@/utils/proxy";
+
 import {
     DEFAULT_HEARTBEAT_INTERVAL,
     FATAL_CLOSE_CODES,
@@ -23,12 +25,18 @@ import {
 } from "./constants";
 import { formatIntents, resolveIntents } from "./intents";
 import { FatalError } from "./openapi";
-import { encodeBase64Url } from "./proxy";
 
 import type * as kernel from "siyuan/kernel";
 
 import type { IQQBotConfig } from "@/types/config";
-import type { IGatewayBot, IHelloData, IPayload, IReadyData } from "@/types/qq";
+import type {
+    IGatewayBot,
+    IHelloData,
+    IPayload,
+    IQQConnectionState,
+    IReadyData,
+    TQQConnectionStatus,
+} from "@/types/qq";
 
 import type { QQOpenApi } from "./openapi";
 
@@ -44,10 +52,11 @@ function errorMessage(error: unknown): string {
 }
 
 /**
- * QQ 机器人 WebSocket 网关客户端: 鉴权、心跳、断线 resume 与退避重连。
+ * QQ 机器人 WebSocket 网关客户端: 鉴权、心跳、断线 resume 与退避重连, 并记录连接状态供设置面板显示。
  * 内核插件的 siyuan.client 只能访问本机内核, 所以凭证与接入点经 QQOpenApi (/api/network/proxy) 获取,
  * WebSocket 经 /ws/network/proxy 转发到 QQ 服务器。
- * QQ bot WebSocket gateway client: identify, heartbeat, resume and reconnect with backoff.
+ * QQ bot WebSocket gateway client: identify, heartbeat, resume and reconnect
+ * with backoff, keeping the connection state for the settings panel.
  * siyuan.client only reaches the local kernel, so the access token and the
  * gateway URL come from QQOpenApi (/api/network/proxy) and the WebSocket goes
  * through /ws/network/proxy.
@@ -73,6 +82,9 @@ export class QQBotGateway {
     private reconnectTimer?: ReturnType<typeof setTimeout>;
     private reconnectAttempts = 0;
 
+    private current: IQQConnectionState = { status: "stopped" }; // 连接状态
+    private username = ""; // READY 中机器人的名称, resume 后沿用
+
     /**
      * @param siyuan - 内核插件全局对象
      * @param openapi - 获取凭证与接入点的 OpenAPI 客户端
@@ -84,12 +96,17 @@ export class QQBotGateway {
         this.onDispatch = onDispatch;
     }
 
+    /* 当前的连接状态 */
+    public get state(): IQQConnectionState {
+        return { ...this.current };
+    }
+
     /**
      * 应用配置: 连接参数变化时重新连接, 未变化且仍在运行时保持现有连接
      */
     public async update(config: IQQBotConfig): Promise<void> {
         const options = this.resolveOptions(config);
-        if (options
+        if (typeof options === "object"
             && this.options
             && options.appid === this.options.appid
             && options.secret === this.options.secret
@@ -98,11 +115,13 @@ export class QQBotGateway {
         }
 
         await this.stop();
-        if (options) {
-            this.options = options;
-            void this.siyuan.logger.info(`[qq] connecting, intents: ${formatIntents(options.intents)}`);
-            void this.connect();
+        if (typeof options === "string") {
+            this.setState(options);
+            return;
         }
+        this.options = options;
+        void this.siyuan.logger.info(`[qq] connecting, intents: ${formatIntents(options.intents)}`);
+        void this.connect();
     }
 
     /**
@@ -112,22 +131,23 @@ export class QQBotGateway {
         this.options = undefined;
         this.clearReconnect();
         this.resetSession();
+        this.setState("stopped");
         await this.detach(1000, "stop");
     }
 
-    /* 校验配置, 配置不完整时返回 undefined */
-    private resolveOptions(config: IQQBotConfig): IOptions | undefined {
+    /* 校验配置, 配置不完整时返回不连接的原因 */
+    private resolveOptions(config: IQQBotConfig): "no-intents" | "unconfigured" | IOptions {
         const appid = config.appid.trim();
         const secret = config.secret.trim();
         if (!appid || !secret) {
             void this.siyuan.logger.info("[qq] QQ_BOT_APPID or QQ_BOT_SECRET is not configured, skip connecting");
-            return undefined;
+            return "unconfigured";
         }
 
         const intents = resolveIntents(config.intents);
         if (intents === 0) {
             void this.siyuan.logger.warn("[qq] no event is subscribed in QQ_BOT_INTENTS, skip connecting");
-            return undefined;
+            return "no-intents";
         }
         return { appid, secret, intents };
     }
@@ -140,6 +160,7 @@ export class QQBotGateway {
         }
 
         const connection = ++this.connection;
+        this.setState("connecting");
         try {
             const token = await this.openapi.accessToken(options);
             const gateway = await this.fetchGateway(options);
@@ -152,7 +173,7 @@ export class QQBotGateway {
             void this.siyuan.logger.debug(`[qq] gateway: ${gateway.url}, session start limit: ${JSON.stringify(limit)}`);
             if (!this.sessionId && limit && limit.remaining <= 0) {
                 void this.siyuan.logger.warn(`[qq] no session starts remaining, retry in ${limit.reset_after} ms`);
-                this.scheduleReconnect(limit.reset_after);
+                this.scheduleReconnect("no session starts remaining", limit.reset_after);
                 return;
             }
 
@@ -179,6 +200,7 @@ export class QQBotGateway {
             if (error instanceof FatalError) {
                 void this.siyuan.logger.error(`[qq] ${error.message}, stop connecting`);
                 this.options = undefined;
+                this.setState("failed", { error: error.message });
                 return;
             }
             this.onDisconnect(connection, `connect failed: ${errorMessage(error)}`);
@@ -217,7 +239,9 @@ export class QQBotGateway {
                     this.seq = payload.s;
                 }
                 if (payload.t === "READY") {
-                    this.sessionId = (payload.d as IReadyData).session_id;
+                    const ready = payload.d as IReadyData;
+                    this.sessionId = ready.session_id;
+                    this.username = ready.user?.username ?? "";
                     this.onSessionReady(connection);
                 }
                 else if (payload.t === "RESUMED") {
@@ -253,6 +277,7 @@ export class QQBotGateway {
     /* READY 或 RESUMED: 重置退避并开始心跳 */
     private onSessionReady(connection: number): void {
         this.reconnectAttempts = 0;
+        this.setState("connected", this.username ? { username: this.username } : {});
         this.stopHeartbeat();
         this.sendHeartbeat(connection);
         this.heartbeatTimer = setInterval(() => {
@@ -280,6 +305,7 @@ export class QQBotGateway {
             void this.siyuan.logger.error(`[qq] disconnected (${reason}): ${FATAL_CLOSE_CODES.get(code)}, stop reconnecting`);
             this.options = undefined;
             this.resetSession();
+            this.setState("failed", { error: `${FATAL_CLOSE_CODES.get(code)} (${reason})` });
             return;
         }
         if (code !== undefined && IDENTIFY_CLOSE_CODES.has(code)) {
@@ -287,7 +313,7 @@ export class QQBotGateway {
         }
 
         void this.siyuan.logger.warn(`[qq] disconnected (${reason}), will ${this.sessionId ? "resume" : "identify"}`);
-        this.scheduleReconnect();
+        this.scheduleReconnect(reason);
     }
 
     /* 废弃当前连接: 之后它的回调都会被忽略 */
@@ -300,11 +326,17 @@ export class QQBotGateway {
         await socket?.close(code, reason).catch(() => { });
     }
 
-    private scheduleReconnect(delay: number = this.nextReconnectDelay()): void {
+    /**
+     * 稍后重新连接
+     * @param reason - 连接断开或没有连接的原因, 显示在设置面板中
+     * @param delay - 等待时间 (ms), 默认按指数退避
+     */
+    private scheduleReconnect(reason: string, delay: number = this.nextReconnectDelay()): void {
         if (!this.options) {
             return;
         }
         this.clearReconnect();
+        this.setState("reconnecting", { error: reason, retryAt: new Date(Date.now() + delay).toISOString() });
         void this.siyuan.logger.info(`[qq] reconnect in ${delay} ms`);
         this.reconnectTimer = setTimeout(() => {
             this.reconnectTimer = undefined;
@@ -329,6 +361,10 @@ export class QQBotGateway {
     private resetSession(): void {
         this.sessionId = "";
         this.seq = 0;
+    }
+
+    private setState(status: TQQConnectionStatus, details: Pick<IQQConnectionState, "error" | "retryAt" | "username"> = {}): void {
+        this.current = { status, since: new Date().toISOString(), ...details };
     }
 
     private identify(connection: number): void {

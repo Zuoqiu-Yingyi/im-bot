@@ -1,7 +1,7 @@
 {
     "name": "im-bot",
     "type": "module",
-    "version": "0.1.1",
+    "version": "0.2.0",
     "private": true,
     "scripts": {
         "dev": "vite",
@@ -17,6 +17,7 @@
     "dependencies": {
         "@workspace/components": "workspace:^",
         "@workspace/types": "workspace:^",
-        "@workspace/utils": "workspace:^"
+        "@workspace/utils": "workspace:^",
+        "uqr": "0.1.3"
     }
 }

@@ -23,8 +23,12 @@
         }
     },
     "inbox": {
+        "file": "[文件]",
+        "image": "[图片]",
         "quote": "引用的消息",
-        "unavailable": "[无法显示的消息]"
+        "unavailable": "[无法显示的消息]",
+        "video": "[视频]",
+        "voice": "[语音]"
     },
     "messenger": {
         "content": "消息内容",
@@ -88,8 +92,40 @@
             },
             "title": "常规设置"
         },
-        "inboxSettings": {
-            "bindings": {
+        "qqBotSettings": {
+            "appid": {
+                "description": "QQ 开放平台中机器人的 AppID",
+                "title": "AppID <code class=\"fn__code\">QQ_BOT_APPID</code>"
+            },
+            "connection": {
+                "connected": "已连接，连接于 {{1}}",
+                "connecting": "正在连接...",
+                "description": "本设备上机器人与 QQ 的连接，自动刷新",
+                "failed": "已停止连接，请检查 AppID、AppSecret 与订阅事件，修改设置后会再次连接",
+                "loading": "正在获取...",
+                "noIntents": "没有订阅任何事件，不会连接",
+                "offline": "已下线，打开「上线」后连接",
+                "otherDevice": "只在设备 {{1}} 上运行，本设备不连接",
+                "reason": "原因",
+                "reconnecting": "连接已断开，将于 {{1}} 重新连接",
+                "status": "状态",
+                "stopped": "未连接",
+                "title": "连接状态",
+                "unconfigured": "没有填写 AppID 或 AppSecret，不会连接",
+                "username": "机器人"
+            },
+            "device": {
+                "assigned": "当前运行设备 ID",
+                "current": "本设备 ID",
+                "description": "开启后只有本设备连接机器人",
+                "title": "只在此设备上运行",
+                "unassigned": "未指定运行设备，每台设备都会连接"
+            },
+            "eventLog": {
+                "description": "把收到的事件保存到工作空间，便于排查问题",
+                "title": "事件日志"
+            },
+            "inboxBindings": {
                 "add": "添加绑定",
                 "description": "把群聊消息写入收集箱文档，一个群可以绑定多篇文档",
                 "doc": "收集箱文档 ID",
@@ -102,27 +138,9 @@
                 "reply": "回复块链接",
                 "title": "绑定群聊"
             },
-            "downloadAssets": {
+            "inboxDownloadAssets": {
                 "description": "把消息中的图片、语音、视频和文件下载到工作空间",
                 "title": "下载资源文件"
-            },
-            "title": "收集箱"
-        },
-        "qqBotSettings": {
-            "appid": {
-                "description": "QQ 开放平台中机器人的 AppID",
-                "title": "AppID <code class=\"fn__code\">QQ_BOT_APPID</code>"
-            },
-            "device": {
-                "assigned": "当前运行设备 ID",
-                "current": "本设备 ID",
-                "description": "开启后只有本设备连接机器人",
-                "title": "只在此设备上运行",
-                "unassigned": "未指定运行设备，每台设备都会连接"
-            },
-            "eventLog": {
-                "description": "把收到的事件保存到工作空间，便于排查问题",
-                "title": "事件日志"
             },
             "intents": {
                 "description": "机器人要接收的事件类别，修改后自动重新连接",
@@ -141,11 +159,84 @@
                 },
                 "title": "订阅事件 <code class=\"fn__code\">QQ_BOT_INTENTS</code>"
             },
+            "online": {
+                "description": "开启后机器人连接 QQ，记录绑定群聊的消息并响应指令；关闭后断开连接",
+                "title": "上线"
+            },
             "secret": {
                 "description": "QQ 开放平台中机器人的 AppSecret，以明文保存并随数据同步",
                 "title": "AppSecret <code class=\"fn__code\">QQ_BOT_SECRET</code>"
             },
+            "tabs": {
+                "bot": "机器人",
+                "inbox": "收集箱"
+            },
             "title": "QQ 机器人"
+        },
+        "weixinBotSettings": {
+            "account": {
+                "botId": "机器人 ID",
+                "cancel": "取消",
+                "confirmed": "登录成功",
+                "description": "用手机微信扫码，把微信 ClawBot 接入思源。在哪台设备上扫码登录，就由哪台设备接收消息",
+                "device": "接收消息的设备",
+                "expired": "登录已失效（{{1}}），请重新扫码登录",
+                "failed": "登录失败：{{1}}",
+                "loading": "正在获取二维码...",
+                "login": "扫码登录",
+                "loginTime": "登录时间",
+                "logout": "退出登录",
+                "logoutDescription": "停止接收微信消息并删除保存的登录信息，随数据同步后其他设备也会退出登录",
+                "logoutTitle": "退出微信登录",
+                "needVerifyCode": "输入手机微信上显示的数字",
+                "notLoggedIn": "未登录",
+                "notRunning": "本设备还没有开始接收消息",
+                "offline": "已下线，打开「上线」后开始接收消息",
+                "otherDevice": "由其他设备接收消息。在本设备上重新扫码登录后，改由本设备接收",
+                "qrcode": "微信登录二维码",
+                "qrcodeExpired": "二维码已过期，请重新扫码登录",
+                "relogin": "重新扫码登录",
+                "running": "正在接收消息",
+                "scaned": "已扫码，请在手机上确认",
+                "status": "状态",
+                "thisDevice": "本设备",
+                "title": "微信账号",
+                "userId": "微信用户",
+                "verify": "提交",
+                "verifying": "正在验证...",
+                "wait": "用手机微信扫描二维码",
+                "wrongCode": "数字不正确，请重新输入"
+            },
+            "eventLog": {
+                "description": "把收到的消息保存到工作空间，便于排查问题",
+                "title": "事件日志"
+            },
+            "inboxDoc": {
+                "description": "把收到的微信消息写入这篇文档下按日期组织的子文档",
+                "placeholder": "20260930112233-abcdefg",
+                "title": "收集箱文档 ID"
+            },
+            "inboxDownloadAssets": {
+                "description": "把消息中的图片、语音、视频和文件解密后保存到工作空间，当前思源版本不支持解密时仍显示为占位文本",
+                "title": "下载资源文件"
+            },
+            "inboxEnabled": {
+                "description": "关闭后只记录日志，不写入收集箱",
+                "title": "写入收集箱"
+            },
+            "inboxReply": {
+                "description": "写入后向微信回复消息超级块的块链接",
+                "title": "回复块链接"
+            },
+            "online": {
+                "description": "开启后由扫码登录的设备接收发给 ClawBot 的消息；关闭后停止接收",
+                "title": "上线"
+            },
+            "tabs": {
+                "bot": "机器人",
+                "inbox": "收集箱"
+            },
+            "title": "微信机器人"
         }
     }
 }

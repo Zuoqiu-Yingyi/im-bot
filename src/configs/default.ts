@@ -21,6 +21,7 @@ export const DEFAULT_CONFIG: IConfig = {
     qq: {
         appid: "",
         secret: "",
+        online: false,
         intents: {
             GUILDS: false,
             GUILD_MEMBERS: false,
@@ -70,6 +71,16 @@ export const DEFAULT_CONFIG: IConfig = {
                     remark: "siyuan-plugin-im-bot-group",
                 },
             },
+        },
+    },
+    weixin: {
+        online: false,
+        eventLog: true,
+        inbox: {
+            doc: "",
+            enabled: true,
+            reply: false,
+            downloadAssets: true,
         },
     },
 };

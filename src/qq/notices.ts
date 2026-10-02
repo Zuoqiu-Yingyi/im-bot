@@ -17,7 +17,7 @@ import type * as kernel from "siyuan/kernel";
 
 import type { QQOpenApi, TCredentials } from "./openapi";
 
-/* 通知类型: online 为内核插件开始运行, offline 为内核插件卸载 */
+/* 通知类型: online 为机器人开始运行 (上线), offline 为机器人停止运行 (下线) */
 export type TNotice = "offline" | "online";
 
 /* 通知文本, {{1}} 为设备名称 */
@@ -31,11 +31,11 @@ function errorMessage(error: unknown): string {
 }
 
 /**
- * 收集箱通知: 以主动消息向开启了通知的收集箱绑定所在的群发送内核插件的上线与下线通知。
+ * 收集箱通知: 以主动消息向开启了通知的收集箱绑定所在的群发送机器人的上线与下线通知。
  * 主动消息受 QQ 的频率限制, 用户或群关闭主动消息时会发送失败, 失败时只记录日志。
  * REF: https://bot.q.qq.com/wiki/develop/api-v2/server-inter/message/overview.html
- * Sends online and offline notices of the kernel plugin as active messages to
- * the groups whose inbox bindings turn on notices; a failed notice is only logged.
+ * Sends the online and offline notices of the bot as active messages to the
+ * groups whose inbox bindings turn on notices; a failed notice is only logged.
  */
 export class QQNotices {
     private readonly siyuan: kernel.ISiyuan;
