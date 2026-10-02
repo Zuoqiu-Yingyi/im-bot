@@ -17,6 +17,7 @@
     "dependencies": {
         "@workspace/components": "workspace:^",
         "@workspace/types": "workspace:^",
-        "@workspace/utils": "workspace:^"
+        "@workspace/utils": "workspace:^",
+        "uqr": "0.1.3"
     }
 }

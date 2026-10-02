@@ -25,7 +25,7 @@
 
 # SiYuan IM Bot
 
-A plugin for [SiYuan Note](https://github.com/siyuan-note/siyuan) that connects a QQ bot to SiYuan: it records the messages of QQ groups in inbox documents, and provides a command to look up OpenIDs, a tab that sends messages to the known groups and users, and a debugger for the QQ bot API.
+A plugin for [SiYuan Note](https://github.com/siyuan-note/siyuan) that connects a QQ bot and a WeChat ClawBot to SiYuan: it records the messages of QQ groups and the messages sent to the WeChat ClawBot in inbox documents, and provides a command to look up OpenIDs, a tab that sends messages to the known groups and users, and a debugger for the QQ bot API.
 
 The main features run in the SiYuan kernel, so they work while SiYuan is running, without its interface open. Requires SiYuan 3.7.3 or later.
 
@@ -38,6 +38,13 @@ The main features run in the SiYuan kernel, so they work while SiYuan is running
 5. In `Inbox > Bound groups`, click "Add a binding" and fill in the group_openid and the ID of the document that collects the messages.
 
 From then on, the messages of the group are recorded in dated sub-documents of that document.
+
+To connect a WeChat ClawBot:
+
+1. In `WeChat Bot > WeChat account`, click "Log in with a QR code", scan the QR code with WeChat on your phone, and confirm on the phone.
+2. Fill in the ID of the document that collects the messages in `WeChat Bot > Inbox document ID`.
+
+From then on, the messages you send to this ClawBot in WeChat are recorded in dated sub-documents of that document.
 
 ## Q & A
 
@@ -62,6 +69,21 @@ From then on, the messages of the group are recorded in dated sub-documents of t
 
   - The AppSecret is stored in plain text in `data/storage/petal/im-bot/config.json` of the workspace and syncs with your data. Any program that can call the kernel API of this workspace, including other plugins, can read this file.
   - The kernel methods this plugin provides (the RPC method `call-qq-api`, which calls the QQ bot API as the bot, and `get-users`, which returns the known groups and C2C users) can be used by the same programs too; they never return the AppSecret or the access token.
+- WeChat messages are not written to the inbox?
+
+  - Check the status in `WeChat Bot > WeChat account`: an expired login needs a new QR code scan, and only the device where you scanned the QR code receives messages.
+  - Check `WeChat Bot > Inbox document ID` and that `Write into the inbox` is on.
+  - Look for lines with `[plugin:im-bot] [weixin]` in the kernel log.
+- What are the limits of the WeChat ClawBot?
+
+  - It only chats one-on-one with the WeChat user who scanned the QR code. It cannot join group chats, and nobody else can add it.
+  - Images, voice messages, files and videos are only recorded as placeholder text for now (voice messages come with the WeChat transcription); they are not downloaded.
+  - "Reply with the block link" replies right after a message arrives. WeChat does not publish the limits of replies; the community has observed at most about 10 replies after each message. When a reply succeeds without a message ID, it may not have been delivered, and the kernel log shows a warning. Messages the bot starts on its own are even less reliable, so the plugin does not send online and offline notices to WeChat.
+  - The plugin uses the same API (the iLink Bot API) as the official OpenClaw WeChat plugin. WeChat has not said whether other clients may use it.
+- Is the WeChat login safe?
+
+  - The login token (bot_token) is stored in plain text in `data/storage/petal/im-bot/weixin.json` of the workspace and syncs with your data. Any program that can call the kernel API of this workspace, including other plugins, can read this file.
+  - The WeChat kernel methods of this plugin never return the bot_token. The login QR code is generated locally. Whoever scans it becomes the user who can chat with the bot, so do not share it.
 
 ## INTRODUCTION
 
@@ -150,6 +172,19 @@ From then on, the messages of the group are recorded in dated sub-documents of t
   - Run "Open the QQ bot API debugger" in the Command Palette (desktop only) to open a tab that calls the [QQ bot server API](https://bot.q.qq.com/wiki/develop/api-v2/dev-prepare/api-call-guide.html) as the bot.
   - Pick the request method, enter a request path starting with `/` (relative to `https://api.bot.qq.com`, for example `/gateway/bot`) and a JSON request body, then click "Send" or press Enter in the path field to see the status code, the time, the response headers and the response body.
   - Requests are sent as the bot, so calling APIs such as sending messages has real effects. The debugger works on every device, regardless of "Run on this device only".
+- WeChat bot (ClawBot)
+
+  - After you log in with a QR code in `WeChat Bot > WeChat account`, the plugin receives the messages sent to the ClawBot by long polling in the SiYuan kernel, without a public address. The login is stored in `data/storage/petal/im-bot/weixin.json`.
+  - The device where you scan the QR code receives the messages. After you scan a new QR code on another device, that device receives them, and the previous device stops once your data syncs.
+  - The receiving position is stored in `data/storage/petal/im-bot/weixin/cursor.json`, so the plugin continues where it stopped after a restart. A new login starts over.
+  - When WeChat reports that the login expired, the plugin stops receiving until you scan a new QR code. "Log out" stops receiving and removes the login.
+  - Received messages are written into the document in `WeChat Bot > Inbox document ID` the same way as the QQ inbox: inserted into `.temp` first, then moved to the end of the `YYYY/MM/YYYY-MM-DD` document. The same document can also be the inbox of QQ groups.
+  - How messages are converted
+
+    - Each message becomes a super block with one paragraph per message item: text shows as it is, with web addresses turned into links; voice messages show as `[Voice]` followed by the transcription; images, files and videos show as `[Image]`, `[File] <file name>` and `[Video]`.
+    - Quotes: when the quoted message is already in the inbox, the quote becomes a block reference to it; otherwise a blockquote shows the quoted content.
+    - Messages sent by the bot itself are not written, and a message received more than once is written only once.
+  - Message blocks have the custom attributes `custom-author-id` (the WeChat user ID of the sender) and `custom-msg-id` (the message ID).
 
 ### Settings Introduction
 
@@ -199,6 +234,26 @@ From then on, the messages of the group are recorded in dated sub-documents of t
 
     - When a message has images, voice messages, videos or files, download them into the workspace with the SiYuan feature that converts network assets to local ones. Other links to files in the message are downloaded too, and links to web pages stay as they are
     - On by default. When off, messages keep the QQ network links, which may stop working later, as QQ does not say how long they stay valid
+- `WeChat Bot`
+
+  - `WeChat account`
+
+    - Shows the logged-in bot, the WeChat user, the login time, the device receiving messages and the status
+    - Click "Log in with a QR code" to show a QR code, scan it with WeChat on your phone and confirm on the phone. When WeChat asks for a number, enter the number shown on the phone here. A QR code expires after about 2 minutes and is replaced automatically, up to 3 QR codes per login (8 minutes at most); after that, click "Log in with a QR code" again
+    - Click "Log out" to stop receiving messages and remove the login
+  - `Inbox document ID`
+
+    - ID of the document that WeChat messages are written into; nothing is written when empty
+  - `Write into the inbox`
+
+    - When off, messages are only logged, not written into the inbox. On by default
+  - `Reply with the block link`
+
+    - When on, the bot replies to each message written into the inbox with the block hyperlink of its super block, `siyuan://blocks/<block ID>`. Off by default; see Q & A for the limits
+  - `Event log`
+
+    - When on, saves each received message as a JSON file `data/storage/petal/im-bot/logs/weixin/messages/<message ID>.json` in the workspace
+    - These files sync with your data, and the plugin does not delete them. On by default
 
 ## CHANGELOG
 

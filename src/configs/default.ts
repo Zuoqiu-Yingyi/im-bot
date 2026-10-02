@@ -72,6 +72,14 @@ export const DEFAULT_CONFIG: IConfig = {
             },
         },
     },
+    weixin: {
+        eventLog: true,
+        inbox: {
+            doc: "",
+            enabled: true,
+            reply: false,
+        },
+    },
 };
 
 /* 新建的收集箱绑定 */

@@ -16,7 +16,6 @@
 export const ACCESS_TOKEN_URL = "https://api.bot.qq.com/app/getAppAccessToken"; // 获取接口调用凭证
 export const API_BASE_URL = "https://api.bot.qq.com"; // OpenAPI 根地址
 
-export const PROXY_DIAL_TIMEOUT = 10_000; // /api/network/proxy 的 t 参数, 只限制连接目标的时长 (ms); 整个请求受 siyuan.client.fetch 的 1 分钟超时限制
 export const DEFAULT_HEARTBEAT_INTERVAL = 45_000; // HELLO 未给出心跳间隔时使用 (ms)
 export const RECONNECT_BASE_DELAY = 1_000; // 重连退避的初始间隔 (ms)
 export const RECONNECT_MAX_DELAY = 60_000; // 重连退避的最大间隔 (ms)

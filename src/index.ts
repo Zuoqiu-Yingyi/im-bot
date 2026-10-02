@@ -21,6 +21,8 @@ import { FLAG_MOBILE } from "@workspace/utils/env/front-end";
 import { Logger } from "@workspace/utils/logger";
 import { mergeIgnoreArray } from "@workspace/utils/misc/merge";
 
+import icon_qq from "./assets/symbols/icon-qq.symbol?raw";
+import icon_wechat from "./assets/symbols/icon-wechat.symbol?raw";
 import { DEFAULT_CONFIG } from "./configs/default";
 import CONSTANTS from "./constants";
 
@@ -33,6 +35,7 @@ import type { ISiyuanGlobal } from "@workspace/types/siyuan";
 import type { IConfig } from "./types/config";
 import type { IApiResponse } from "./types/qq";
 import type { IBotUsers } from "./types/users";
+import type { IWeixinAccountState, IWeixinLoginState } from "./types/weixin";
 import type { I18N } from "./utils/i18n";
 
 import type { IApiDebuggerTabData } from "./components/ApiDebugger.svelte";
@@ -126,7 +129,10 @@ export default class ImBotPlugin extends siyuan.Plugin {
         // this.logger.debug(this);
 
         /* 注册图标 */
-        this.addIcons([].join(""));
+        this.addIcons([
+            icon_qq,
+            icon_wechat,
+        ].join(""));
 
         /**
          * 注册命令, 在 onload 结束后即刻解析, 因此不能在回调函数中注册。
@@ -259,6 +265,40 @@ export default class ImBotPlugin extends siyuan.Plugin {
      */
     public async callQQApi(url: string, method: string, body?: unknown): Promise<IApiResponse> {
         return this.kernel.rpc.call[CONSTANTS.KERNEL_RPC_METHOD.CALL_QQ_API]?.(url, method, body);
+    }
+
+    /**
+     * 通过内核插件的 RPC weixin-get-account, 获取微信登录信息 (不含 bot_token)
+     * @returns 没有登录时为 null
+     * @throws 内核插件没有运行时以 JSON-RPC 错误拒绝
+     */
+    public async getWeixinAccount(): Promise<IWeixinAccountState | null> {
+        return this.kernel.rpc.call[CONSTANTS.KERNEL_RPC_METHOD.WEIXIN_GET_ACCOUNT]?.() ?? null;
+    }
+
+    /* 通过内核插件的 RPC weixin-login-start, 开始微信扫码登录; 在哪台设备上扫码登录, 就由哪台设备接收消息 */
+    public async startWeixinLogin(): Promise<IWeixinLoginState> {
+        return this.kernel.rpc.call[CONSTANTS.KERNEL_RPC_METHOD.WEIXIN_LOGIN_START]?.();
+    }
+
+    /* 通过内核插件的 RPC weixin-login-state, 获取微信扫码登录的状态 */
+    public async getWeixinLoginState(): Promise<IWeixinLoginState> {
+        return this.kernel.rpc.call[CONSTANTS.KERNEL_RPC_METHOD.WEIXIN_LOGIN_STATE]?.();
+    }
+
+    /* 通过内核插件的 RPC weixin-login-verify, 提交手机微信上显示的数字 */
+    public async verifyWeixinLogin(code: string): Promise<IWeixinLoginState> {
+        return this.kernel.rpc.call[CONSTANTS.KERNEL_RPC_METHOD.WEIXIN_LOGIN_VERIFY]?.(code);
+    }
+
+    /* 通过内核插件的 RPC weixin-login-cancel, 取消微信扫码登录 */
+    public async cancelWeixinLogin(): Promise<IWeixinLoginState> {
+        return this.kernel.rpc.call[CONSTANTS.KERNEL_RPC_METHOD.WEIXIN_LOGIN_CANCEL]?.();
+    }
+
+    /* 通过内核插件的 RPC weixin-logout, 停止接收微信消息并删除登录信息 */
+    public async logoutWeixin(): Promise<void> {
+        await this.kernel.rpc.call[CONSTANTS.KERNEL_RPC_METHOD.WEIXIN_LOGOUT]?.();
     }
 
     /* 同步配置到内核插件, QQ 机器人配置变化时内核插件会重新连接 */

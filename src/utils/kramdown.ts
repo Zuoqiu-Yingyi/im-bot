@@ -106,6 +106,34 @@ export function link(text: string, url: string): string {
     return `[${escapeText(text)}](${destination(url)})`;
 }
 
+const URL_TRAILING_PUNCTUATION = /[.,;:!?'*]+$/;
+const URL_IN_TEXT = /https?:\/\/[\w\-.~:/?#[\]@!&'()*+,;=%$]+/g; // 文本中的网址
+
+function count(text: string, char: string): number {
+    return text.split(char).length - 1;
+}
+
+/* 网址末尾的标点与多出的右括号属于正文, 如 `(见 https://example.com/a)` 中的 `)` */
+export function trimUrl(href: string): string {
+    let url = href.replace(URL_TRAILING_PUNCTUATION, "");
+    while (url.endsWith(")") && count(url, ")") > count(url, "(")) {
+        url = url.slice(0, -1).replace(URL_TRAILING_PUNCTUATION, "");
+    }
+    return url;
+}
+
+/* 纯文本按原样显示, 其中的网址转为超链接 */
+export function textWithLinks(text: string): string {
+    let result = "";
+    let last = 0;
+    for (const match of text.matchAll(URL_IN_TEXT)) {
+        const url = trimUrl(match[0]);
+        result += escapeText(text.slice(last, match.index)) + link(url, url);
+        last = match.index + url.length;
+    }
+    return result + escapeText(text.slice(last));
+}
+
 /* 音频块 */
 export function audio(url: string): string {
     return `<audio controls="controls" src="${url.replace(/"/g, "%22")}"></audio>`;

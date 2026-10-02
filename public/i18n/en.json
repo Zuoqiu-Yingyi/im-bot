@@ -23,8 +23,12 @@
         }
     },
     "inbox": {
+        "file": "[File]",
+        "image": "[Image]",
         "quote": "Quoted message",
-        "unavailable": "[Message not available]"
+        "unavailable": "[Message not available]",
+        "video": "[Video]",
+        "voice": "[Voice]"
     },
     "messenger": {
         "content": "Message",
@@ -146,6 +150,58 @@
                 "title": "AppSecret <code class=\"fn__code\">QQ_BOT_SECRET</code>"
             },
             "title": "QQ Bot"
+        },
+        "weixinBotSettings": {
+            "account": {
+                "botId": "Bot ID",
+                "cancel": "Cancel",
+                "confirmed": "Logged in",
+                "description": "Scan the QR code with WeChat on your phone to connect a WeChat ClawBot to SiYuan. The device where you scan the QR code receives the messages",
+                "device": "Device receiving messages",
+                "expired": "The login expired ({{1}}), scan the QR code again",
+                "failed": "Login failed: {{1}}",
+                "loading": "Getting the QR code...",
+                "login": "Log in with a QR code",
+                "loginTime": "Login time",
+                "logout": "Log out",
+                "logoutDescription": "Stop receiving WeChat messages and remove the saved login. Other devices also log out after your data syncs",
+                "logoutTitle": "Log out of WeChat",
+                "needVerifyCode": "Enter the number shown in WeChat on your phone",
+                "notLoggedIn": "Not logged in",
+                "notRunning": "This device has not started receiving messages yet",
+                "otherDevice": "Another device receives the messages. Scan the QR code again on this device to receive them here",
+                "qrcode": "WeChat login QR code",
+                "qrcodeExpired": "The QR code expired, scan a new one",
+                "relogin": "Scan the QR code again",
+                "running": "Receiving messages",
+                "scaned": "Scanned, confirm the login on your phone",
+                "status": "Status",
+                "thisDevice": "this device",
+                "title": "WeChat account",
+                "userId": "WeChat user",
+                "verify": "Submit",
+                "verifying": "Verifying...",
+                "wait": "Scan the QR code with WeChat on your phone",
+                "wrongCode": "Wrong number, enter it again"
+            },
+            "eventLog": {
+                "description": "Save received messages in the workspace for troubleshooting",
+                "title": "Event log"
+            },
+            "inboxDoc": {
+                "description": "Write received WeChat messages into date-organized subdocuments of this document",
+                "placeholder": "20260930112233-abcdefg",
+                "title": "Inbox document ID"
+            },
+            "inboxEnabled": {
+                "description": "When off, messages are only logged, not written into the inbox",
+                "title": "Write into the inbox"
+            },
+            "inboxReply": {
+                "description": "Reply in WeChat with the block link of the message super block after writing it",
+                "title": "Reply with the block link"
+            },
+            "title": "WeChat Bot"
         }
     }
 }

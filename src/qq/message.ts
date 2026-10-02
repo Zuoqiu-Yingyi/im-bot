@@ -23,6 +23,7 @@ import {
     link,
     paragraph,
     superBlock,
+    trimUrl,
     video,
 } from "@/utils/kramdown";
 
@@ -65,7 +66,6 @@ interface IContext {
 
 /* content 中的标记: @ 全体成员、@ 成员、QQ 表情与网址 */
 const TOKEN = /<@all>|<@!?(\w+)>|<faceType=\d+,faceId="[^"]*",ext="([^"]*)">|(https?:\/\/[\w\-.~:/?#[\]@!$&'()*+,;=%]+)/g;
-const URL_TRAILING_PUNCTUATION = /[.,;:!?'*]+$/;
 const CHAT_RECORD_TITLE = /^\[.+的聊天记录\]$/;
 const ANCHOR_LENGTH = 32;
 
@@ -108,19 +108,6 @@ function faceText(ext: string): string {
     catch {
         return "";
     }
-}
-
-function count(text: string, char: string): number {
-    return text.split(char).length - 1;
-}
-
-/* 网址末尾的标点与多出的右括号属于正文, 如 `(见 https://example.com/a)` 中的 `)` */
-function trimUrl(href: string): string {
-    let url = href.replace(URL_TRAILING_PUNCTUATION, "");
-    while (url.endsWith(")") && count(url, ")") > count(url, "(")) {
-        url = url.slice(0, -1).replace(URL_TRAILING_PUNCTUATION, "");
-    }
-    return url;
 }
 
 function mentionText(id: string | undefined, mentions: IMention[] | undefined): string {

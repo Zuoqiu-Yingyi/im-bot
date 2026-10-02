@@ -19,7 +19,11 @@
         "chatbot",
         "im",
         "inbox",
-        "qqbot"
+        "qqbot",
+        "微信",
+        "ClawBot",
+        "WeChat",
+        "weixin"
     ],
     "kernels": [
         "all"
@@ -36,9 +40,9 @@
         "zh-TW": "IM 機器人"
     },
     "description": {
-        "default": "Connect a QQ bot to SiYuan and record group messages in inbox documents",
-        "zh-CN": "把 QQ 机器人接入思源，将群聊消息记录到收集箱文档",
-        "zh-TW": "把 QQ 機器人接入思源，將群聊訊息記錄到收集箱文件"
+        "default": "Connect a QQ bot and a WeChat ClawBot to SiYuan and record messages in inbox documents",
+        "zh-CN": "把 QQ 机器人与微信 ClawBot 接入思源，将消息记录到收集箱文档",
+        "zh-TW": "把 QQ 機器人與微信 ClawBot 接入思源，將訊息記錄到收集箱文件"
     },
     "readme": {
         "default": "README.md",

@@ -13,6 +13,8 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+import { encodeBase64Url } from "@/utils/proxy";
+
 import {
     DEFAULT_HEARTBEAT_INTERVAL,
     FATAL_CLOSE_CODES,
@@ -23,7 +25,6 @@ import {
 } from "./constants";
 import { formatIntents, resolveIntents } from "./intents";
 import { FatalError } from "./openapi";
-import { encodeBase64Url } from "./proxy";
 
 import type * as kernel from "siyuan/kernel";
 

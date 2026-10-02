@@ -18,6 +18,19 @@ import type { IPanelConfig } from "@/types/qq";
 
 export interface IConfig {
     qq: IQQBotConfig;
+    weixin: IWeixinBotConfig;
+}
+
+/* 微信机器人 (ClawBot); 登录信息不在配置中, 由内核插件保存在 weixin.json 中 */
+export interface IWeixinBotConfig {
+    eventLog: boolean; // 事件日志: 是否把收到的消息保存到 logs/weixin/messages/
+    inbox: IWeixinInboxConfig; // 思源收集箱
+}
+
+export interface IWeixinInboxConfig {
+    doc: string; // 收集箱文档 ID
+    enabled: boolean; // 是否写入收集箱
+    reply: boolean; // 写入后是否向该消息回复其超级块的块超链接
 }
 
 export interface IQQBotConfig {

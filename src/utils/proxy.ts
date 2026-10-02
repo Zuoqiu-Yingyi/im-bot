@@ -15,9 +15,9 @@
 
 /* 经思源内核转发到外网的请求: 内核插件的 siyuan.client 只能访问本机内核 */
 
-import { PROXY_DIAL_TIMEOUT } from "./constants";
-
 import type * as kernel from "siyuan/kernel";
+
+const PROXY_DIAL_TIMEOUT = 10_000; // /api/network/proxy 的 t 参数, 只限制连接目标的时长 (ms); 整个请求受 siyuan.client.fetch 的 1 分钟超时限制
 
 /* 经内核转发的 HTTP 请求 */
 export interface IProxyRequest {

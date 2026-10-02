@@ -23,8 +23,12 @@
         }
     },
     "inbox": {
+        "file": "[檔案]",
+        "image": "[圖片]",
         "quote": "引用的訊息",
-        "unavailable": "[無法顯示的訊息]"
+        "unavailable": "[無法顯示的訊息]",
+        "video": "[影片]",
+        "voice": "[語音]"
     },
     "messenger": {
         "content": "訊息內容",
@@ -146,6 +150,58 @@
                 "title": "AppSecret <code class=\"fn__code\">QQ_BOT_SECRET</code>"
             },
             "title": "QQ 機器人"
+        },
+        "weixinBotSettings": {
+            "account": {
+                "botId": "機器人 ID",
+                "cancel": "取消",
+                "confirmed": "登入成功",
+                "description": "用手機微信掃碼，把微信 ClawBot 接入思源。在哪台裝置上掃碼登入，就由哪台裝置接收訊息",
+                "device": "接收訊息的裝置",
+                "expired": "登入已失效（{{1}}），請重新掃碼登入",
+                "failed": "登入失敗：{{1}}",
+                "loading": "正在取得二維碼...",
+                "login": "掃碼登入",
+                "loginTime": "登入時間",
+                "logout": "登出",
+                "logoutDescription": "停止接收微信訊息並刪除儲存的登入資訊，隨資料同步後其他裝置也會登出",
+                "logoutTitle": "登出微信",
+                "needVerifyCode": "輸入手機微信上顯示的數字",
+                "notLoggedIn": "未登入",
+                "notRunning": "本裝置還沒有開始接收訊息",
+                "otherDevice": "由其他裝置接收訊息。在本裝置上重新掃碼登入後，改由本裝置接收",
+                "qrcode": "微信登入二維碼",
+                "qrcodeExpired": "二維碼已過期，請重新掃碼登入",
+                "relogin": "重新掃碼登入",
+                "running": "正在接收訊息",
+                "scaned": "已掃碼，請在手機上確認",
+                "status": "狀態",
+                "thisDevice": "本裝置",
+                "title": "微信帳號",
+                "userId": "微信使用者",
+                "verify": "送出",
+                "verifying": "正在驗證...",
+                "wait": "用手機微信掃描二維碼",
+                "wrongCode": "數字不正確，請重新輸入"
+            },
+            "eventLog": {
+                "description": "把收到的訊息儲存到工作空間，便於排查問題",
+                "title": "事件日誌"
+            },
+            "inboxDoc": {
+                "description": "把收到的微信訊息寫入這篇文件下按日期組織的子文件",
+                "placeholder": "20260930112233-abcdefg",
+                "title": "收集箱文件 ID"
+            },
+            "inboxEnabled": {
+                "description": "關閉後只記錄日誌，不寫入收集箱",
+                "title": "寫入收集箱"
+            },
+            "inboxReply": {
+                "description": "寫入後向微信回覆訊息超級區塊的區塊連結",
+                "title": "回覆區塊連結"
+            },
+            "title": "微信機器人"
         }
     }
 }
