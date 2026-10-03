@@ -1,0 +1,400 @@
+{
+    "apiDebugger": {
+        "body": "Request body",
+        "bodyPlaceholder": "Request body in JSON, leave it empty to send no body",
+        "duration": "Time",
+        "error": "Request failed",
+        "headers": "Response headers",
+        "invalidBody": "The request body is not valid JSON, the request was not sent",
+        "method": "Request method",
+        "noBody": "No response body",
+        "open": "Open the QQ bot API debugger",
+        "response": "Response",
+        "send": "Send",
+        "sending": "Sending...",
+        "title": "QQ bot API debugger",
+        "url": "Request path",
+        "urlPlaceholder": "Request path starting with /, relative to https://api.bot.qq.com, for example /gateway/bot"
+    },
+    "commands": {
+        "chatid": {
+            "chat": "Chat ID: {{1}}",
+            "user": "User ID: {{1}}"
+        },
+        "openid": {
+            "group": "Group OpenID: {{1}}",
+            "user": "User OpenID: {{1}}"
+        }
+    },
+    "inbox": {
+        "all": "all",
+        "animation": "[Animation]",
+        "audio": "[Audio]",
+        "calendar": "[Event]",
+        "card": "[Card]",
+        "chat": "[Group card]",
+        "chatRecord": "[Chat history]",
+        "contact": "[Contact]",
+        "file": "[File]",
+        "folder": "[Folder]",
+        "image": "[Image]",
+        "location": "[Location]",
+        "poll": "[Poll]",
+        "quote": "Quoted message",
+        "sticker": "[Sticker]",
+        "task": "[Task]",
+        "unavailable": "[Message not available]",
+        "video": "[Video]",
+        "videoCall": "[Video call]",
+        "voice": "[Voice]"
+    },
+    "messenger": {
+        "content": "Message",
+        "contentPlaceholder": "The message to send; press Ctrl+Enter (⌘+Enter on macOS) to send it",
+        "duration": "Time",
+        "empty": "No groups or users are known yet. Events such as the bot being added to a group, receiving messages or being added by a user are recorded in chats.json",
+        "error": "Request failed",
+        "firstSeen": "First recorded",
+        "groupAdded": "The bot is in the group",
+        "groupRemoved": "The bot was removed from the group",
+        "groups": "Groups",
+        "headers": "Response headers",
+        "hintGroup": "Active messages to a group need the group owner to turn on 「机器人主动在群聊内发言」 (the bot may speak in the group) for the bot",
+        "hintUser": "Active messages to a user need the user to turn on active messages on the profile card of the bot. Wake-up messages can only be sent within 30 days after the user chats with the bot, one each on the same day, in days 1–3, 3–7 and 7–30",
+        "info": "Group info",
+        "infoClass": "Category",
+        "infoMembers": "Members",
+        "infoMemo": "Description",
+        "infoName": "Name",
+        "infoTags": "Tags",
+        "infoWhitelist": "This API is only open to allowlisted bots; apply for it on the QQ Open Platform",
+        "lastMessage": "Latest message",
+        "loadError": "Failed to read the known groups and users",
+        "loading": "Loading...",
+        "markdown": "Markdown",
+        "noBody": "No response body",
+        "open": "Open the QQ bot messenger",
+        "owner": "Group owner",
+        "ownerOf": "Owner: {{1}}",
+        "proactive": "Active messages",
+        "proactiveAllowed": "Allowed ({{1}})",
+        "proactiveRejected": "Refused ({{1}})",
+        "proactiveUnknown": "Unknown",
+        "query": "Query the group info",
+        "querying": "Querying...",
+        "refresh": "Refresh",
+        "result": "Result of sending to {{1}}",
+        "send": "Send",
+        "sending": "Sending...",
+        "status": "Status",
+        "target": "Recipient",
+        "targetPlaceholder": "Choose a known group or user",
+        "text": "Text",
+        "title": "QQ bot messenger",
+        "type": "Message type",
+        "userAdded": "The user has added the bot",
+        "userRemoved": "The user deleted the bot",
+        "users": "C2C chats",
+        "wakeup": "Wake-up message"
+    },
+    "notices": {
+        "feishu": {
+            "offline": "Inbox offline: messages of this chat are not recorded for now (device: {{1}})",
+            "online": "Inbox online: messages of this chat are recorded in SiYuan (device: {{1}})"
+        },
+        "offline": "Inbox offline: messages of this group are not recorded for now (device: {{1}})",
+        "online": "Inbox online: messages of this group are recorded in SiYuan (device: {{1}})",
+        "telegram": {
+            "offline": "Inbox offline: messages of this chat are not recorded for now (device: {{1}})",
+            "online": "Inbox online: messages of this chat are recorded in SiYuan (device: {{1}})"
+        }
+    },
+    "settings": {
+        "feishuBotSettings": {
+            "apiBaseUrl": {
+                "description": "Leave it empty to use Feishu (https://open.feishu.cn); fill in https://open.larksuite.com for Lark",
+                "title": "Open platform address"
+            },
+            "appId": {
+                "description": "App ID of the custom app on the Feishu open platform, found in Credentials & Basic Info of the app",
+                "placeholder": "cli_a1b2c3d4e5f6g7h8",
+                "title": "App ID"
+            },
+            "appSecret": {
+                "description": "App Secret of the app, stored in plain text and synced with your data",
+                "title": "App Secret"
+            },
+            "connection": {
+                "connected": "Connected since {{1}}",
+                "connecting": "Connecting...",
+                "description": "The long connection of the bot to Feishu on this device, refreshed automatically",
+                "failed": "Stopped connecting. Check the App ID, App Secret and open platform address; the bot connects again after a change",
+                "loading": "Loading...",
+                "offline": "Offline. Turn on Online to connect",
+                "otherDevice": "Runs on device {{1}} only, this device does not connect",
+                "reason": "Reason",
+                "reconnecting": "Disconnected, reconnecting at {{1}}",
+                "status": "Status",
+                "stopped": "Not connected",
+                "title": "Connection",
+                "unconfigured": "Not connected: the App ID or App Secret is empty",
+                "username": "Bot"
+            },
+            "device": {
+                "assigned": "Device running the bot",
+                "current": "This device",
+                "description": "When on, only this device connects. Feishu pushes each event to only one of the connections, so turn it on when you have several devices, or the messages are spread over them",
+                "title": "Run on this device only",
+                "unassigned": "No device is set, every device connects"
+            },
+            "eventLog": {
+                "description": "Save received events in the workspace for troubleshooting",
+                "title": "Event log"
+            },
+            "inboxBindings": {
+                "add": "Add a binding",
+                "chat": "Chat ID",
+                "chatPlaceholder": "oc_a0553eda9014c201e6969b478895c230",
+                "description": "Write the messages of direct chats or groups into inbox documents; a chat can be bound to several documents. Send /chatid to the bot (mention the bot in groups) to get the chat ID",
+                "doc": "Inbox document ID",
+                "docPlaceholder": "20260930112233-abcdefg",
+                "enabled": "Enabled",
+                "notify": "Online and offline notices",
+                "remove": "Remove",
+                "reply": "Reply with the block link",
+                "title": "Bound chats"
+            },
+            "inboxDownloadAssets": {
+                "description": "Download the images, voice messages, videos and files of messages into the workspace; Feishu does not serve files over 100 MB",
+                "title": "Download assets"
+            },
+            "online": {
+                "description": "When on, the bot connects to Feishu, records the messages of bound chats and answers commands; when off, it disconnects",
+                "title": "Online"
+            },
+            "tabs": {
+                "bot": "Bot",
+                "inbox": "Inbox"
+            },
+            "title": "Feishu Bot"
+        },
+        "generalSettings": {
+            "reset": {
+                "description": "Reset all settings options to default options (refresh page after reset)",
+                "text": "Reset",
+                "title": "Reset settings options"
+            },
+            "title": "General"
+        },
+        "qqBotSettings": {
+            "appid": {
+                "description": "AppID of the bot on the QQ Open Platform",
+                "title": "AppID <code class=\"fn__code\">QQ_BOT_APPID</code>"
+            },
+            "connection": {
+                "connected": "Connected since {{1}}",
+                "connecting": "Connecting...",
+                "description": "The connection of the bot to QQ on this device, refreshed automatically",
+                "failed": "Stopped connecting. Check the AppID, the AppSecret and the subscribed events; the bot connects again after a change",
+                "loading": "Loading...",
+                "noIntents": "Not connected: no event is subscribed",
+                "offline": "Offline. Turn on Online to connect",
+                "otherDevice": "Runs on device {{1}} only, this device does not connect",
+                "reason": "Reason",
+                "reconnecting": "Disconnected, connecting again at {{1}}",
+                "status": "Status",
+                "stopped": "Not connected",
+                "title": "Connection",
+                "unconfigured": "Not connected: the AppID or the AppSecret is empty",
+                "username": "Bot"
+            },
+            "device": {
+                "assigned": "Device running the bot",
+                "current": "This device",
+                "description": "When on, only this device connects to the bot",
+                "title": "Run on this device only",
+                "unassigned": "No device is set, every device connects"
+            },
+            "eventLog": {
+                "description": "Save received events in the workspace for troubleshooting",
+                "title": "Event log"
+            },
+            "inboxBindings": {
+                "add": "Add a binding",
+                "description": "Write group messages into inbox documents; a group can be bound to several documents",
+                "doc": "Inbox document ID",
+                "docPlaceholder": "20260930112233-abcdefg",
+                "enabled": "Enabled",
+                "group": "Group Open ID",
+                "groupPlaceholder": "7E1569E220555215CCBF5D1A85B1A123",
+                "notify": "Online and offline notices",
+                "remove": "Remove",
+                "reply": "Reply with the block link",
+                "title": "Bound groups"
+            },
+            "inboxDownloadAssets": {
+                "description": "Download the images, voice messages, videos and files of messages into the workspace",
+                "title": "Download assets"
+            },
+            "intents": {
+                "description": "Event categories the bot receives; the bot reconnects after a change",
+                "items": {
+                    "AUDIO_ACTION": "Audio",
+                    "DIRECT_MESSAGE": "Guild direct messages",
+                    "FORUMS_EVENT": "Forums (private bots only)",
+                    "GROUP_AND_C2C_EVENT": "Group and C2C chats",
+                    "GUILDS": "Guilds and channels",
+                    "GUILD_MEMBERS": "Guild members",
+                    "GUILD_MESSAGES": "All guild messages (private bots only)",
+                    "GUILD_MESSAGE_REACTIONS": "Guild message reactions",
+                    "INTERACTION": "Interactions",
+                    "MESSAGE_AUDIT": "Message audit",
+                    "PUBLIC_GUILD_MESSAGES": "Guild @bot messages"
+                },
+                "title": "Subscribed events <code class=\"fn__code\">QQ_BOT_INTENTS</code>"
+            },
+            "online": {
+                "description": "When on, the bot connects to QQ, records the messages of bound groups and answers commands; when off, it disconnects",
+                "title": "Online"
+            },
+            "secret": {
+                "description": "AppSecret of the bot on the QQ Open Platform, stored in plain text and synced with your data",
+                "title": "AppSecret <code class=\"fn__code\">QQ_BOT_SECRET</code>"
+            },
+            "tabs": {
+                "bot": "Bot",
+                "inbox": "Inbox"
+            },
+            "title": "QQ Bot"
+        },
+        "telegramBotSettings": {
+            "apiBaseUrl": {
+                "description": "Leave it empty to use the official server, or fill in the address of a self-hosted Bot API server or a reverse proxy; the token is sent to this address with every request",
+                "title": "Bot API server"
+            },
+            "connection": {
+                "connected": "Receiving messages since {{1}}",
+                "connecting": "Connecting...",
+                "description": "The connection of the bot to Telegram on this device, refreshed automatically",
+                "failed": "Stopped receiving. Check the token and the Bot API server; it also stops when the bot has a webhook or another program receives the messages of the same bot. The bot connects again after a change",
+                "loading": "Loading...",
+                "offline": "Offline. Turn on Online to connect",
+                "otherDevice": "Runs on device {{1}} only, this device does not connect",
+                "reason": "Reason",
+                "reconnecting": "Request failed, retrying at {{1}}",
+                "status": "Status",
+                "stopped": "Not connected",
+                "title": "Connection",
+                "unconfigured": "Not connected: the token is empty",
+                "username": "Bot"
+            },
+            "device": {
+                "assigned": "Device running the bot",
+                "current": "This device",
+                "description": "When on, only this device receives messages. Telegram lets only one program receive the messages of a bot at a time, so turn it on when you have several devices",
+                "title": "Run on this device only",
+                "unassigned": "No device is set, every device connects"
+            },
+            "eventLog": {
+                "description": "Save received updates in the workspace for troubleshooting",
+                "title": "Event log"
+            },
+            "inboxBindings": {
+                "add": "Add a binding",
+                "chat": "Chat ID",
+                "chatPlaceholder": "-1001234567890",
+                "description": "Write the messages of private chats, groups or channels into inbox documents; a chat can be bound to several documents. Send /chatid to the bot to get the chat ID",
+                "doc": "Inbox document ID",
+                "docPlaceholder": "20260930112233-abcdefg",
+                "enabled": "Enabled",
+                "notify": "Online and offline notices",
+                "remove": "Remove",
+                "reply": "Reply with the block link",
+                "title": "Bound chats"
+            },
+            "inboxDownloadAssets": {
+                "description": "Download the images, voice messages, videos and files of messages into the workspace; the official server only serves files up to 20 MB",
+                "title": "Download assets"
+            },
+            "online": {
+                "description": "When on, the bot receives Telegram messages, records the messages of bound chats and answers commands; when off, it stops receiving them",
+                "title": "Online"
+            },
+            "tabs": {
+                "bot": "Bot",
+                "inbox": "Inbox"
+            },
+            "title": "Telegram Bot",
+            "token": {
+                "description": "Token of the bot from @BotFather, stored in plain text and synced with your data",
+                "placeholder": "123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11",
+                "title": "Token"
+            }
+        },
+        "weixinBotSettings": {
+            "account": {
+                "botId": "Bot ID",
+                "cancel": "Cancel",
+                "confirmed": "Logged in",
+                "description": "Scan the QR code with WeChat on your phone to connect a WeChat ClawBot to SiYuan. The device where you scan the QR code receives the messages",
+                "device": "Device receiving messages",
+                "expired": "The login expired ({{1}}), scan the QR code again",
+                "failed": "Login failed: {{1}}",
+                "loading": "Getting the QR code...",
+                "login": "Log in with a QR code",
+                "loginTime": "Login time",
+                "logout": "Log out",
+                "logoutDescription": "Stop receiving WeChat messages and remove the saved login. Other devices also log out after your data syncs",
+                "logoutTitle": "Log out of WeChat",
+                "needVerifyCode": "Enter the number shown in WeChat on your phone",
+                "notLoggedIn": "Not logged in",
+                "notRunning": "This device has not started receiving messages yet",
+                "offline": "Offline. Turn on Online to receive messages",
+                "otherDevice": "Another device receives the messages. Scan the QR code again on this device to receive them here",
+                "qrcode": "WeChat login QR code",
+                "qrcodeExpired": "The QR code expired, scan a new one",
+                "relogin": "Scan the QR code again",
+                "running": "Receiving messages",
+                "scaned": "Scanned, confirm the login on your phone",
+                "status": "Status",
+                "thisDevice": "this device",
+                "title": "WeChat account",
+                "userId": "WeChat user",
+                "verify": "Submit",
+                "verifying": "Verifying...",
+                "wait": "Scan the QR code with WeChat on your phone",
+                "wrongCode": "Wrong number, enter it again"
+            },
+            "eventLog": {
+                "description": "Save received messages in the workspace for troubleshooting",
+                "title": "Event log"
+            },
+            "inboxDoc": {
+                "description": "Write received WeChat messages into date-organized subdocuments of this document",
+                "placeholder": "20260930112233-abcdefg",
+                "title": "Inbox document ID"
+            },
+            "inboxDownloadAssets": {
+                "description": "Download and decrypt the images, voice messages, videos and files of messages into the workspace; they stay placeholders when this version of SiYuan cannot decrypt them",
+                "title": "Download assets"
+            },
+            "inboxEnabled": {
+                "description": "When off, messages are only logged, not written into the inbox",
+                "title": "Write into the inbox"
+            },
+            "inboxReply": {
+                "description": "Reply in WeChat with the block link of the message super block after writing it",
+                "title": "Reply with the block link"
+            },
+            "online": {
+                "description": "When on, the device where you scanned the QR code receives the messages sent to the ClawBot; when off, it stops receiving them",
+                "title": "Online"
+            },
+            "tabs": {
+                "bot": "Bot",
+                "inbox": "Inbox"
+            },
+            "title": "WeChat Bot"
+        }
+    }
+}
