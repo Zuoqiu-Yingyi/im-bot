@@ -1,5 +1,23 @@
 # Changelog
 
+## [0.3.0](https://github.com/Zuoqiu-Yingyi/siyuan-plugin-im-bot/compare/v0.2.0...v0.3.0) (2026-10-03)
+
+
+### Miscellaneous
+
+* release `v0.3.0` ([5d1feac](https://github.com/Zuoqiu-Yingyi/siyuan-plugin-im-bot/commit/5d1feaca2f3cf3295695023c9ea77af3c16c0d76))
+* **release:** release v0.3.0 ([18aab49](https://github.com/Zuoqiu-Yingyi/siyuan-plugin-im-bot/commit/18aab492c4191e79604f220a524dd5d216693aef))
+
+
+### Features
+
+* **telegram:** connect a Telegram bot via the Bot API ([7b8fc14](https://github.com/Zuoqiu-Yingyi/siyuan-plugin-im-bot/commit/7b8fc14d1def5cdb10fd1e2080750b36e2beba06))
+
+
+### Bug Fixes
+
+* **telegram:** add rich text, update IDs and animated stickers ([a0c0d50](https://github.com/Zuoqiu-Yingyi/siyuan-plugin-im-bot/commit/a0c0d50208eae785f14e2fb175eb1a2d10d17aa6))
+
 ## [0.2.0](https://github.com/Zuoqiu-Yingyi/siyuan-plugin-im-bot/compare/v0.1.1...v0.2.0) (2026-10-02)
 
 
