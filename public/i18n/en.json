@@ -17,15 +17,25 @@
         "urlPlaceholder": "Request path starting with /, relative to https://api.bot.qq.com, for example /gateway/bot"
     },
     "commands": {
+        "chatid": {
+            "chat": "Chat ID: {{1}}",
+            "user": "User ID: {{1}}"
+        },
         "openid": {
             "group": "Group OpenID: {{1}}",
             "user": "User OpenID: {{1}}"
         }
     },
     "inbox": {
+        "animation": "[Animation]",
+        "audio": "[Audio]",
+        "contact": "[Contact]",
         "file": "[File]",
         "image": "[Image]",
+        "location": "[Location]",
+        "poll": "[Poll]",
         "quote": "Quoted message",
+        "sticker": "[Sticker]",
         "unavailable": "[Message not available]",
         "video": "[Video]",
         "voice": "[Voice]"
@@ -81,7 +91,11 @@
     },
     "notices": {
         "offline": "Inbox offline: messages of this group are not recorded for now (device: {{1}})",
-        "online": "Inbox online: messages of this group are recorded in SiYuan (device: {{1}})"
+        "online": "Inbox online: messages of this group are recorded in SiYuan (device: {{1}})",
+        "telegram": {
+            "offline": "Inbox offline: messages of this chat are not recorded for now (device: {{1}})",
+            "online": "Inbox online: messages of this chat are recorded in SiYuan (device: {{1}})"
+        }
     },
     "settings": {
         "generalSettings": {
@@ -172,6 +186,70 @@
                 "inbox": "Inbox"
             },
             "title": "QQ Bot"
+        },
+        "telegramBotSettings": {
+            "apiBaseUrl": {
+                "description": "Leave it empty to use the official server, or fill in the address of a self-hosted Bot API server or a reverse proxy; the token is sent to this address with every request",
+                "title": "Bot API server"
+            },
+            "connection": {
+                "connected": "Receiving messages since {{1}}",
+                "connecting": "Connecting...",
+                "description": "The connection of the bot to Telegram on this device, refreshed automatically",
+                "failed": "Stopped receiving. Check the token and the Bot API server; it also stops when the bot has a webhook or another program receives the messages of the same bot. The bot connects again after a change",
+                "loading": "Loading...",
+                "offline": "Offline. Turn on Online to connect",
+                "otherDevice": "Runs on device {{1}} only, this device does not connect",
+                "reason": "Reason",
+                "reconnecting": "Request failed, retrying at {{1}}",
+                "status": "Status",
+                "stopped": "Not connected",
+                "title": "Connection",
+                "unconfigured": "Not connected: the token is empty",
+                "username": "Bot"
+            },
+            "device": {
+                "assigned": "Device running the bot",
+                "current": "This device",
+                "description": "When on, only this device receives messages. Telegram lets only one program receive the messages of a bot at a time, so turn it on when you have several devices",
+                "title": "Run on this device only",
+                "unassigned": "No device is set, every device connects"
+            },
+            "eventLog": {
+                "description": "Save received updates in the workspace for troubleshooting",
+                "title": "Event log"
+            },
+            "inboxBindings": {
+                "add": "Add a binding",
+                "chat": "Chat ID",
+                "chatPlaceholder": "-1001234567890",
+                "description": "Write the messages of private chats, groups or channels into inbox documents; a chat can be bound to several documents. Send /chatid to the bot to get the chat ID",
+                "doc": "Inbox document ID",
+                "docPlaceholder": "20260930112233-abcdefg",
+                "enabled": "Enabled",
+                "notify": "Online and offline notices",
+                "remove": "Remove",
+                "reply": "Reply with the block link",
+                "title": "Bound chats"
+            },
+            "inboxDownloadAssets": {
+                "description": "Download the images, voice messages, videos and files of messages into the workspace; the official server only serves files up to 20 MB",
+                "title": "Download assets"
+            },
+            "online": {
+                "description": "When on, the bot receives Telegram messages, records the messages of bound chats and answers commands; when off, it stops receiving them",
+                "title": "Online"
+            },
+            "tabs": {
+                "bot": "Bot",
+                "inbox": "Inbox"
+            },
+            "title": "Telegram Bot",
+            "token": {
+                "description": "Token of the bot from @BotFather, stored in plain text and synced with your data",
+                "placeholder": "123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11",
+                "title": "Token"
+            }
         },
         "weixinBotSettings": {
             "account": {

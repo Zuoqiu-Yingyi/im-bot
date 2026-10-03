@@ -25,7 +25,7 @@
 
 # SiYuan IM Bot
 
-A plugin for [SiYuan Note](https://github.com/siyuan-note/siyuan) that connects a QQ bot and a WeChat ClawBot to SiYuan: it records the messages of QQ groups and the messages sent to the WeChat ClawBot in inbox documents, and provides a command to look up OpenIDs, a tab that sends messages to the known groups and users, and a debugger for the QQ bot API.
+A plugin for [SiYuan Note](https://github.com/siyuan-note/siyuan) that connects a QQ bot, a WeChat ClawBot and a Telegram bot to SiYuan: it records the messages of QQ groups, the messages sent to the WeChat ClawBot and the messages of Telegram private chats, groups and channels in inbox documents, and provides commands to look up OpenIDs and chat IDs, a tab that sends messages to the known groups and users, and a debugger for the QQ bot API.
 
 The main features run in the SiYuan kernel, so they work while SiYuan is running, without its interface open. Requires SiYuan 3.7.3 or later.
 
@@ -45,6 +45,15 @@ To connect a WeChat ClawBot:
 2. Fill in the ID of the document that collects the messages in `WeChat Bot > Inbox > Inbox document ID`, then turn on `WeChat Bot > Bot > Online` (off by default).
 
 From then on, the messages you send to this ClawBot in WeChat are recorded in dated sub-documents of that document.
+
+To connect a Telegram bot:
+
+1. In Telegram, send `/newbot` to [@BotFather](https://t.me/BotFather) to create a bot and get its token. To record every message of a group, first send `/setprivacy` to @BotFather to turn off the privacy mode of the bot, then add the bot to the group (a bot already in the group has to be removed and added again for the change to take effect), or make the bot an administrator of the group. To record a channel, add the bot to the channel as an administrator.
+2. Fill in the token in `Telegram Bot > Bot > Token`, then turn on `Telegram Bot > Bot > Online` (off by default).
+3. Send `/chatid` to the bot in a private chat; in a group, have the owner or an administrator send `/chatid@<bot username>`; in a channel, post `/chatid` (the reply of the bot appears in the channel, so you may delete it afterwards). The bot replies with the ID of the chat.
+4. In `Telegram Bot > Inbox > Bound chats`, click "Add a binding" and fill in the chat ID and the ID of the document that collects the messages.
+
+From then on, the messages of the chat are recorded in dated sub-documents of that document.
 
 ## Q & A
 
@@ -87,6 +96,27 @@ From then on, the messages you send to this ClawBot in WeChat are recorded in da
 
   - The login token (bot_token) is stored in plain text in `data/storage/petal/im-bot/weixin.json` of the workspace and syncs with your data. Any program that can call the kernel API of this workspace, including other plugins, can read this file.
   - The WeChat kernel methods of this plugin never return the bot_token. The login QR code is generated locally. Whoever scans it becomes the user who can chat with the bot, so do not share it.
+- Telegram messages are not written to the inbox?
+
+  - Check the state of this device in `Telegram Bot > Bot > Connection`, which shows the reason when the bot stopped receiving. When it says offline, turn on `Telegram Bot > Bot > Online`.
+  - In groups: bots run in privacy mode by default and only receive a few messages, such as commands meant for them and replies to them. To record every message, send `/setprivacy` to @BotFather to turn privacy mode off, then remove the bot from the group and add it again (Telegram applies the change only after the bot is added again); or make the bot an administrator of the group.
+  - In channels: the bot has to be a member of the channel (usually as an administrator) to receive channel posts.
+  - When a basic group is upgraded to a supergroup, its chat ID changes to a new one starting with `-100`. The kernel log shows a warning; update the binding with the new chat ID.
+  - Check that the binding is enabled and that the chat ID and the document ID are right. With `Run on this device only` on, only the chosen device writes the inbox.
+  - Look for lines with `[plugin:im-bot] [telegram]` in the kernel log.
+- The Telegram connection says it stopped receiving?
+
+  - The plugin stops receiving when the token is wrong or malformed, or the Bot API server is wrong. It connects again after a settings change (such as the token or the Bot API server), or after the plugin is enabled again.
+  - Telegram does not allow receiving messages the way this plugin does (getUpdates) while the bot has a webhook. Delete the webhook first, for example by opening `https://api.telegram.org/bot<token>/deleteWebhook` in a browser.
+  - Only one program can receive the messages of a bot at a time: when SiYuan on another device or another bot program receives them too, the one that starts later makes the earlier one get a conflict error (error code 409), and this plugin stops receiving when it gets that error. With several devices, turn on `Run on this device only`, and stop other programs that use the token.
+- Is the Telegram token safe?
+
+  - The token is stored in plain text in `data/storage/petal/im-bot/config.json` of the workspace and syncs with your data. Any program that can call the kernel API of this workspace, including other plugins, can read this file. Whoever has the token fully controls the bot; if it leaks, send `/revoke` to @BotFather to get a new token.
+  - In the logs the plugin writes and in the errors it shows in the settings panel, the secret part of the token is replaced with `***`.
+  - Every request sends the token to the `Bot API server`, so only fill in a server you trust.
+- The anchor text of a block reference in a quote changed?
+
+  - The block references in quotes and replies in the inbox use dynamic anchor texts: after the quoted message changes (for example when you edit it in SiYuan), SiYuan makes the anchor text again from the first block of that message. When the quoted message is itself a quote, its first block is its own blockquote, so the anchor text becomes the content it quotes. To keep an anchor text, change the block reference to a static anchor text in its context menu.
 
 ## INTRODUCTION
 
@@ -134,7 +164,7 @@ From then on, the messages you send to this ClawBot in WeChat are recorded in da
     - Voice: an audio block, followed by the speech recognition text from QQ.
     - Video: a video block.
     - Files: a link named after the file.
-    - Quotes: a block reference to the quoted message when it is in the inbox; otherwise a blockquote with the quoted content.
+    - Quotes: a blockquote before the text. When the quoted message is in the inbox, it holds a block reference to that message with a dynamic anchor text; otherwise it holds the quoted content.
     - Chat records (forwarded messages): a super block per message, including nested chat records.
     - Cards and other messages: shown as text.
   - Message blocks carry these custom attributes, which can be used in queries
@@ -190,9 +220,39 @@ From then on, the messages you send to this ClawBot in WeChat are recorded in da
     - Each message becomes a super block with one paragraph per message item: text shows as it is, with web addresses turned into links; images, voice messages, files and videos first show as `[Image]`, `[Voice]` followed by the transcription, `[File] <file name>` and `[Video]`.
     - When `WeChat Bot > Inbox > Download assets` is on and the SiYuan kernel can decrypt them, the plugin downloads the media from the WeChat CDN after the reply, decrypts them with AES-128-ECB, saves them as assets and replaces the placeholders: images show as images, videos as video blocks, and voice messages and files as links to their assets (voice messages keep the transcription). The message block keeps its ID, so the block link already sent and the block references to it still work.
     - Media that fail to download or decrypt keep their placeholders, with a warning in the kernel log. When a message carries the MD5 of a file or a video, the plugin checks it and only logs a warning on a mismatch; the file is still saved.
-    - Quotes: when the quoted message is already in the inbox, the quote becomes a block reference to it; otherwise a blockquote shows the quoted content.
+    - Quotes: a blockquote before the text. When the quoted message is already in the inbox, it holds a block reference to that message with a dynamic anchor text; otherwise it holds the quoted content.
     - Messages sent by the bot itself are not written, and a message received more than once is written only once.
   - Message blocks have the custom attributes `custom-author-id` (the WeChat user ID of the sender) and `custom-msg-id` (the message ID).
+- Telegram bot
+
+  - With a token filled in and `Telegram Bot > Bot > Online` on, the plugin receives the messages of the bot by long polling (getUpdates) in the SiYuan kernel, without a public address. The bot cannot have a webhook at the same time.
+  - `Telegram Bot > Bot > Connection` shows the state of this device. A failed request is retried after 2 seconds, and after 30 seconds once 3 requests in a row have failed; when rate limited, the plugin waits as long as Telegram asks.
+  - The receiving position is only kept in memory, as the Telegram server remembers which messages were received. Messages sent to the bot while "Online" is off or the plugin is stopped are kept by Telegram for up to 24 hours and received after the bot goes online again.
+  - Every received update is written to the kernel log, and also saved as a file with `Telegram Bot > Bot > Event log` on.
+- Telegram inbox
+
+  - Each binding writes the messages of a chat (a private chat, a group or a channel) into an inbox document the same way as the QQ inbox: inserted into `.temp` first, then moved to the end of the `YYYY/MM/YYYY-MM-DD` document. The same document can also be the inbox of QQ groups and WeChat.
+  - Commands for this bot (such as `/chatid` and `/start@<bot username>`) and service messages such as member changes and pins are not written; a command with the username of another bot (such as `/start@other_bot`) is written as an ordinary message.
+  - A message received more than once is written only once. Editing or deleting a message in Telegram does not change the inbox.
+  - How messages are converted
+
+    - Each message becomes a super block. The formatting of the text becomes SiYuan styles: bold, italic, underline, strikethrough and inline code stay as they are, spoilers become highlights, quotes become blockquotes and code blocks stay code blocks; text links, web addresses, email addresses and phone numbers become links; mentions and commands show as <kbd>@username</kbd> and <kbd>/command</kbd>, and users without a username as <kbd>@&lt;name&gt;</kbd>; dates and times become inline memos with their UTC time as the memo. Other text shows as it is, with web addresses turned into links.
+    - Formatting SiYuan cannot keep in full: underlined text with characters that can form Markdown marks, such as `*`, `_`, `#` and `[`, shows without the underline; in strikethrough, highlights and other styles with punctuation, the spaces next to the punctuation may lose the style.
+    - Media first show as placeholders such as `[Image]`, `[Voice]` and `[File] <file name>`. With `Telegram Bot > Inbox > Download assets` on, the plugin downloads the media from Telegram, saves them as assets and replaces the placeholders: images and static stickers show as images; videos, video messages, video stickers and animations as video blocks; voice messages and audio as audio blocks; and files as links named after the files. SiYuan cannot play animated stickers (.tgs), so they show as their thumbnails, followed by a link to the sticker file. Only the largest size of an image is saved, and the caption follows the media.
+    - The official Telegram server only serves files up to 20 MB, so larger media and media that fail to download keep their placeholders, with a warning in the kernel log.
+    - Locations show as links to OpenStreetMap; contacts, polls and dice show as text.
+    - Replies: a blockquote before the text. When the replied message is already in the inbox, it holds a block reference to that message with a dynamic anchor text; otherwise it holds the replied content. When the reply quotes part of the message, the anchor text or the blockquote shows the quoted part.
+  - Message blocks have these custom attributes
+
+    - `custom-msg-id`: `<chat ID>:<message ID>`. A message ID is only unique within its chat, so the chat ID is included
+    - `custom-author-id`: the user ID of the sender; the ID of the group or channel when sending as that group or channel
+    - `custom-author-username`: the name of the sender (the signature or the channel name in channels), only recorded in groups and channels, and shown at the top left of the message block
+    - `custom-update-id`: the ID of the update that delivered the message (update_id)
+  - With "Reply with the block link" on in a binding, the bot replies to each message written to the document with the block hyperlink of its super block, `siyuan://blocks/<block ID>`. With "Online and offline notices" on, the chat gets a notice when the bot goes online and when it goes offline, at the same moments as the QQ "Online and offline notices".
+- Telegram commands
+
+  - `/chatid` (and `/start`): the bot replies with the ID of the chat, and in groups also with the user ID of the sender. In groups, send `/chatid@<bot username>`: with privacy mode on, the bot may not receive commands without its username.
+  - In groups, only commands from the owner and administrators (anonymous administrators included) are answered; commands from other members are only logged.
 
 ### Settings Introduction
 
@@ -283,6 +343,50 @@ From then on, the messages you send to this ClawBot in WeChat are recorded in da
     - `Download assets`
 
       - When on, decrypts the images, voice messages, videos and files of messages and saves them as assets in the workspace; see "How messages are converted". When the SiYuan kernel cannot decrypt them (no `siyuan.crypto`, or no AES-ECB), they stay placeholders
+      - On by default; a change applies to the messages received afterwards
+- `Telegram Bot`
+
+  - `Bot`
+
+    - `Online`
+
+      - When on, the bot goes online: it receives Telegram messages, records the messages of bound chats and answers commands. When off, it stops receiving them. The chats whose bindings turn on "Online and offline notices" get a notice each time
+      - Off by default. The setting syncs to your other devices; with `Run on this device only` on, only the chosen device goes online
+    - `Connection`
+
+      - Shows the connection of the bot to Telegram on this device: receiving messages (since when, and the username of the bot), connecting, request failed (when it retries, and why), stopped receiving (and why), and the cases where it does not connect: offline, running on another device only, or no token
+      - Refreshed every 2 seconds while the settings panel is open
+    - `Token`
+
+      - Token of the bot from @BotFather, like `123456:ABC-DEF...`
+      - Stored in plain text in `data/storage/petal/im-bot/config.json` of the workspace and synced with your data
+    - `Bot API server`
+
+      - Leave it empty to use the official Telegram server `https://api.telegram.org`. You can also fill in the address of a [self-hosted Bot API server](https://github.com/tdlib/telegram-bot-api) or a reverse proxy (such as `http://127.0.0.1:8081`) for networks that cannot reach the official server
+      - A self-hosted server running in `--local` mode does not serve file downloads, so media keep their placeholders
+      - Every request sends the token to this address
+    - `Event log`
+
+      - When on, saves each received update as a JSON file `data/storage/petal/im-bot/logs/telegram/updates/<bot ID>/<update ID>.json` in the workspace
+      - These files sync with your data, and the plugin does not delete them. On by default
+    - `Run on this device only`
+
+      - When on, only this device receives messages: it writes the event log and the inbox, answers commands and sends the online and offline notices. Telegram lets only one program receive the messages of a bot at a time, so turn it on when you have several devices
+      - When off, every device with this plugin tries to receive the messages while the bot is online, and they conflict with each other
+      - The IDs of this device and of the chosen device show under the switch
+  - `Inbox`
+
+    - `Bound chats`
+
+      - Each binding writes the messages of a chat into an inbox document. A chat can be bound to several documents, and a document to several chats
+      - `Chat ID`: the user ID of the other person in a private chat; negative for groups, and starting with `-100` for supergroups and channels. Send `/chatid` to the bot to get it, or find it in the event log
+      - `Inbox document ID`: the ID of the document that collects the messages. Right-click the document in the document tree and choose "Copy > Copy ID"
+      - `Enabled`: when off, the binding writes no messages and sends no online or offline notices. A binding without a chat or a document ID has no effect either
+      - `Reply with the block link`: when on, the bot replies to each message written to the document with the block hyperlink of its super block. Off by default
+      - `Online and offline notices`: when on, the chat gets a notice when the bot goes online and when it goes offline. When several bindings of a chat turn this on, the chat gets one notice each time. Off by default
+    - `Download assets`
+
+      - When on, downloads the images, voice messages, videos, stickers and files of messages as assets in the workspace; see "Telegram inbox". The official server only serves files up to 20 MB
       - On by default; a change applies to the messages received afterwards
 
 ## CHANGELOG

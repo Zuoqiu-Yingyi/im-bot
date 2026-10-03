@@ -22,6 +22,7 @@ import { Logger } from "@workspace/utils/logger";
 import { mergeIgnoreArray } from "@workspace/utils/misc/merge";
 
 import icon_qq from "./assets/symbols/icon-qq.symbol?raw";
+import icon_telegram from "./assets/symbols/icon-telegram.symbol?raw";
 import icon_wechat from "./assets/symbols/icon-wechat.symbol?raw";
 import { DEFAULT_CONFIG } from "./configs/default";
 import CONSTANTS from "./constants";
@@ -34,6 +35,7 @@ import type { ISiyuanGlobal } from "@workspace/types/siyuan";
 
 import type { IConfig } from "./types/config";
 import type { IApiResponse, IQQConnectionState } from "./types/qq";
+import type { ITelegramConnectionState } from "./types/telegram";
 import type { IBotUsers } from "./types/users";
 import type { IWeixinAccountState, IWeixinLoginState } from "./types/weixin";
 import type { I18N } from "./utils/i18n";
@@ -132,6 +134,7 @@ export default class ImBotPlugin extends siyuan.Plugin {
         this.addIcons([
             icon_qq,
             icon_wechat,
+            icon_telegram,
         ].join(""));
 
         /**
@@ -314,6 +317,14 @@ export default class ImBotPlugin extends siyuan.Plugin {
     /* 通过内核插件的 RPC weixin-logout, 停止接收微信消息并删除登录信息 */
     public async logoutWeixin(): Promise<void> {
         await this.kernel.rpc.call[CONSTANTS.KERNEL_RPC_METHOD.WEIXIN_LOGOUT]?.();
+    }
+
+    /**
+     * 通过内核插件的 RPC telegram-get-state, 获取本设备上 Telegram 机器人的连接状态
+     * @throws 内核插件没有运行时以 JSON-RPC 错误拒绝
+     */
+    public async getTelegramConnectionState(): Promise<ITelegramConnectionState | null> {
+        return this.kernel.rpc.call[CONSTANTS.KERNEL_RPC_METHOD.TELEGRAM_GET_STATE]?.() ?? null;
     }
 
     /* 同步配置到内核插件, QQ 机器人配置变化时内核插件会重新连接 */

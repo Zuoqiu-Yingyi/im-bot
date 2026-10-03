@@ -189,20 +189,18 @@ function toMedia(attachment: IAttachment): IMedia {
  * @param content - 消息内容
  * @param mentions - content 中提及的对象
  * @param media - 附件
- * @param prefix - 段落开头的行内内容, 如引用消息的块引用
  */
 function convertBody(
     context: IContext,
     content: string,
     mentions: IMention[] | undefined,
     media: IMedia[],
-    prefix = "",
 ): string[] {
     context.media += media.length;
     const images = media
         .filter((item) => item.kind === "image")
         .map((item) => image(item.url, item.name));
-    const blocks = [paragraph(prefix + images.join("") + inlineContent(content, mentions))];
+    const blocks = [paragraph(images.join("") + inlineContent(content, mentions))];
     for (const item of media) {
         switch (item.kind) {
             case "voice":
@@ -222,14 +220,20 @@ function convertBody(
     return blocks.filter(Boolean);
 }
 
-/* 引用消息: 能找到被引用消息所在的块时转为块引用, 否则用引述块显示被引用的内容 */
+/**
+ * 引用消息: 正文前是一个引述块, 能找到被引用消息所在的块时其中为指向该块的块引用 (动态锚文本),
+ * 否则为被引用的内容
+ */
 function convertReference(context: IContext, message: IGroupMessage, reference: string | undefined): string[] {
     const refIdx = sceneValue(message, "ref_msg_idx");
     const quoted = message.msg_elements?.find((element) => element.msg_idx === refIdx) ?? message.msg_elements?.[0];
     const media = (message.attachments ?? []).map(toMedia);
     if (reference) {
         const anchor = anchorText(quoted?.content ?? "", message.mentions) || context.labels.quote;
-        return convertBody(context, message.content.trim(), message.mentions, media, `${blockRef(reference, anchor)} `);
+        return [
+            blockquote([blockRef(reference, anchor)]),
+            ...convertBody(context, message.content.trim(), message.mentions, media),
+        ];
     }
 
     const quote = quoted

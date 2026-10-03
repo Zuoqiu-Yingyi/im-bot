@@ -19,6 +19,30 @@ import type { IPanelConfig } from "@/types/qq";
 export interface IConfig {
     qq: IQQBotConfig;
     weixin: IWeixinBotConfig;
+    telegram: ITelegramBotConfig;
+}
+
+/* Telegram 机器人 */
+export interface ITelegramBotConfig {
+    token: string; // 从 @BotFather 获取的 Token, 形如 <机器人 ID>:<密钥>
+    apiBaseUrl: string; // Bot API 服务器的地址, 为空时使用官方服务器 https://api.telegram.org
+    online: boolean; // 是否上线: 关闭时所有设备都不接收消息 (下线)
+    eventLog: boolean; // 事件日志: 是否把收到的更新保存到 logs/telegram/updates/
+    device: string; // 运行 Telegram 机器人的设备 ID, 为空时每台设备都运行
+    inbox: ITelegramInboxConfig; // 思源收集箱
+}
+
+export interface ITelegramInboxConfig {
+    bindings: ITelegramInboxBinding[]; // 会话与收集箱文档的绑定
+    downloadAssets: boolean; // 是否把消息中的媒体保存为资源文件
+}
+
+export interface ITelegramInboxBinding {
+    chat: string; // 会话 ID (chat_id), 私聊为用户 ID, 超级群与频道以 -100 开头
+    doc: string; // 收集箱文档 ID
+    enabled: boolean; // 是否启用该绑定
+    reply: boolean; // 写入后是否向该消息回复其超级块的块超链接
+    notify: boolean; // 机器人上线与下线时是否向该会话发送通知
 }
 
 /* 微信机器人 (ClawBot); 登录信息不在配置中, 由内核插件保存在 weixin.json 中 */
