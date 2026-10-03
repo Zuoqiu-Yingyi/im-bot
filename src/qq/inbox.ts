@@ -36,7 +36,7 @@ function errorMessage(error: unknown): string {
 
 /* 生效的绑定: 已启用, 且群与文档都已填写 */
 export function activeBindings(config: IQQInboxConfig): IQQInboxBinding[] {
-    return config.bindings.filter((binding) => binding.enabled && binding.group && binding.doc);
+    return config.bindings.filter((binding) => binding.enabled && binding.chat && binding.doc);
 }
 
 /**
@@ -75,7 +75,7 @@ export class QQInbox {
         if (mentionsBot(payload.t, message)) {
             return;
         }
-        const bindings = activeBindings(this.config().inbox).filter((binding) => binding.group === message.group_openid);
+        const bindings = activeBindings(this.config().inbox).filter((binding) => binding.chat === message.group_openid);
         if (bindings.length === 0) {
             return;
         }
@@ -87,7 +87,7 @@ export class QQInbox {
                     await this.write(binding, payload.id ?? "", message, index + 1);
                 }
                 catch (error) {
-                    void this.siyuan.logger.warn(`[qq] [inbox] write the message ${message.id} of group ${binding.group} to ${binding.doc} failed:`, errorMessage(error));
+                    void this.siyuan.logger.warn(`[qq] [inbox] write the message ${message.id} of group ${binding.chat} to ${binding.doc} failed:`, errorMessage(error));
                 }
             }
         });
@@ -98,7 +98,7 @@ export class QQInbox {
         await this.writer.prepare(inbox);
 
         const msgIdx = sceneValue(message, "msg_idx");
-        if (msgIdx && await this.writer.findMessage(inbox, MSG_IDX_ATTRIBUTE, msgIdx)) {
+        if (msgIdx && (await this.writer.findMessage(inbox, MSG_IDX_ATTRIBUTE, msgIdx))) {
             // 同一条消息可能重复推送, 也可能同时推送 GROUP_AT_MESSAGE_CREATE 与 GROUP_MESSAGE_CREATE
             void this.siyuan.logger.debug(`[qq] [inbox] the message ${msgIdx} is already in ${inbox}, skip it`);
             return;

@@ -35,7 +35,7 @@ The main features run in the SiYuan kernel, so they work while SiYuan is running
 2. Add the bot to the QQ group to record, and have the group owner turn on 「获取群内全部消息」 (receive all group messages) for the bot.
 3. Fill in `QQ Bot > Bot > AppID` and `QQ Bot > Bot > AppSecret` in the settings of this plugin, then turn on `QQ Bot > Bot > Online` (off by default).
 4. As the group owner, send `/openid` to the bot with an @ mention in the group. The bot replies with the group_openid of the group.
-5. In `QQ Bot > Inbox > Bound groups`, click "Add a binding" and fill in the group_openid and the ID of the document that collects the messages.
+5. In `QQ Bot > Inbox > Bound groups`, click "Add a binding", fill in the group_openid and the ID of the document that collects the messages, then turn on "Enabled" of the binding (new bindings are off by default).
 
 From then on, the messages of the group are recorded in dated sub-documents of that document.
 
@@ -51,7 +51,7 @@ To connect a Telegram bot:
 1. In Telegram, send `/newbot` to [@BotFather](https://t.me/BotFather) to create a bot and get its token. To record every message of a group, first send `/setprivacy` to @BotFather to turn off the privacy mode of the bot, then add the bot to the group (a bot already in the group has to be removed and added again for the change to take effect), or make the bot an administrator of the group. To record a channel, add the bot to the channel as an administrator.
 2. Fill in the token in `Telegram Bot > Bot > Token`, then turn on `Telegram Bot > Bot > Online` (off by default).
 3. Send `/chatid` to the bot in a private chat; in a group, have the owner or an administrator send `/chatid@<bot username>`; in a channel, post `/chatid` (the reply of the bot appears in the channel, so you may delete it afterwards). The bot replies with the ID of the chat.
-4. In `Telegram Bot > Inbox > Bound chats`, click "Add a binding" and fill in the chat ID and the ID of the document that collects the messages.
+4. In `Telegram Bot > Inbox > Bound chats`, click "Add a binding", fill in the chat ID and the ID of the document that collects the messages, then turn on "Enabled" of the binding (new bindings are off by default).
 
 From then on, the messages of the chat are recorded in dated sub-documents of that document.
 
@@ -64,7 +64,7 @@ To connect a Feishu bot:
 5. In 「开发配置 > 事件与回调 > 事件配置」 (Events & Callbacks > Event configuration), set the subscription mode to 「使用长连接接收事件」 (receive events through a persistent connection) and save it (Feishu saves it only while a connection is online, hence the previous step), then add the event 「接收消息」 (`im.message.receive_v1`).
 6. Create and publish another version so that the 「接收消息」 event takes effect.
 7. Send `/chatid` to the bot in a direct chat; for a group, add the bot to the group, then have the owner or a group administrator send `/chatid` with an @ mention of the bot. The bot replies with the ID of the chat.
-8. In `Feishu Bot > Inbox > Bound chats`, click "Add a binding" and fill in the chat ID and the ID of the document that collects the messages.
+8. In `Feishu Bot > Inbox > Bound chats`, click "Add a binding", fill in the chat ID and the ID of the document that collects the messages, then turn on "Enabled" of the binding (new bindings are off by default).
 
 From then on, the messages of the chat are recorded in dated sub-documents of that document.
 
@@ -107,7 +107,7 @@ From then on, the messages of the chat are recorded in dated sub-documents of th
   - The plugin uses the same API (the iLink Bot API) as the official OpenClaw WeChat plugin. WeChat has not said whether other clients may use it.
 - Is the WeChat login safe?
 
-  - The login token (bot_token) is stored in plain text in `data/storage/petal/im-bot/weixin.json` of the workspace and syncs with your data. Any program that can call the kernel API of this workspace, including other plugins, can read this file.
+  - The login token (bot_token) is stored in plain text in `data/storage/petal/im-bot/weixin/<bot ID>/auth.json` of the workspace and syncs with your data. Any program that can call the kernel API of this workspace, including other plugins, can read this file.
   - The WeChat kernel methods of this plugin never return the bot_token. The login QR code is generated locally. Whoever scans it becomes the user who can chat with the bot, so do not share it.
 - Telegram messages are not written to the inbox?
 
@@ -161,12 +161,13 @@ From then on, the messages of the chat are recorded in dated sub-documents of th
   - Every received event is written to the kernel log, and also saved as a file with `QQ Bot > Bot > Event log` on.
 - Known groups and C2C users
 
-  - QQ has no API that lists the groups the bot is in or the users who chat with it, so the plugin records them from the received events in `data/storage/petal/im-bot/users.json` of the workspace (next to `config.json`, synced with your data), where you can look up group_openids and user_openids. These events belong to "Group and C2C chats" in `QQ Bot > Bot > Subscribed events`.
+  - QQ has no API that lists the groups the bot is in or the users who chat with it, so the plugin records them from the received events in `data/storage/petal/im-bot/qq/<AppID>/chats.json` of the workspace (synced with your data), where you can look up group_openids and user_openids. These events belong to "Group and C2C chats" in `QQ Bot > Bot > Subscribed events`.
   - Only groups and users that appear in events are recorded: a group the bot was in before the plugin started running shows up once it gets a new message.
-  - The records are kept per AppID of the bot (an OpenID is only valid for the same bot), with groups keyed by group_openid and C2C users by user_openid. Times come from the events and are in UTC.
+  - Each bot (AppID) has its own file (an OpenID is only valid for the same bot), with groups in `groups` keyed by group_openid and C2C users in `users` keyed by user_openid. Times come from the events and are in UTC.
   - Group records
 
     - `status`: `added` when the bot is in the group, `removed` after the bot was removed from it
+    - `name`: the group name. QQ events carry no group names, so it comes from the latest successful group info query (`GET /v2/groups/{group_openid}/info`, such as "Query the group info" in the "Send messages" tab), an API only open to allowlisted bots
     - `firstSeen`: the time of the earliest recorded event
     - `added`, `removed`: when the bot was last added to or removed from the group, and the member_openid of the member who did it
     - `proactive`: whether a group admin last allowed or refused active messages from the bot (`allowed`), when and by whom
@@ -227,9 +228,9 @@ From then on, the messages of the chat are recorded in dated sub-documents of th
 - Messenger
 
   - Run "Open the QQ bot messenger" in the Command Palette (desktop only) to open a tab that sends active messages as the bot to the known groups and C2C users.
-  - Choose the recipient from `users.json` (see "Known groups and C2C users"). Groups the bot is still in and users who still have the bot come first, the most recently active first; groups that removed the bot and users who deleted it are marked. Click "Refresh" to read the list again, including the changes not written to `users.json` yet.
+  - Choose the recipient from `chats.json` (see "Known groups and C2C users"). Groups the bot is still in and users who still have the bot come first, the most recently active first; groups that removed the bot and users who deleted it are marked. Click "Refresh" to read the list again, including the changes not written to `chats.json` yet.
   - The tab shows the status of the chosen recipient, its active message setting, the group owner or the union_openid, and the times of the latest message and the first record.
-  - For a group, click "Query the group info" to get its name, description, category, tags and number of members; the name then also shows in the recipient list. This API is only open to allowlisted bots; otherwise the tab says that you need to apply for it on the QQ Open Platform.
+  - For a group, click "Query the group info" to get its name, description, category, tags and number of members; the name then also shows in the recipient list, and is recorded in `chats.json` so that it shows the next time too. This API is only open to allowlisted bots; otherwise the tab says that you need to apply for it on the QQ Open Platform.
   - Choose text or Markdown as the message type. For a C2C user, turn on "Wake-up message" to send it as a wake-up message (`is_wakeup`).
   - Click "Send" or press Ctrl+Enter (⌘+Enter on macOS) to send the message and see the status code, the time, the response headers and the response body. Sending succeeds when the status code is 2xx and the response body has no error code (`err_code`); the message is then cleared. It is kept when sending fails, or when you edit it while waiting for the response; the error code in the response body tells why sending failed.
   - QQ limits active messages: a group needs the group owner to turn on 「机器人主动在群聊内发言」 (the bot may speak in the group) for the bot, and a user needs to turn on active messages on the profile card of the bot. Each group or user receives at most 20 per minute and 1000 per day. Wake-up messages can only be sent within 30 days after the user chats with the bot, one each on the same day, in days 1–3, 3–7 and 7–30.
@@ -241,11 +242,12 @@ From then on, the messages of the chat are recorded in dated sub-documents of th
   - Requests are sent as the bot, so calling APIs such as sending messages has real effects. The debugger works on every device, regardless of "Online" and "Run on this device only".
 - WeChat bot (ClawBot)
 
-  - After you log in with a QR code in `WeChat Bot > Bot > WeChat account` and turn on `WeChat Bot > Bot > Online`, the plugin receives the messages sent to the ClawBot by long polling in the SiYuan kernel, without a public address. The login is stored in `data/storage/petal/im-bot/weixin.json`.
+  - After you log in with a QR code in `WeChat Bot > Bot > WeChat account` and turn on `WeChat Bot > Bot > Online`, the plugin receives the messages sent to the ClawBot by long polling in the SiYuan kernel, without a public address. The login is stored in `data/storage/petal/im-bot/weixin/<bot ID>/auth.json`.
   - Turning "Online" off stops receiving, and turning it on again continues from the last receiving position. Whether the messages sent to the ClawBot while it is offline arrive after it goes online depends on whether the WeChat service keeps them, which has not been verified.
   - The device where you scan the QR code receives the messages. After you scan a new QR code on another device, that device receives them, and the previous device stops once your data syncs.
-  - The receiving position is stored in `data/storage/petal/im-bot/weixin/cursor.json`, so the plugin continues where it stopped after a restart. A new login starts over.
-  - When WeChat reports that the login expired, the plugin stops receiving until you scan a new QR code. "Log out" stops receiving and removes the login.
+  - The receiving position is stored in `data/storage/petal/im-bot/weixin/<bot ID>/cursor.json`, so the plugin continues where it stopped after a restart. A new login starts over.
+  - There is one login at a time: after a login to another bot, the login and the receiving position of the previous bot are removed, and its event log is kept.
+  - When WeChat reports that the login expired, the plugin stops receiving until you scan a new QR code. "Log out" stops receiving and removes the login and the receiving position; the event log is kept.
   - Received messages are written into the document in `WeChat Bot > Inbox > Inbox document ID` the same way as the QQ inbox: inserted into `.temp` first, then moved to the end of the `YYYY/MM/YYYY-MM-DD` document. The same document can also be the inbox of QQ groups.
   - How messages are converted
 
@@ -320,6 +322,14 @@ From then on, the messages of the chat are recorded in dated sub-documents of th
 
   - `/chatid`: the bot replies with the ID of the chat and the open_id of the sender. In groups, send it with an @ mention of the bot.
   - In groups, only commands from the owner and group administrators are answered (the plugin reads them with the `im:chat:readonly` scope); commands from other members are only logged.
+- Data files
+
+  - The plugin keeps its data in `data/storage/petal/im-bot/` of the workspace, synced with your data: `config.json` holds the settings, and the other data of each bot is in a directory named after the bot ID.
+  - QQ: `qq/<AppID>/chats.json` (the known groups and C2C users) and `qq/<AppID>/events/` (the event log).
+  - WeChat: `weixin/<bot ID>/auth.json` (the login), `weixin/<bot ID>/cursor.json` (the receiving position) and `weixin/<bot ID>/events/` (the event log).
+  - Telegram: `telegram/<bot ID>/events/` (the event log).
+  - Feishu: `feishu/<App ID>/events/` (the event log).
+  - The plugin writes the current bot IDs of WeChat and Telegram to `weixin.botId` and `telegram.botId` of `config.json`: for WeChat when you log in with a QR code (cleared when you log out), for Telegram after it connects.
 
 ### Settings Introduction
 
@@ -334,7 +344,7 @@ From then on, the messages of the chat are recorded in dated sub-documents of th
 
     - `Online`
 
-      - When on, the bot goes online: it connects to QQ, records the messages of bound groups, writes `users.json`, answers commands and syncs the command panels. When off, the bot goes offline and disconnects, and messages are not recorded while it is offline. The groups whose bindings turn on "Online and offline notices" get a notice each time; see "Online and offline notices"
+      - When on, the bot goes online: it connects to QQ, records the messages of bound groups, writes `chats.json`, answers commands and syncs the command panels. When off, the bot goes offline and disconnects, and messages are not recorded while it is offline. The groups whose bindings turn on "Online and offline notices" get a notice each time; see "Online and offline notices"
       - Off by default. The setting syncs to your other devices; with `Run on this device only` on, only the chosen device goes online
     - `Connection`
 
@@ -355,13 +365,13 @@ From then on, the messages of the chat are recorded in dated sub-documents of th
       - The bot reconnects after a change; with every switch off, it does not connect
     - `Event log`
 
-      - When on, each received event is saved as a JSON file `data/storage/petal/im-bot/logs/events/<event type>/<event ID>.json` in the workspace. Details in these files, such as the group_openid, help to set up bindings
+      - When on, each received event is saved as a JSON file `data/storage/petal/im-bot/qq/<AppID>/events/<event type>/<event ID>.json` in the workspace. Details in these files, such as the group_openid, help to set up bindings
       - Events without an event ID (`READY`, `RESUMED`) are not saved
       - The files sync with your data, and the plugin never deletes them; turn the log off when you do not need it for troubleshooting
-      - On by default; a change applies to the events received afterwards
+      - Off by default; a change applies to the events received afterwards
     - `Run on this device only`
 
-      - When on, only this device connects to the bot: it writes the event log, the inbox and `users.json`, answers commands, sends the online and offline notices and syncs the command panels. Other devices disconnect once the setting syncs to them
+      - When on, only this device connects to the bot: it writes the event log, the inbox and `chats.json`, answers commands, sends the online and offline notices and syncs the command panels. Other devices disconnect once the setting syncs to them
       - When off, every device with this plugin connects to the bot while it is online
       - The IDs of this device and of the chosen device show under the switch
   - `Inbox`
@@ -370,9 +380,9 @@ From then on, the messages of the chat are recorded in dated sub-documents of th
 
       - Each binding writes the messages of a group into an inbox document. A group can be bound to several documents, and a document to several groups
       - Click "Add a binding" to add a binding and "Remove" to remove one; changes are saved at once
-      - `Group Open ID`: the OpenID of the group (group_openid). The group owner can get it by sending `/openid` to the bot with an @ mention in the group, and it is also in `users.json` and the event log
+      - `Group Open ID`: the OpenID of the group (group_openid). The group owner can get it by sending `/openid` to the bot with an @ mention in the group, and it is also in `chats.json` and the event log
       - `Inbox document ID`: the ID of the document that collects the messages. Right-click the document in the document tree and choose "Copy > Copy ID"
-      - `Enabled`: when off, the binding writes no messages and sends no online or offline notices. A binding without a group or a document ID has no effect either
+      - `Enabled`: when off, the binding writes no messages and sends no online or offline notices. A binding without a group or a document ID has no effect either. New bindings are off by default
       - `Reply with the block link`: when on, the bot quotes each message written to the document in a reply with the block hyperlink of its super block, `siyuan://blocks/<block ID>`. A message written to several documents with this switch on gets one reply per document. Off by default; see Q & A for the limits
       - `Online and offline notices`: when on, the group gets a notice when the bot goes online and when it goes offline; see "Online and offline notices". When several bindings of a group turn this on, the group gets one notice each time. Off by default
     - `Download assets`
@@ -394,8 +404,8 @@ From then on, the messages of the chat are recorded in dated sub-documents of th
       - Click "Log out" to stop receiving messages and remove the login
     - `Event log`
 
-      - When on, saves each received message as a JSON file `data/storage/petal/im-bot/logs/weixin/messages/<message ID>.json` in the workspace
-      - These files sync with your data, and the plugin does not delete them. On by default
+      - When on, saves each received message as a JSON file `data/storage/petal/im-bot/weixin/<bot ID>/events/<message ID>.json` in the workspace
+      - These files sync with your data, and the plugin does not delete them. Off by default
   - `Inbox`
 
     - `Inbox document ID`
@@ -434,8 +444,8 @@ From then on, the messages of the chat are recorded in dated sub-documents of th
       - Every request sends the token to this address
     - `Event log`
 
-      - When on, saves each received update as a JSON file `data/storage/petal/im-bot/logs/telegram/updates/<bot ID>/<update ID>.json` in the workspace
-      - These files sync with your data, and the plugin does not delete them. On by default
+      - When on, saves each received update as a JSON file `data/storage/petal/im-bot/telegram/<bot ID>/events/<update ID>.json` in the workspace
+      - These files sync with your data, and the plugin does not delete them. Off by default
     - `Run on this device only`
 
       - When on, only this device receives messages: it writes the event log and the inbox, answers commands and sends the online and offline notices. Telegram lets only one program receive the messages of a bot at a time, so turn it on when you have several devices
@@ -448,7 +458,7 @@ From then on, the messages of the chat are recorded in dated sub-documents of th
       - Each binding writes the messages of a chat into an inbox document. A chat can be bound to several documents, and a document to several chats
       - `Chat ID`: the user ID of the other person in a private chat; negative for groups, and starting with `-100` for supergroups and channels. Send `/chatid` to the bot to get it, or find it in the event log
       - `Inbox document ID`: the ID of the document that collects the messages. Right-click the document in the document tree and choose "Copy > Copy ID"
-      - `Enabled`: when off, the binding writes no messages and sends no online or offline notices. A binding without a chat or a document ID has no effect either
+      - `Enabled`: when off, the binding writes no messages and sends no online or offline notices. A binding without a chat or a document ID has no effect either. New bindings are off by default
       - `Reply with the block link`: when on, the bot replies to each message written to the document with the block hyperlink of its super block. Off by default
       - `Online and offline notices`: when on, the chat gets a notice when the bot goes online and when it goes offline. When several bindings of a chat turn this on, the chat gets one notice each time. Off by default
     - `Download assets`
@@ -480,8 +490,8 @@ From then on, the messages of the chat are recorded in dated sub-documents of th
       - The bot reconnects after a change of the App ID, the App Secret or the open platform address
     - `Event log`
 
-      - When on, saves each received event as a JSON file `data/storage/petal/im-bot/logs/feishu/events/<event type>/<event ID>.json` in the workspace, where you can find the chat IDs (chat_id) for bindings
-      - These files sync with your data, and the plugin does not delete them. On by default
+      - When on, saves each received event as a JSON file `data/storage/petal/im-bot/feishu/<App ID>/events/<event type>/<event ID>.json` in the workspace, where you can find the chat IDs (chat_id) for bindings
+      - These files sync with your data, and the plugin does not delete them. Off by default
     - `Run on this device only`
 
       - When on, only this device connects to Feishu: it writes the event log and the inbox, answers commands and sends the online and offline notices. Feishu pushes each event to only one of the connections, so turn it on when you have several devices
@@ -494,7 +504,7 @@ From then on, the messages of the chat are recorded in dated sub-documents of th
       - Each binding writes the messages of a chat into an inbox document. A chat can be bound to several documents, and a document to several chats
       - `Chat ID`: the chat_id starting with `oc_`, for both direct chats and groups. Send `/chatid` to the bot to get it (in groups, the owner or a group administrator sends it with an @ mention of the bot), or find it in the event log
       - `Inbox document ID`: the ID of the document that collects the messages. Right-click the document in the document tree and choose "Copy > Copy ID"
-      - `Enabled`: when off, the binding writes no messages and sends no online or offline notices. A binding without a chat or a document ID has no effect either
+      - `Enabled`: when off, the binding writes no messages and sends no online or offline notices. A binding without a chat or a document ID has no effect either. New bindings are off by default
       - `Reply with the block link`: when on, the bot replies to each message written to the document with the block hyperlink of its super block. Off by default
       - `Online and offline notices`: when on, the chat gets a notice when the bot goes online and when it goes offline. When several bindings of a chat turn this on, the chat gets one notice each time. Off by default
     - `Download assets`

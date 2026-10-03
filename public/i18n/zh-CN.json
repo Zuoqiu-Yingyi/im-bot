@@ -52,7 +52,7 @@
         "content": "消息内容",
         "contentPlaceholder": "要发送的消息，按 Ctrl+Enter（macOS 上为 ⌘+Enter）发送",
         "duration": "耗时",
-        "empty": "还没有已知的群或用户。机器人被添加到群、收到消息、被用户添加等事件会记录到 users.json 中",
+        "empty": "还没有已知的群或用户。机器人被添加到群、收到消息、被用户添加等事件会记录到 chats.json 中",
         "error": "请求失败",
         "firstSeen": "首次记录",
         "groupAdded": "机器人在群中",

@@ -27,11 +27,7 @@
     import Panels from "@workspace/components/siyuan/setting/panel/Panels.svelte";
     import Tabs from "@workspace/components/siyuan/setting/tab/Tabs.svelte";
 
-    import {
-        DEFAULT_FEISHU_INBOX_BINDING,
-        DEFAULT_INBOX_BINDING,
-        DEFAULT_TELEGRAM_INBOX_BINDING,
-    } from "@/configs/default";
+    import { DEFAULT_FEISHU_INBOX_BINDING, DEFAULT_INBOX_BINDING, DEFAULT_TELEGRAM_INBOX_BINDING } from "@/configs/default";
     import { DEFAULT_API_BASE_URL as DEFAULT_FEISHU_API_BASE_URL } from "@/feishu/constants";
     import { INTENTS } from "@/qq/constants";
     import { DEFAULT_API_BASE_URL } from "@/telegram/constants";
@@ -45,12 +41,7 @@
 
     import type Plugin from "@/index";
     import type { TIntent } from "@/qq/constants";
-    import type {
-        IConfig,
-        IFeishuInboxBinding,
-        IQQInboxBinding,
-        ITelegramInboxBinding,
-    } from "@/types/config";
+    import type { IConfig, IFeishuInboxBinding, IQQInboxBinding, ITelegramInboxBinding } from "@/types/config";
 
     interface IProps {
         config: IConfig; // 传入的配置项
@@ -458,12 +449,12 @@
                                             <Input
                                                 block={true}
                                                 onChanged={async (e) => {
-                                                    binding.group = e.value.trim();
+                                                    binding.chat = e.value.trim();
                                                     await saveBindings();
                                                 }}
                                                 placeholder={i18n.settings.qqBotSettings.inboxBindings.groupPlaceholder}
-                                                settingKey="group"
-                                                settingValue={binding.group}
+                                                settingKey="chat"
+                                                settingValue={binding.chat}
                                                 type={ItemType.text}
                                             />
                                         </label>

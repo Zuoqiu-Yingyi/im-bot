@@ -13,13 +13,13 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-/**
- * users.json: 各机器人已知的群与单聊用户, 键为机器人的 AppID (OpenID 只在同一个机器人内有效)。
- * 时间都是 ISO 8601 格式的 UTC 时间, 如 `2026-10-01T08:00:00.000Z`, 取自事件中的时间。
- */
+/* 各机器人已知的群与单聊用户, 键为机器人的 AppID (OpenID 只在同一个机器人内有效) */
 export type TUsers = Record<string, IBotUsers>;
 
-/* 一个机器人已知的群与单聊用户 */
+/**
+ * 一个机器人已知的群与单聊用户, 即 `qq/<AppID>/chats.json` 的内容。
+ * 时间都是 ISO 8601 格式的 UTC 时间, 如 `2026-10-01T08:00:00.000Z`, 取自事件中的时间。
+ */
 export interface IBotUsers {
     groups: Record<string, IGroupRecord>; // group_openid → 群
     users: Record<string, IUserRecord>; // user_openid → 单聊用户
@@ -66,6 +66,7 @@ export interface IUserMessage extends ITimeRecord {
 
 export interface IGroupRecord {
     status: TRelation;
+    name?: string; // 群名称: QQ 的事件中没有群名称, 取自最近一次成功的查询群信息 (GET /v2/groups/{group_openid}/info)
     firstSeen: string; // 记录到的最早一个事件的时间
     added?: IGroupOperation; // 最近一次机器人被添加到群 (GROUP_ADD_ROBOT)
     removed?: IGroupOperation; // 最近一次机器人被移出群 (GROUP_DEL_ROBOT)

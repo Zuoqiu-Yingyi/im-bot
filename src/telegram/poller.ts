@@ -70,6 +70,7 @@ export class TelegramPoller {
     private readonly siyuan: kernel.ISiyuan;
     private readonly api: TelegramApi;
     private readonly onUpdate: (bot: ITelegramBot, update: IUpdate) => void;
+    private readonly onReady: (bot: ITelegramBot) => void;
 
     private generation = 0; // 轮询序号, 开始或停止时递增, 旧的轮询据此退出
     private options?: ITelegramOptions; // 正在使用的 Token 与服务器地址; undefined 表示没有运行
@@ -79,11 +80,18 @@ export class TelegramPoller {
      * @param siyuan - 内核插件全局对象
      * @param api - Bot API 客户端
      * @param onUpdate - 接收每个更新
+     * @param onReady - 每次开始接收后 getMe 成功时调用
      */
-    constructor(siyuan: kernel.ISiyuan, api: TelegramApi, onUpdate: (bot: ITelegramBot, update: IUpdate) => void) {
+    constructor(
+        siyuan: kernel.ISiyuan,
+        api: TelegramApi,
+        onUpdate: (bot: ITelegramBot, update: IUpdate) => void,
+        onReady: (bot: ITelegramBot) => void,
+    ) {
         this.siyuan = siyuan;
         this.api = api;
         this.onUpdate = onUpdate;
+        this.onReady = onReady;
     }
 
     /* 当前的连接状态 */
@@ -149,6 +157,7 @@ export class TelegramPoller {
                     }
                     me = result;
                     void this.siyuan.logger.info(`[telegram] bot ${id} is @${me.username ?? ""}`);
+                    this.onReady({ options, me });
                 }
 
                 const connected = this.current.status === "connected";

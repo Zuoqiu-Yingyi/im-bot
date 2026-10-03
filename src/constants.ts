@@ -14,12 +14,8 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 export default {
-    /* 插件配置文件名, 前端插件 saveData 与内核插件 siyuan.storage 都相对 data/storage/petal/im-bot/ */
+    /* 插件配置文件名, 前端插件 saveData 与内核插件 siyuan.storage 都相对 data/storage/petal/im-bot/; 各机器人的数据文件见 utils/storage.ts */
     GLOBAL_CONFIG_NAME: "config.json",
-    /* 已知群与单聊用户的列表, 由内核插件维护, 与配置文件在同一目录 */
-    USERS_FILE_NAME: "users.json",
-    /* 微信机器人的登录信息, 由内核插件维护; 放在存储目录根部, 内核插件才能监听到数据同步带来的变化 */
-    WEIXIN_ACCOUNT_FILE_NAME: "weixin.json",
     /* 前端插件与内核插件共用的 RPC 方法名 */
     KERNEL_RPC_METHOD: {
         UPDATE_CONFIG: "update-config", // 更新配置, QQ 机器人配置变化时重新连接

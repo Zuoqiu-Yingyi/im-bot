@@ -52,7 +52,7 @@
         "content": "Message",
         "contentPlaceholder": "The message to send; press Ctrl+Enter (⌘+Enter on macOS) to send it",
         "duration": "Time",
-        "empty": "No groups or users are known yet. Events such as the bot being added to a group, receiving messages or being added by a user are recorded in users.json",
+        "empty": "No groups or users are known yet. Events such as the bot being added to a group, receiving messages or being added by a user are recorded in chats.json",
         "error": "Request failed",
         "firstSeen": "First recorded",
         "groupAdded": "The bot is in the group",

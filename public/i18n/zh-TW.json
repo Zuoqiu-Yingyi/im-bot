@@ -52,7 +52,7 @@
         "content": "訊息內容",
         "contentPlaceholder": "要傳送的訊息，按 Ctrl+Enter（macOS 上為 ⌘+Enter）傳送",
         "duration": "耗時",
-        "empty": "還沒有已知的群或使用者。機器人被新增到群、收到訊息、被使用者新增等事件會記錄到 users.json 中",
+        "empty": "還沒有已知的群或使用者。機器人被新增到群、收到訊息、被使用者新增等事件會記錄到 chats.json 中",
         "error": "請求失敗",
         "firstSeen": "首次記錄",
         "groupAdded": "機器人在群中",
