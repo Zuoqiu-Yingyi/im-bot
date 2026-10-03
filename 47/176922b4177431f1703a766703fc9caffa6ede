@@ -1,0 +1,90 @@
+src/index.ts
+  s_2bde2bc1ff6a0c::t_317ba899046093 24,38,140,333-338
+src/feishu/members.ts
+  s_2bde2bc1ff6a0c::t_9a4936224ee4be 36
+  s_2bde2bc1ff6a0c::t_edeb5ec7db69d2 1-35,37-121
+public/README.md
+  s_2bde2bc1ff6a0c::t_d983eae8468053 458-503
+  s_2bde2bc1ff6a0c::t_08bf8550dbdab0 28,58-61,68-70,130-137,141-147
+  s_2bde2bc1ff6a0c::t_275543ffe92b6f 62-67,138-140
+  s_2bde2bc1ff6a0c::t_b060a813dcf49a 288-322
+  s_2bde2bc1ff6a0c::t_ca181a0a9ae71c 148
+src/feishu/message.ts
+  s_2bde2bc1ff6a0c::t_317b533493ef82 1-110,114-196,202-203,205-213,215-248,250-275
+  s_2bde2bc1ff6a0c::t_e9b6e4977c71c9 111-113
+  s_2bde2bc1ff6a0c::t_00640055b483e5 249
+  s_2bde2bc1ff6a0c::t_c570b6270f9963 276-398,401-428,430-586,588-652
+  s_2bde2bc1ff6a0c::t_c93aa7383640f4 197-201,204,214,399-400,429,587
+src/feishu/constants.ts
+  s_2bde2bc1ff6a0c::t_1818921c6fb62a 1-87
+public/README.zh-CN.md
+  s_2bde2bc1ff6a0c::t_dd87ef2f2f4234 310,458-502
+  s_2bde2bc1ff6a0c::t_519f69b26c8932 28,58-61,68-70,130-137,141-147
+  s_2bde2bc1ff6a0c::t_17a8ed289c20a5 62-67,138-140
+  s_2bde2bc1ff6a0c::t_98d080936810f1 148
+  s_2bde2bc1ff6a0c::t_4008fdeda3913b 288-309,311-322
+src/assets/symbols/icon-feishu.symbol
+  s_2bde2bc1ff6a0c::t_0d82e9905933d8 1-18
+src/constants.ts
+  s_2bde2bc1ff6a0c::t_581fa05219035c 36
+src/components/Settings.svelte
+  s_2bde2bc1ff6a0c::t_4b51ec8da9cef1 1104-1221
+  s_2bde2bc1ff6a0c::t_bf808336ebcfed 957-1103,1222-1223
+  s_2bde2bc1ff6a0c::t_a173fd96f33013 30-35,39,48-53,85,119-124,171-184,240-262
+src/feishu/inbox.ts
+  s_2bde2bc1ff6a0c::t_b1f867dcbead9d 1-205,207-292
+  s_2bde2bc1ff6a0c::t_600ce3049e6a9c 206
+src/configs/default.ts
+  s_2bde2bc1ff6a0c::t_5e38ac43be1044 18-23,102-113,134-142,146,153
+src/components/FeishuConnection.svelte
+  s_2bde2bc1ff6a0c::t_575d757678e634 1-158
+src/feishu/gateway.ts
+  s_2bde2bc1ff6a0c::t_207b8979aa2168 1-15,17-285,287-296,298-421,429-465,467-513
+  s_2bde2bc1ff6a0c::t_33553b72d871c3 422-428
+  s_2bde2bc1ff6a0c::t_a4997592165ceb 16,286,297
+  s_2bde2bc1ff6a0c::t_7976e99c05e0f9 466
+src/kernel.ts
+  s_2bde2bc1ff6a0c::t_7c19436bcdce5d 18-25,50-51,56-61,77,143-144,146,171-173,198-204,219,243-249,267,279,304,309-311,315,319,328,332,336-383,689-704,831-868
+public/plugin.json
+  s_2bde2bc1ff6a0c::t_2fddec789f983c 29-33,50-52
+src/utils/proxy.ts
+  s_2bde2bc1ff6a0c::t_e5c4b3c0ffed33 59-67
+src/feishu/media.ts
+  s_2bde2bc1ff6a0c::t_9ea8c85cbc98f7 1-68,71-85,88-90,92-97,99-106,109,111-123
+  s_2bde2bc1ff6a0c::t_ed3309648e04e5 69-70,86-87,91,98,107-108,110
+src/types/config.d.ts
+  s_2bde2bc1ff6a0c::t_4e247c451c8e46 23-47
+src/feishu/api.ts
+  s_2bde2bc1ff6a0c::t_646ab9e0a5058c 219
+  s_2bde2bc1ff6a0c::t_ee722d6074d72f 1-15,22-74,76-162,164,167,169-218,220-234,236-238,242-246,252-255,258,260-346,348-352,354-356
+  s_2bde2bc1ff6a0c::t_ceed0101163577 75,163,168,239-241,247-251,256-257,259
+  s_2bde2bc1ff6a0c::t_2f9cccb8628d98 165-166
+  s_2bde2bc1ff6a0c::t_05ede77475b647 16-21,235,347,353
+src/feishu/notices.ts
+  s_2bde2bc1ff6a0c::t_68c928216c89ce 1-72
+src/feishu/protobuf.ts
+  s_2bde2bc1ff6a0c::t_184e5650191a56 21-27
+  s_2bde2bc1ff6a0c::t_f5bcac22492821 342-343
+  s_2bde2bc1ff6a0c::t_84a571c8203d52 1-20,28-341,344-414
+src/types/feishu.d.ts
+  s_2bde2bc1ff6a0c::t_061867aba9c2fe 1-208
+src/feishu/commands.ts
+  s_2bde2bc1ff6a0c::t_d6b2feec9a1ff6 44,105
+  s_2bde2bc1ff6a0c::t_42f4a2106f68f2 1-43,45-104,106-111
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.45-trip",
+  "base_commit_sha": "47176922b4177431f1703a766703fc9caffa6ede",
+  "prompts": {},
+  "sessions": {
+    "s_2bde2bc1ff6a0c": {
+      "agent_id": {
+        "tool": "chengxiaobang",
+        "id": "s_29qi86xlql19",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Yingyi / 颖逸 <49649786+Zuoqiu-Yingyi@users.noreply.github.com>"
+    }
+  }
+}
