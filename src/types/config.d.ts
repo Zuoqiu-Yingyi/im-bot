@@ -20,6 +20,31 @@ export interface IConfig {
     qq: IQQBotConfig;
     weixin: IWeixinBotConfig;
     telegram: ITelegramBotConfig;
+    feishu: IFeishuBotConfig;
+}
+
+/* 飞书机器人 (企业自建应用), 以长连接接收事件 */
+export interface IFeishuBotConfig {
+    appId: string; // 应用的 App ID, 形如 cli_xxx
+    appSecret: string; // 应用的 App Secret
+    apiBaseUrl: string; // 开放平台的地址, 为空时使用飞书 https://open.feishu.cn; Lark 为 https://open.larksuite.com
+    online: boolean; // 是否上线: 关闭时所有设备都不连接 (下线)
+    eventLog: boolean; // 事件日志: 是否把收到的事件保存到 logs/feishu/events/
+    device: string; // 运行飞书机器人的设备 ID, 为空时每台设备都运行
+    inbox: IFeishuInboxConfig; // 思源收集箱
+}
+
+export interface IFeishuInboxConfig {
+    bindings: IFeishuInboxBinding[]; // 会话与收集箱文档的绑定
+    downloadAssets: boolean; // 是否把消息中的媒体保存为资源文件
+}
+
+export interface IFeishuInboxBinding {
+    chat: string; // 会话 ID (chat_id), 单聊与群聊都以 oc_ 开头
+    doc: string; // 收集箱文档 ID
+    enabled: boolean; // 是否启用该绑定
+    reply: boolean; // 写入后是否向该消息回复其超级块的块超链接
+    notify: boolean; // 机器人上线与下线时是否向该会话发送通知
 }
 
 /* Telegram 机器人 */

@@ -21,6 +21,7 @@ import { FLAG_MOBILE } from "@workspace/utils/env/front-end";
 import { Logger } from "@workspace/utils/logger";
 import { mergeIgnoreArray } from "@workspace/utils/misc/merge";
 
+import icon_feishu from "./assets/symbols/icon-feishu.symbol?raw";
 import icon_qq from "./assets/symbols/icon-qq.symbol?raw";
 import icon_telegram from "./assets/symbols/icon-telegram.symbol?raw";
 import icon_wechat from "./assets/symbols/icon-wechat.symbol?raw";
@@ -34,6 +35,7 @@ import Settings from "./components/Settings.svelte";
 import type { ISiyuanGlobal } from "@workspace/types/siyuan";
 
 import type { IConfig } from "./types/config";
+import type { IFeishuConnectionState } from "./types/feishu";
 import type { IApiResponse, IQQConnectionState } from "./types/qq";
 import type { ITelegramConnectionState } from "./types/telegram";
 import type { IBotUsers } from "./types/users";
@@ -135,6 +137,7 @@ export default class ImBotPlugin extends siyuan.Plugin {
             icon_qq,
             icon_wechat,
             icon_telegram,
+            icon_feishu,
         ].join(""));
 
         /**
@@ -325,6 +328,14 @@ export default class ImBotPlugin extends siyuan.Plugin {
      */
     public async getTelegramConnectionState(): Promise<ITelegramConnectionState | null> {
         return this.kernel.rpc.call[CONSTANTS.KERNEL_RPC_METHOD.TELEGRAM_GET_STATE]?.() ?? null;
+    }
+
+    /**
+     * 通过内核插件的 RPC feishu-get-state, 获取本设备上飞书机器人的连接状态
+     * @throws 内核插件没有运行时以 JSON-RPC 错误拒绝
+     */
+    public async getFeishuConnectionState(): Promise<IFeishuConnectionState | null> {
+        return this.kernel.rpc.call[CONSTANTS.KERNEL_RPC_METHOD.FEISHU_GET_STATE]?.() ?? null;
     }
 
     /* 同步配置到内核插件, QQ 机器人配置变化时内核插件会重新连接 */

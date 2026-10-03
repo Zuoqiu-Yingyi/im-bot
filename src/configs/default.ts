@@ -15,7 +15,12 @@
 
 import { mergeIgnoreArray } from "@workspace/utils/misc/merge";
 
-import type { IConfig, IQQInboxBinding, ITelegramInboxBinding } from "@/types/config";
+import type {
+    IConfig,
+    IFeishuInboxBinding,
+    IQQInboxBinding,
+    ITelegramInboxBinding,
+} from "@/types/config";
 
 export const DEFAULT_CONFIG: IConfig = {
     qq: {
@@ -94,6 +99,18 @@ export const DEFAULT_CONFIG: IConfig = {
             downloadAssets: true,
         },
     },
+    feishu: {
+        appId: "",
+        appSecret: "",
+        apiBaseUrl: "",
+        online: false,
+        eventLog: true,
+        device: "",
+        inbox: {
+            bindings: [],
+            downloadAssets: true,
+        },
+    },
 };
 
 /* 新建的收集箱绑定 */
@@ -114,15 +131,25 @@ export const DEFAULT_TELEGRAM_INBOX_BINDING: ITelegramInboxBinding = {
     notify: false,
 };
 
+/* 新建的飞书收集箱绑定 */
+export const DEFAULT_FEISHU_INBOX_BINDING: IFeishuInboxBinding = {
+    chat: "",
+    doc: "",
+    enabled: true,
+    reply: false,
+    notify: false,
+};
+
 /**
  * 在默认配置上合并保存的配置, 数组整体覆盖默认值。
  * 收集箱的绑定逐条按 DEFAULT_INBOX_BINDING 补全: 旧版配置中的绑定没有 enabled、reply 与 notify, 视为启用、不回复、不通知;
- * Telegram 的绑定同样按 DEFAULT_TELEGRAM_INBOX_BINDING 补全, 手动编辑的配置可能缺少字段
+ * Telegram 与飞书的绑定同样按各自的默认绑定补全, 手动编辑的配置可能缺少字段
  * @param configs - 保存的配置, 后面的覆盖前面的
  */
 export function mergeConfig(...configs: Partial<IConfig>[]): IConfig {
     const config = mergeIgnoreArray<IConfig>(DEFAULT_CONFIG, ...configs);
     config.qq.inbox.bindings = config.qq.inbox.bindings.map((binding) => ({ ...DEFAULT_INBOX_BINDING, ...binding }));
     config.telegram.inbox.bindings = config.telegram.inbox.bindings.map((binding) => ({ ...DEFAULT_TELEGRAM_INBOX_BINDING, ...binding }));
+    config.feishu.inbox.bindings = config.feishu.inbox.bindings.map((binding) => ({ ...DEFAULT_FEISHU_INBOX_BINDING, ...binding }));
     return config;
 }

@@ -27,10 +27,16 @@
     import Panels from "@workspace/components/siyuan/setting/panel/Panels.svelte";
     import Tabs from "@workspace/components/siyuan/setting/tab/Tabs.svelte";
 
-    import { DEFAULT_INBOX_BINDING, DEFAULT_TELEGRAM_INBOX_BINDING } from "@/configs/default";
+    import {
+        DEFAULT_FEISHU_INBOX_BINDING,
+        DEFAULT_INBOX_BINDING,
+        DEFAULT_TELEGRAM_INBOX_BINDING,
+    } from "@/configs/default";
+    import { DEFAULT_API_BASE_URL as DEFAULT_FEISHU_API_BASE_URL } from "@/feishu/constants";
     import { INTENTS } from "@/qq/constants";
     import { DEFAULT_API_BASE_URL } from "@/telegram/constants";
 
+    import FeishuConnection from "./FeishuConnection.svelte";
     import QQConnection from "./QQConnection.svelte";
     import TelegramConnection from "./TelegramConnection.svelte";
     import WeixinAccount from "./WeixinAccount.svelte";
@@ -39,7 +45,12 @@
 
     import type Plugin from "@/index";
     import type { TIntent } from "@/qq/constants";
-    import type { IConfig, IQQInboxBinding, ITelegramInboxBinding } from "@/types/config";
+    import type {
+        IConfig,
+        IFeishuInboxBinding,
+        IQQInboxBinding,
+        ITelegramInboxBinding,
+    } from "@/types/config";
 
     interface IProps {
         config: IConfig; // 传入的配置项
@@ -71,6 +82,7 @@
         qq: "qq", // QQ 机器人设置
         weixin: "weixin", // 微信机器人设置
         telegram: "telegram", // Telegram 机器人设置
+        feishu: "feishu", // 飞书机器人设置
     } as const;
 
     const TabKey = {
@@ -103,6 +115,12 @@
             text: i18n.settings.telegramBotSettings.title,
             name: i18n.settings.telegramBotSettings.title,
             icon: "#icon-telegram",
+        },
+        {
+            key: PanelKey.feishu,
+            text: i18n.settings.feishuBotSettings.title,
+            name: i18n.settings.feishuBotSettings.title,
+            icon: "#icon-feishu",
         },
     ] as const satisfies ITab[];
 
@@ -147,6 +165,20 @@
             key: TabKey.inbox,
             text: i18n.settings.telegramBotSettings.tabs.inbox,
             name: i18n.settings.telegramBotSettings.tabs.inbox,
+            icon: "📥",
+        },
+    ] as const satisfies ITab[];
+    const feishuTabs = [
+        {
+            key: TabKey.bot,
+            text: i18n.settings.feishuBotSettings.tabs.bot,
+            name: i18n.settings.feishuBotSettings.tabs.bot,
+            icon: "⚙",
+        },
+        {
+            key: TabKey.inbox,
+            text: i18n.settings.feishuBotSettings.tabs.inbox,
+            name: i18n.settings.feishuBotSettings.tabs.inbox,
             icon: "📥",
         },
     ] as const satisfies ITab[];
@@ -204,6 +236,30 @@
     async function removeTelegramBinding(index: number) {
         telegramBindings.splice(index, 1);
         await saveTelegramBindings();
+    }
+
+    // svelte-ignore state_referenced_locally
+    let feishuDevice = $state(config.feishu.device); // 运行飞书机器人的设备 ID
+
+    const feishuBindingsTitle = `${i18n.settings.feishuBotSettings.inboxBindings.title}<div class="b3-label__text">${i18n.settings.feishuBotSettings.inboxBindings.description}</div>`;
+
+    /* 飞书收集箱绑定; 手动编辑的配置可能缺少字段, 按默认值补全 */
+    // svelte-ignore state_referenced_locally
+    const feishuBindings = $state<IFeishuInboxBinding[]>(config.feishu.inbox.bindings.map((binding) => ({ ...DEFAULT_FEISHU_INBOX_BINDING, ...binding })));
+
+    async function saveFeishuBindings() {
+        config.feishu.inbox.bindings = $state.snapshot(feishuBindings);
+        await updated();
+    }
+
+    async function addFeishuBinding() {
+        feishuBindings.push({ ...DEFAULT_FEISHU_INBOX_BINDING });
+        await saveFeishuBindings();
+    }
+
+    async function removeFeishuBinding(index: number) {
+        feishuBindings.splice(index, 1);
+        await saveFeishuBindings();
     }
 </script>
 
@@ -890,6 +946,274 @@
                                     }}
                                     settingKey="telegramDownloadAssets"
                                     settingValue={config.telegram.inbox.downloadAssets}
+                                    type={ItemType.checkbox}
+                                />
+                            {/snippet}
+                        </Item>
+                    </div>
+                {/snippet}
+            </Tabs>
+        </Panel>
+
+        <!-- 飞书机器人设置面板: 机器人与收集箱两个页签 -->
+        <Panel display={panels[4].key === focusPanel}>
+            <Tabs
+                focus={tabs_focus_key}
+                tabs={feishuTabs}
+            >
+                {#snippet children(focusTab)}
+                    <!-- 标签页 1 - 机器人 -->
+                    <div
+                        class:fn__none={feishuTabs[0].key !== focusTab}
+                        data-type={feishuTabs[0].name}
+                    >
+                        <!-- 上线 -->
+                        <Item
+                            text={i18n.settings.feishuBotSettings.online.description}
+                            title={i18n.settings.feishuBotSettings.online.title}
+                        >
+                            {#snippet input()}
+                                <Input
+                                    onChanged={async (e) => {
+                                        config.feishu.online = e.value;
+                                        await updated();
+                                    }}
+                                    settingKey="feishuOnline"
+                                    settingValue={config.feishu.online}
+                                    type={ItemType.checkbox}
+                                />
+                            {/snippet}
+                        </Item>
+
+                        <!-- 连接状态 -->
+                        <div class="b3-label">
+                            {i18n.settings.feishuBotSettings.connection.title}
+                            <div class="b3-label__text">{i18n.settings.feishuBotSettings.connection.description}</div>
+                            <div class="fn__hr"></div>
+                            <FeishuConnection {plugin} />
+                        </div>
+
+                        <!-- App ID -->
+                        <Item
+                            block={true}
+                            text={i18n.settings.feishuBotSettings.appId.description}
+                            title={i18n.settings.feishuBotSettings.appId.title}
+                        >
+                            {#snippet input()}
+                                <Input
+                                    block={true}
+                                    onChanged={async (e) => {
+                                        config.feishu.appId = e.value.trim();
+                                        await updated();
+                                    }}
+                                    placeholder={i18n.settings.feishuBotSettings.appId.placeholder}
+                                    settingKey="feishuAppId"
+                                    settingValue={config.feishu.appId}
+                                    type={ItemType.text}
+                                />
+                            {/snippet}
+                        </Item>
+
+                        <!-- App Secret -->
+                        <Item
+                            block={true}
+                            text={i18n.settings.feishuBotSettings.appSecret.description}
+                            title={i18n.settings.feishuBotSettings.appSecret.title}
+                        >
+                            {#snippet input()}
+                                <Input
+                                    block={true}
+                                    onChanged={async (e) => {
+                                        config.feishu.appSecret = e.value.trim();
+                                        await updated();
+                                    }}
+                                    settingKey="feishuAppSecret"
+                                    settingValue={config.feishu.appSecret}
+                                    type={ItemType.text}
+                                />
+                            {/snippet}
+                        </Item>
+
+                        <!-- 开放平台地址 -->
+                        <Item
+                            block={true}
+                            text={i18n.settings.feishuBotSettings.apiBaseUrl.description}
+                            title={i18n.settings.feishuBotSettings.apiBaseUrl.title}
+                        >
+                            {#snippet input()}
+                                <Input
+                                    block={true}
+                                    onChanged={async (e) => {
+                                        config.feishu.apiBaseUrl = e.value.trim();
+                                        await updated();
+                                    }}
+                                    placeholder={DEFAULT_FEISHU_API_BASE_URL}
+                                    settingKey="feishuApiBaseUrl"
+                                    settingValue={config.feishu.apiBaseUrl}
+                                    type={ItemType.text}
+                                />
+                            {/snippet}
+                        </Item>
+
+                        <!-- 事件日志 -->
+                        <Item
+                            text={i18n.settings.feishuBotSettings.eventLog.description}
+                            title={i18n.settings.feishuBotSettings.eventLog.title}
+                        >
+                            {#snippet input()}
+                                <Input
+                                    onChanged={async (e) => {
+                                        config.feishu.eventLog = e.value;
+                                        await updated();
+                                    }}
+                                    settingKey="feishuEventLog"
+                                    settingValue={config.feishu.eventLog}
+                                    type={ItemType.checkbox}
+                                />
+                            {/snippet}
+                        </Item>
+
+                        <!-- 运行设备 -->
+                        <Item title={i18n.settings.feishuBotSettings.device.title}>
+                            {#snippet textSlot()}
+                                {i18n.settings.feishuBotSettings.device.description}
+                                <br />
+                                {i18n.settings.feishuBotSettings.device.current} <code class="fn__code">{currentDevice}</code>
+                                <br />
+                                {#if feishuDevice}
+                                    {i18n.settings.feishuBotSettings.device.assigned} <code class="fn__code">{feishuDevice}</code>
+                                {:else}
+                                    {i18n.settings.feishuBotSettings.device.unassigned}
+                                {/if}
+                            {/snippet}
+                            {#snippet input()}
+                                <Input
+                                    onChanged={async (e) => {
+                                        feishuDevice = e.value ? currentDevice : "";
+                                        config.feishu.device = feishuDevice;
+                                        await updated();
+                                    }}
+                                    settingKey="feishuDevice"
+                                    settingValue={feishuDevice === currentDevice}
+                                    type={ItemType.checkbox}
+                                />
+                            {/snippet}
+                        </Item>
+                    </div>
+
+                    <!-- 标签页 2 - 收集箱 -->
+                    <div
+                        class:fn__none={feishuTabs[1].key !== focusTab}
+                        data-type={feishuTabs[1].name}
+                    >
+                        <!-- 绑定会话: 不能放进 Item 的 label 中, 否则点击空白处会切换第一个开关 -->
+                        <div class="b3-label">
+                            <!-- eslint-disable-next-line svelte/no-at-html-tags -->
+                            {@html feishuBindingsTitle}
+                            {#each feishuBindings as binding, index (binding)}
+                                <div class="fn__hr"></div>
+                                <div class="binding">
+                                    <div class="binding__fields">
+                                        <label class="binding__field">
+                                            <span>{i18n.settings.feishuBotSettings.inboxBindings.chat}</span>
+                                            <Input
+                                                block={true}
+                                                onChanged={async (e) => {
+                                                    binding.chat = e.value.trim();
+                                                    await saveFeishuBindings();
+                                                }}
+                                                placeholder={i18n.settings.feishuBotSettings.inboxBindings.chatPlaceholder}
+                                                settingKey="chat"
+                                                settingValue={binding.chat}
+                                                type={ItemType.text}
+                                            />
+                                        </label>
+                                        <label class="binding__field">
+                                            <span>{i18n.settings.feishuBotSettings.inboxBindings.doc}</span>
+                                            <Input
+                                                block={true}
+                                                onChanged={async (e) => {
+                                                    binding.doc = e.value.trim();
+                                                    await saveFeishuBindings();
+                                                }}
+                                                placeholder={i18n.settings.feishuBotSettings.inboxBindings.docPlaceholder}
+                                                settingKey="doc"
+                                                settingValue={binding.doc}
+                                                type={ItemType.text}
+                                            />
+                                        </label>
+                                    </div>
+                                    <div class="fn__flex binding__switches">
+                                        <label class="fn__flex">
+                                            <span class="binding__switch">{i18n.settings.feishuBotSettings.inboxBindings.enabled}</span>
+                                            <span class="fn__space"></span>
+                                            <Input
+                                                onChanged={async (e) => {
+                                                    binding.enabled = e.value;
+                                                    await saveFeishuBindings();
+                                                }}
+                                                settingKey="enabled"
+                                                settingValue={binding.enabled}
+                                                type={ItemType.checkbox}
+                                            />
+                                        </label>
+                                        <label class="fn__flex">
+                                            <span class="binding__switch">{i18n.settings.feishuBotSettings.inboxBindings.reply}</span>
+                                            <span class="fn__space"></span>
+                                            <Input
+                                                onChanged={async (e) => {
+                                                    binding.reply = e.value;
+                                                    await saveFeishuBindings();
+                                                }}
+                                                settingKey="reply"
+                                                settingValue={binding.reply}
+                                                type={ItemType.checkbox}
+                                            />
+                                        </label>
+                                        <label class="fn__flex">
+                                            <span class="binding__switch">{i18n.settings.feishuBotSettings.inboxBindings.notify}</span>
+                                            <span class="fn__space"></span>
+                                            <Input
+                                                onChanged={async (e) => {
+                                                    binding.notify = e.value;
+                                                    await saveFeishuBindings();
+                                                }}
+                                                settingKey="notify"
+                                                settingValue={binding.notify}
+                                                type={ItemType.checkbox}
+                                            />
+                                        </label>
+                                        <button
+                                            class="b3-button b3-button--remove binding__remove"
+                                            onclick={() => removeFeishuBinding(index)}
+                                        >
+                                            {i18n.settings.feishuBotSettings.inboxBindings.remove}
+                                        </button>
+                                    </div>
+                                </div>
+                            {/each}
+                            <div class="fn__hr"></div>
+                            <button
+                                class="b3-button b3-button--outline"
+                                onclick={addFeishuBinding}
+                            >
+                                {i18n.settings.feishuBotSettings.inboxBindings.add}
+                            </button>
+                        </div>
+
+                        <!-- 下载资源文件 -->
+                        <Item
+                            text={i18n.settings.feishuBotSettings.inboxDownloadAssets.description}
+                            title={i18n.settings.feishuBotSettings.inboxDownloadAssets.title}
+                        >
+                            {#snippet input()}
+                                <Input
+                                    onChanged={async (e) => {
+                                        config.feishu.inbox.downloadAssets = e.value;
+                                        await updated();
+                                    }}
+                                    settingKey="feishuDownloadAssets"
+                                    settingValue={config.feishu.inbox.downloadAssets}
                                     type={ItemType.checkbox}
                                 />
                             {/snippet}

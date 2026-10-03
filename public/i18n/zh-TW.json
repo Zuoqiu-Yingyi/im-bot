@@ -27,17 +27,25 @@
         }
     },
     "inbox": {
+        "all": "所有人",
         "animation": "[動圖]",
         "audio": "[音訊]",
+        "calendar": "[行程]",
+        "card": "[卡片]",
+        "chat": "[群組名片]",
+        "chatRecord": "[聊天記錄]",
         "contact": "[聯絡人]",
         "file": "[檔案]",
+        "folder": "[資料夾]",
         "image": "[圖片]",
         "location": "[位置]",
         "poll": "[投票]",
         "quote": "引用的訊息",
         "sticker": "[貼圖]",
+        "task": "[任務]",
         "unavailable": "[無法顯示的訊息]",
         "video": "[影片]",
+        "videoCall": "[視訊通話]",
         "voice": "[語音]"
     },
     "messenger": {
@@ -90,6 +98,10 @@
         "wakeup": "互動召回"
     },
     "notices": {
+        "feishu": {
+            "offline": "收集箱已下線，本會話的訊息暫停記錄（裝置：{{1}}）",
+            "online": "收集箱已上線，本會話的訊息將記錄到思源筆記（裝置：{{1}}）"
+        },
         "offline": "收集箱已下線，本群訊息暫停記錄（裝置：{{1}}）",
         "online": "收集箱已上線，本群訊息將記錄到思源筆記（裝置：{{1}}）",
         "telegram": {
@@ -98,6 +110,74 @@
         }
     },
     "settings": {
+        "feishuBotSettings": {
+            "apiBaseUrl": {
+                "description": "留空時使用飛書（https://open.feishu.cn）；使用 Lark 時填寫 https://open.larksuite.com",
+                "title": "開放平台位址"
+            },
+            "appId": {
+                "description": "飛書開放平台中企業自建應用的 App ID，在應用的「憑證與基礎資訊」中取得",
+                "placeholder": "cli_a1b2c3d4e5f6g7h8",
+                "title": "App ID"
+            },
+            "appSecret": {
+                "description": "該應用的 App Secret，以明文儲存並隨資料同步",
+                "title": "App Secret"
+            },
+            "connection": {
+                "connected": "已連線，連線於 {{1}}",
+                "connecting": "正在連線...",
+                "description": "本裝置上機器人與飛書的長連線，自動重新整理",
+                "failed": "已停止連線，請檢查 App ID、App Secret 與開放平台位址，修改設定後會再次連線",
+                "loading": "正在取得...",
+                "offline": "已下線，開啟「上線」後連線",
+                "otherDevice": "只在裝置 {{1}} 上執行，本裝置不連線",
+                "reason": "原因",
+                "reconnecting": "連線已中斷，將於 {{1}} 重新連線",
+                "status": "狀態",
+                "stopped": "未連線",
+                "title": "連線狀態",
+                "unconfigured": "沒有填寫 App ID 或 App Secret，不會連線",
+                "username": "機器人"
+            },
+            "device": {
+                "assigned": "目前執行的裝置 ID",
+                "current": "本裝置 ID",
+                "description": "開啟後只有本裝置連線機器人。飛書把每個事件只推送給其中一個連線，有多台裝置時請開啟，否則訊息會分散到各台裝置",
+                "title": "只在此裝置上執行",
+                "unassigned": "未指定執行裝置，每台裝置都會連線"
+            },
+            "eventLog": {
+                "description": "把收到的事件儲存到工作空間，便於排查問題",
+                "title": "事件日誌"
+            },
+            "inboxBindings": {
+                "add": "新增綁定",
+                "chat": "會話 ID",
+                "chatPlaceholder": "oc_a0553eda9014c201e6969b478895c230",
+                "description": "把單聊或群聊的訊息寫入收集箱文件，一個會話可以綁定多篇文件。向機器人傳送 /chatid（群聊中要 @ 機器人）可以查詢會話 ID",
+                "doc": "收集箱文件 ID",
+                "docPlaceholder": "20260930112233-abcdefg",
+                "enabled": "啟用",
+                "notify": "上下線通知",
+                "remove": "刪除",
+                "reply": "回覆區塊連結",
+                "title": "綁定會話"
+            },
+            "inboxDownloadAssets": {
+                "description": "把訊息中的圖片、語音、影片與檔案下載到工作空間。飛書不提供超過 100 MB 的檔案",
+                "title": "下載資源檔案"
+            },
+            "online": {
+                "description": "開啟後機器人連線飛書，記錄綁定會話的訊息並回應指令；關閉後中斷連線",
+                "title": "上線"
+            },
+            "tabs": {
+                "bot": "機器人",
+                "inbox": "收集箱"
+            },
+            "title": "飛書機器人"
+        },
         "generalSettings": {
             "reset": {
                 "description": "重置所有設定選項為預設選項（重置後將重新整理頁面）",
