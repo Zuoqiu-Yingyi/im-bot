@@ -1,0 +1,51 @@
+src/utils/kramdown.ts
+  s_5600fdeafa3ce4::t_455303c7ed8eda 217,219-220,222-223,226-228
+  s_5600fdeafa3ce4::t_73932ae6c3a1d6 146-147,149-152,155-157,161-162
+  s_5600fdeafa3ce4::t_f4ab329e0a2a2d 104-109,111,130-135,140,143-145,148,153-154,158-160,163-190,229-231,236-244
+  s_5600fdeafa3ce4::t_5e0c28d315e3f0 216,218,221,224-225
+src/weixin/message.ts
+  s_5600fdeafa3ce4::t_b8bda14ca23b3f 150-151,162-166
+src/telegram/entities.ts
+  s_5600fdeafa3ce4::t_60262eb0aca86b 21,204,206
+  s_5600fdeafa3ce4::t_ddab303f0cded4 1-20,22-150,152-203,205,207-211,248-253,255-261
+  s_5600fdeafa3ce4::t_22ca26a2e269ce 151,212-247
+  s_5600fdeafa3ce4::t_bf471f91a942d1 254
+src/qq/message.ts
+  s_5600fdeafa3ce4::t_27a1329ea423c7 203,223-226,233-236
+src/telegram/media.ts
+  s_5600fdeafa3ce4::t_41719649307999 23,26,45-46,69,71,74,77-88,91-92,94-95,116
+  s_5600fdeafa3ce4::t_0ba3918bab0fe6 89-90,93,96,98,104
+src/telegram/inbox.ts
+  s_5600fdeafa3ce4::t_df88c5db70e79c 79-85,100,109,122,140-141,145
+src/kernel.ts
+  s_5600fdeafa3ce4::t_1a4f2190bbca92 714
+public/README.zh-CN.md
+  s_5600fdeafa3ce4::t_6fb8b174870288 117-119
+  s_5600fdeafa3ce4::t_0b5143a36adf41 167,223,240-242,244,250
+  s_5600fdeafa3ce4::t_16ecf7580fdd00 239
+public/README.md
+  s_5600fdeafa3ce4::t_25eb870974a8f0 117-119
+  s_5600fdeafa3ce4::t_ddb09048ab11d0 167,223,240-242,244,250
+  s_5600fdeafa3ce4::t_284e84e2224171 239
+src/types/telegram.d.ts
+  s_5600fdeafa3ce4::t_497a66c7db445e 56,58,62-63,102
+src/telegram/message.ts
+  s_5600fdeafa3ce4::t_e05c3ed7cad9e5 234-238,241-242,244-251,269,282-285,288,292,305,313-317,325
+  s_5600fdeafa3ce4::t_f438bc1b81f3e4 28-29,34,38-39,64,66-72,76,78,121,145-154
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.45-trip",
+  "base_commit_sha": "a0c0d50208eae785f14e2fb175eb1a2d10d17aa6",
+  "prompts": {},
+  "sessions": {
+    "s_5600fdeafa3ce4": {
+      "agent_id": {
+        "tool": "chengxiaobang",
+        "id": "s_p6zul49e3rqy",
+        "model": "claude-sonnet-5"
+      },
+      "human_author": "Yingyi / 颖逸 <49649786+Zuoqiu-Yingyi@users.noreply.github.com>"
+    }
+  }
+}
