@@ -1,5 +1,23 @@
 # Changelog
 
+## [0.4.0](https://github.com/Zuoqiu-Yingyi/siyuan-plugin-im-bot/compare/v0.3.0...v0.4.0) (2026-10-03)
+
+
+### ⚠ BREAKING CHANGES
+
+* existing data is not migrated. users.json and logs/ are no longer used, the WeChat login in weixin.json is ignored (scan the QR code again), QQ bindings saved with the group field need their group_openid again, and bindings without an enabled field are now disabled.
+
+### Miscellaneous
+
+* release `v0.4.0` ([f912811](https://github.com/Zuoqiu-Yingyi/siyuan-plugin-im-bot/commit/f91281186b30aa21e617c5851a847033dd6e50dc))
+* **release:** release v0.4.0 ([5a6428a](https://github.com/Zuoqiu-Yingyi/siyuan-plugin-im-bot/commit/5a6428a6c3c9d850f19c1de91a476cc6f3bfcac6))
+
+
+### Features
+
+* **feishu:** connect a Feishu bot via the long connection ([4717692](https://github.com/Zuoqiu-Yingyi/siyuan-plugin-im-bot/commit/47176922b4177431f1703a766703fc9caffa6ede))
+* keep the data of each bot in its own directory ([e993bdc](https://github.com/Zuoqiu-Yingyi/siyuan-plugin-im-bot/commit/e993bdcbb8df0f0d473fa20c3ef9fc5fbc6c45c9))
+
 ## [0.3.0](https://github.com/Zuoqiu-Yingyi/siyuan-plugin-im-bot/compare/v0.2.0...v0.3.0) (2026-10-03)
 
 
