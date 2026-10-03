@@ -13,6 +13,8 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+import { weixinCursorPath } from "@/utils/storage";
+
 import { resultCode } from "./api";
 import {
     BACKOFF_DELAY,
@@ -34,9 +36,6 @@ interface ICursor {
     cursor: string; // get_updates_buf
 }
 
-/* 游标文件, 相对插件数据目录; 不需要监听其变化, 所以放在子目录中 (存储目录的监听不包括子目录) */
-const CURSOR_FILE = "weixin/cursor.json";
-
 function sleep(ms: number): Promise<void> {
     return new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -51,12 +50,12 @@ function sameLogin(a: IWeixinAccount, b: IWeixinAccount): boolean {
 }
 
 /**
- * 以长轮询 (getupdates) 接收微信消息, 游标保存在 weixin/cursor.json 中, 重新启动后从上次的位置继续, 重新登录后从头开始。
+ * 以长轮询 (getupdates) 接收微信消息, 游标保存在 `weixin/<机器人 ID>/cursor.json` 中, 重新启动后从上次的位置继续, 重新登录后从头开始。
  * 重试规则与官方客户端的 monitor.ts 相同: 失败后 2 秒重试, 连续失败 3 次后等待 30 秒;
  * 返回 -14 (登录失效) 时停止轮询并调用 onExpired, 需要重新扫码 (官方客户端会暂停 1 小时后重试)。
  * 进行中的长轮询请求无法取消: 停止后它返回的消息被丢弃, 游标也不会前进, 下次轮询时会再次收到这些消息。
  * Receives WeChat messages by long polling getupdates, and keeps the cursor in
- * weixin/cursor.json to resume after a restart.
+ * `weixin/<bot ID>/cursor.json` to resume after a restart.
  */
 export class WeixinPoller {
     private readonly siyuan: kernel.ISiyuan;
@@ -113,13 +112,14 @@ export class WeixinPoller {
         await this.notify(account, "stop");
     }
 
-    /* 删除保存的游标, 用于退出登录 */
-    public async removeCursor(): Promise<void> {
+    /* 删除机器人保存的游标, 用于退出登录 */
+    public async removeCursor(botId: string): Promise<void> {
+        const path = weixinCursorPath(botId);
         try {
-            await this.siyuan.storage.remove(CURSOR_FILE);
+            await this.siyuan.storage.remove(path);
         }
         catch (error) {
-            void this.siyuan.logger.warn(`[weixin] remove ${CURSOR_FILE} failed:`, errorMessage(error));
+            void this.siyuan.logger.warn(`[weixin] remove ${path} failed:`, errorMessage(error));
         }
     }
 
@@ -206,7 +206,7 @@ export class WeixinPoller {
     /* 这次登录保存的游标, 没有时为空字符串 */
     private async loadCursor(account: IWeixinAccount): Promise<string> {
         try {
-            const data = await (await this.siyuan.storage.get(CURSOR_FILE)).json() as null | Partial<ICursor>;
+            const data = await (await this.siyuan.storage.get(weixinCursorPath(account.botId))).json() as null | Partial<ICursor>;
             return data?.botId === account.botId && data.loginTime === account.loginTime && typeof data.cursor === "string"
                 ? data.cursor
                 : "";
@@ -219,11 +219,12 @@ export class WeixinPoller {
 
     private async saveCursor(account: IWeixinAccount, cursor: string): Promise<void> {
         const data: ICursor = { botId: account.botId, loginTime: account.loginTime, cursor };
+        const path = weixinCursorPath(account.botId);
         try {
-            await this.siyuan.storage.put(CURSOR_FILE, JSON.stringify(data));
+            await this.siyuan.storage.put(path, JSON.stringify(data));
         }
         catch (error) {
-            void this.siyuan.logger.warn(`[weixin] save ${CURSOR_FILE} failed:`, errorMessage(error));
+            void this.siyuan.logger.warn(`[weixin] save ${path} failed:`, errorMessage(error));
         }
     }
 }

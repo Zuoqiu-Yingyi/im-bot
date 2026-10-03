@@ -27,24 +27,32 @@
         }
     },
     "inbox": {
+        "all": "all",
         "animation": "[Animation]",
         "audio": "[Audio]",
+        "calendar": "[Event]",
+        "card": "[Card]",
+        "chat": "[Group card]",
+        "chatRecord": "[Chat history]",
         "contact": "[Contact]",
         "file": "[File]",
+        "folder": "[Folder]",
         "image": "[Image]",
         "location": "[Location]",
         "poll": "[Poll]",
         "quote": "Quoted message",
         "sticker": "[Sticker]",
+        "task": "[Task]",
         "unavailable": "[Message not available]",
         "video": "[Video]",
+        "videoCall": "[Video call]",
         "voice": "[Voice]"
     },
     "messenger": {
         "content": "Message",
         "contentPlaceholder": "The message to send; press Ctrl+Enter (⌘+Enter on macOS) to send it",
         "duration": "Time",
-        "empty": "No groups or users are known yet. Events such as the bot being added to a group, receiving messages or being added by a user are recorded in users.json",
+        "empty": "No groups or users are known yet. Events such as the bot being added to a group, receiving messages or being added by a user are recorded in chats.json",
         "error": "Request failed",
         "firstSeen": "First recorded",
         "groupAdded": "The bot is in the group",
@@ -90,6 +98,10 @@
         "wakeup": "Wake-up message"
     },
     "notices": {
+        "feishu": {
+            "offline": "Inbox offline: messages of this chat are not recorded for now (device: {{1}})",
+            "online": "Inbox online: messages of this chat are recorded in SiYuan (device: {{1}})"
+        },
         "offline": "Inbox offline: messages of this group are not recorded for now (device: {{1}})",
         "online": "Inbox online: messages of this group are recorded in SiYuan (device: {{1}})",
         "telegram": {
@@ -98,6 +110,74 @@
         }
     },
     "settings": {
+        "feishuBotSettings": {
+            "apiBaseUrl": {
+                "description": "Leave it empty to use Feishu (https://open.feishu.cn); fill in https://open.larksuite.com for Lark",
+                "title": "Open platform address"
+            },
+            "appId": {
+                "description": "App ID of the custom app on the Feishu open platform, found in Credentials & Basic Info of the app",
+                "placeholder": "cli_a1b2c3d4e5f6g7h8",
+                "title": "App ID"
+            },
+            "appSecret": {
+                "description": "App Secret of the app, stored in plain text and synced with your data",
+                "title": "App Secret"
+            },
+            "connection": {
+                "connected": "Connected since {{1}}",
+                "connecting": "Connecting...",
+                "description": "The long connection of the bot to Feishu on this device, refreshed automatically",
+                "failed": "Stopped connecting. Check the App ID, App Secret and open platform address; the bot connects again after a change",
+                "loading": "Loading...",
+                "offline": "Offline. Turn on Online to connect",
+                "otherDevice": "Runs on device {{1}} only, this device does not connect",
+                "reason": "Reason",
+                "reconnecting": "Disconnected, reconnecting at {{1}}",
+                "status": "Status",
+                "stopped": "Not connected",
+                "title": "Connection",
+                "unconfigured": "Not connected: the App ID or App Secret is empty",
+                "username": "Bot"
+            },
+            "device": {
+                "assigned": "Device running the bot",
+                "current": "This device",
+                "description": "When on, only this device connects. Feishu pushes each event to only one of the connections, so turn it on when you have several devices, or the messages are spread over them",
+                "title": "Run on this device only",
+                "unassigned": "No device is set, every device connects"
+            },
+            "eventLog": {
+                "description": "Save received events in the workspace for troubleshooting",
+                "title": "Event log"
+            },
+            "inboxBindings": {
+                "add": "Add a binding",
+                "chat": "Chat ID",
+                "chatPlaceholder": "oc_a0553eda9014c201e6969b478895c230",
+                "description": "Write the messages of direct chats or groups into inbox documents; a chat can be bound to several documents. Send /chatid to the bot (mention the bot in groups) to get the chat ID",
+                "doc": "Inbox document ID",
+                "docPlaceholder": "20260930112233-abcdefg",
+                "enabled": "Enabled",
+                "notify": "Online and offline notices",
+                "remove": "Remove",
+                "reply": "Reply with the block link",
+                "title": "Bound chats"
+            },
+            "inboxDownloadAssets": {
+                "description": "Download the images, voice messages, videos and files of messages into the workspace; Feishu does not serve files over 100 MB",
+                "title": "Download assets"
+            },
+            "online": {
+                "description": "When on, the bot connects to Feishu, records the messages of bound chats and answers commands; when off, it disconnects",
+                "title": "Online"
+            },
+            "tabs": {
+                "bot": "Bot",
+                "inbox": "Inbox"
+            },
+            "title": "Feishu Bot"
+        },
         "generalSettings": {
             "reset": {
                 "description": "Reset all settings options to default options (refresh page after reset)",

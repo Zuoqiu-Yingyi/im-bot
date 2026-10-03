@@ -118,7 +118,7 @@
             .sort((a, b) => Number(a.record.status === "removed") - Number(b.record.status === "removed") || b.activity - a.activity);
     }
 
-    /* 发送对象的名称: 查询到的群名称、群主或用户的昵称, 都没有时为空 */
+    /* 发送对象的名称: 这次查询到的或 chats.json 中记录的群名称、群主或用户的昵称, 都没有时为空 */
     function nameOf(item: TTarget): string {
         if (item.scope === "c2c") {
             return item.record.lastMessage?.username ?? "";
@@ -126,6 +126,9 @@
         const info = infos[item.openid];
         if (info && "info" in info && info.info.group_name) {
             return info.info.group_name;
+        }
+        if (item.record.name) {
+            return item.record.name;
         }
         const owner = item.record.owner?.username;
         return owner ? fill(i18n.ownerOf, owner) : "";

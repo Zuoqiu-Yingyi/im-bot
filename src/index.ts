@@ -21,10 +21,11 @@ import { FLAG_MOBILE } from "@workspace/utils/env/front-end";
 import { Logger } from "@workspace/utils/logger";
 import { mergeIgnoreArray } from "@workspace/utils/misc/merge";
 
+import icon_feishu from "./assets/symbols/icon-feishu.symbol?raw";
 import icon_qq from "./assets/symbols/icon-qq.symbol?raw";
 import icon_telegram from "./assets/symbols/icon-telegram.symbol?raw";
 import icon_wechat from "./assets/symbols/icon-wechat.symbol?raw";
-import { DEFAULT_CONFIG } from "./configs/default";
+import { DEFAULT_CONFIG, mergeConfig } from "./configs/default";
 import CONSTANTS from "./constants";
 
 import ApiDebugger from "./components/ApiDebugger.svelte";
@@ -34,6 +35,7 @@ import Settings from "./components/Settings.svelte";
 import type { ISiyuanGlobal } from "@workspace/types/siyuan";
 
 import type { IConfig } from "./types/config";
+import type { IFeishuConnectionState } from "./types/feishu";
 import type { IApiResponse, IQQConnectionState } from "./types/qq";
 import type { ITelegramConnectionState } from "./types/telegram";
 import type { IBotUsers } from "./types/users";
@@ -135,6 +137,7 @@ export default class ImBotPlugin extends siyuan.Plugin {
             icon_qq,
             icon_wechat,
             icon_telegram,
+            icon_feishu,
         ].join(""));
 
         /**
@@ -206,10 +209,21 @@ export default class ImBotPlugin extends siyuan.Plugin {
         return this.updateConfig(mergeIgnoreArray(DEFAULT_CONFIG) as IConfig);
     }
 
-    /* 更新插件配置 */
+    /**
+     * 更新插件配置。
+     * 微信与 Telegram 的机器人 ID (weixin.botId、telegram.botId) 由内核插件写入配置文件, 内存中的值可能已经过时,
+     * 所以保存前从配置文件中读取它们, 不覆盖内核插件写入的值 (重置配置时也是如此)
+     */
     public async updateConfig(config?: IConfig): Promise<void> {
         if (config && config !== this.config) {
             this.config = config;
+        }
+        // 没有配置文件时 loadData 返回空字符串
+        const saved: unknown = await this.loadData(ImBotPlugin.GLOBAL_CONFIG_NAME);
+        if (saved && typeof saved === "object") {
+            const { weixin, telegram } = mergeConfig(saved as Partial<IConfig>);
+            this.config.weixin.botId = weixin.botId;
+            this.config.telegram.botId = telegram.botId;
         }
         await this.saveData(ImBotPlugin.GLOBAL_CONFIG_NAME, JSON.stringify(this.config, undefined, 4));
         await this.updateKernelConfig();
@@ -257,9 +271,9 @@ export default class ImBotPlugin extends siyuan.Plugin {
     }
 
     /**
-     * 通过内核插件的 RPC get-users, 获取插件设置中的 QQ 机器人已知的群与单聊用户, 包括还没写入 users.json 的变化
+     * 通过内核插件的 RPC get-users, 获取插件设置中的 QQ 机器人已知的群与单聊用户, 包括还没写入 chats.json 的变化
      * @returns 以 group_openid 与 user_openid 为键的群与单聊用户
-     * @throws 未设置 AppID、users.json 不是 JSON 对象或内核插件没有运行时以 JSON-RPC 错误拒绝
+     * @throws 未设置 AppID、chats.json 不是 JSON 对象或内核插件没有运行时以 JSON-RPC 错误拒绝
      */
     public async getUsers(): Promise<IBotUsers> {
         return this.kernel.rpc.call[CONSTANTS.KERNEL_RPC_METHOD.GET_USERS]?.();
@@ -325,6 +339,14 @@ export default class ImBotPlugin extends siyuan.Plugin {
      */
     public async getTelegramConnectionState(): Promise<ITelegramConnectionState | null> {
         return this.kernel.rpc.call[CONSTANTS.KERNEL_RPC_METHOD.TELEGRAM_GET_STATE]?.() ?? null;
+    }
+
+    /**
+     * 通过内核插件的 RPC feishu-get-state, 获取本设备上飞书机器人的连接状态
+     * @throws 内核插件没有运行时以 JSON-RPC 错误拒绝
+     */
+    public async getFeishuConnectionState(): Promise<IFeishuConnectionState | null> {
+        return this.kernel.rpc.call[CONSTANTS.KERNEL_RPC_METHOD.FEISHU_GET_STATE]?.() ?? null;
     }
 
     /* 同步配置到内核插件, QQ 机器人配置变化时内核插件会重新连接 */

@@ -2,7 +2,7 @@
     "name": "im-bot",
     "author": "Zuoqiu Yingyi",
     "url": "https://github.com/Zuoqiu-Yingyi/siyuan-plugin-im-bot",
-    "version": "0.3.0",
+    "version": "0.4.0",
     "minAppVersion": "3.8.6",
     "disabledInPublish": true,
     "keywords": [
@@ -26,7 +26,11 @@
         "weixin",
         "Telegram",
         "电报",
-        "電報"
+        "電報",
+        "飞书",
+        "飛書",
+        "Feishu",
+        "Lark"
     ],
     "kernels": [
         "all"
@@ -43,9 +47,9 @@
         "zh-TW": "IM 機器人"
     },
     "description": {
-        "default": "Connect a QQ bot, a WeChat ClawBot and a Telegram bot to SiYuan and record messages in inbox documents",
-        "zh-CN": "把 QQ 机器人、微信 ClawBot 与 Telegram 机器人接入思源，将消息记录到收集箱文档",
-        "zh-TW": "把 QQ 機器人、微信 ClawBot 與 Telegram 機器人接入思源，將訊息記錄到收集箱文件"
+        "default": "Connect a QQ bot, a WeChat ClawBot, a Telegram bot and a Feishu bot to SiYuan and record messages in inbox documents",
+        "zh-CN": "把 QQ 机器人、微信 ClawBot、Telegram 机器人与飞书机器人接入思源，将消息记录到收集箱文档",
+        "zh-TW": "把 QQ 機器人、微信 ClawBot、Telegram 機器人與飛書機器人接入思源，將訊息記錄到收集箱文件"
     },
     "readme": {
         "default": "README.md",

@@ -163,7 +163,7 @@ export interface IQRCodeStatusResponse extends IResult {
     redirect_host?: string; // scaned_but_redirect 时改用的主机名
 }
 
-/* 扫码登录得到的登录信息, 由内核插件保存在 weixin.json 中, 随数据同步 */
+/* 扫码登录得到的登录信息, 由内核插件保存在 weixin/<机器人 ID>/auth.json 中, 随数据同步 */
 export interface IWeixinAccount {
     botId: string; // ilink_bot_id
     token: string; // bot_token

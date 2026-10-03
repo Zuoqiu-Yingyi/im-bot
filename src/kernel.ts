@@ -15,6 +15,14 @@
 
 import { mergeConfig } from "@/configs/default";
 import CONSTANTS from "@/constants";
+import { FeishuApi, resolveOptions as resolveFeishuOptions } from "@/feishu/api";
+import { FeishuCommands } from "@/feishu/commands";
+import { FeishuGateway } from "@/feishu/gateway";
+import { activeBindings as activeFeishuBindings, FeishuInbox } from "@/feishu/inbox";
+import { FeishuMedia } from "@/feishu/media";
+import { FeishuMembers } from "@/feishu/members";
+import { fromEvent } from "@/feishu/message";
+import { FeishuNotices } from "@/feishu/notices";
 import { QQCommands } from "@/qq/commands";
 import { eventLogPath } from "@/qq/event-log";
 import { QQBotGateway } from "@/qq/gateway";
@@ -30,6 +38,7 @@ import { TelegramMedia } from "@/telegram/media";
 import { TelegramNotices } from "@/telegram/notices";
 import { TelegramPoller } from "@/telegram/poller";
 import { InboxWriter } from "@/utils/inbox";
+import { feishuEventPath, telegramEventPath, weixinAuthPath, weixinDirectory, weixinEventPath } from "@/utils/storage";
 import { WeixinApi } from "@/weixin/api";
 import { WeixinInbox } from "@/weixin/inbox";
 import { WeixinLogin } from "@/weixin/login";
@@ -39,31 +48,31 @@ import { WeixinPoller } from "@/weixin/poller";
 
 import type * as kernel from "siyuan/kernel";
 
+import type { IFeishuOptions } from "@/feishu/api";
+import type { IFeishuBot } from "@/feishu/gateway";
 import type { TNotice } from "@/qq/notices";
 import type { ITelegramOptions } from "@/telegram/api";
 import type { ITelegramBot } from "@/telegram/poller";
 import type { IConfig } from "@/types/config";
-import type { IApiResponse, IPayload, IQQConnectionState } from "@/types/qq";
+import type { IChatMemberBotEvent, IEvent, IFeishuConnectionState, IMessageReceiveEvent } from "@/types/feishu";
+import type { IApiResponse, IGroupInfo, IPayload, IQQConnectionState } from "@/types/qq";
 import type { ITelegramConnectionState, IUpdate } from "@/types/telegram";
 import type { IBotUsers } from "@/types/users";
-import type {
-    IWeixinAccount,
-    IWeixinAccountState,
-    IWeixinLoginState,
-    IWeixinMessage,
-} from "@/types/weixin";
+import type { IWeixinAccount, IWeixinAccountState, IWeixinLoginState, IWeixinMessage } from "@/types/weixin";
 import type { IConfirmedLogin } from "@/weixin/login";
 
 const CONFIG_RELOAD_DELAY = 1_000; // 配置文件变化后重新读取的延迟 (ms), 合并一次写入产生的多个文件事件
 const OFFLINE_NOTICE_TIMEOUT = 5_000; // 卸载时等待下线通知的最长时间 (ms): 内核会等待 onunload 结束, 退出思源时也是如此
-const WEIXIN_MESSAGE_LOG_DIRECTORY = "logs/weixin/messages"; // 微信消息日志目录, 相对插件数据目录
-const TELEGRAM_UPDATE_LOG_DIRECTORY = "logs/telegram/updates"; // Telegram 更新日志目录, 相对插件数据目录
 
 function errorMessage(error: unknown): string {
     return error instanceof Error ? error.message : String(error);
 }
 
-/* 校验 weixin.json 的内容 */
+function isObject(value: unknown): value is Record<string, unknown> {
+    return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+/* 校验微信登录信息 auth.json 的内容 */
 function resolveWeixinAccount(data: unknown): IWeixinAccount {
     const account = data as null | Partial<IWeixinAccount>;
     const required = ["botId", "token", "baseUrl", "device", "loginTime"] as const;
@@ -114,41 +123,51 @@ function waitAtMost(promise: Promise<unknown>, ms: number): Promise<void> {
 /**
  * 内核插件, 构建为 dist/kernel.js。
  * 运行在思源内核的 goja 运行时中 (没有 DOM), 只能通过全局对象 siyuan 调用内核能力。
- * 按插件配置接入 QQ 机器人 WebSocket 网关, 把网关推送的全部事件打印到内核日志, 开启事件日志时同时保存到 logs/events/,
+ * 各机器人的数据文件保存在各自的目录中, 见 utils/storage.ts。
+ * 按插件配置接入 QQ 机器人 WebSocket 网关, 把网关推送的全部事件打印到内核日志, 开启事件日志时同时保存到 `qq/<AppID>/events/`,
  * 把绑定群聊中没有提及机器人的消息写入收集箱文档, 上线与下线时向开启了通知的绑定群聊发送通知,
  * 响应单聊中以及群主提及机器人发送的 /openid 等指令, 并按配置同步指令面板,
- * 把群与单聊用户的事件汇总到 users.json (已知的群与单聊用户及其状态)。
+ * 把群与单聊用户的事件汇总到 `qq/<AppID>/chats.json` (已知的群与单聊用户及其状态)。
  * 关闭上线开关时不连接网关; 指定了运行设备时, 只有该设备连接网关、发送通知并同步指令面板。
- * 微信 ClawBot 扫码登录后 (RPC weixin-login-*), 打开上线开关时在扫码登录的设备上以长轮询接收消息并写入收集箱, 登录信息保存在 weixin.json 中;
+ * 微信 ClawBot 扫码登录后 (RPC weixin-login-*), 打开上线开关时在扫码登录的设备上以长轮询接收消息并写入收集箱,
+ * 登录信息保存在 `weixin/<机器人 ID>/auth.json` 中, 当前的机器人 ID 写入配置文件的 weixin.botId;
  * 内核的 siyuan.crypto 支持 AES-ECB 时, 消息中的媒体解密后保存为资源文件, 否则显示为占位文本。
  * Telegram 机器人填写 Token 并打开上线开关后, 以长轮询 (getUpdates) 接收更新: 把绑定会话的消息写入收集箱,
- * 响应 /chatid 与 /start, 上线与下线时向开启了通知的绑定会话发送通知; 指定了运行设备时只有该设备接收。
+ * 响应 /chatid 与 /start, 上线与下线时向开启了通知的绑定会话发送通知; 指定了运行设备时只有该设备接收,
+ * 并在 getMe 成功后把机器人 ID 写入配置文件的 telegram.botId。
+ * 飞书机器人填写 App ID 与 App Secret 并打开上线开关后, 以长连接接收事件: 把绑定会话的消息写入收集箱,
+ * 响应 /chatid, 上线与下线时向开启了通知的绑定会话发送通知; 指定了运行设备时只有该设备连接。
  * 前端可以通过 RPC call-qq-api 以机器人身份调用 QQ 开放平台的服务端接口, 通过 RPC get-users 获取已知的群与单聊用户,
- * 通过 RPC qq-get-state 与 telegram-get-state 获取本设备上 QQ 与 Telegram 机器人的连接状态。
+ * 通过 RPC qq-get-state、telegram-get-state 与 feishu-get-state 获取本设备上 QQ、Telegram 与飞书机器人的连接状态。
  * kernel.js 以普通脚本 (非 ES module) 执行: 本文件不能 export, 也不能从 external 模块 (如 siyuan) 导入运行时值。
  * Kernel plugin, built to dist/kernel.js. Runs in the goja runtime of the
  * SiYuan kernel (no DOM) and uses the global `siyuan` object. Connects to the
  * QQ bot WebSocket gateway with the plugin config and writes every pushed
- * event to the kernel log, and to logs/events/ when the event log is on. Writes
+ * event to the kernel log, and to `qq/<AppID>/events/` when the event log is on. Writes
  * the messages of bound groups that do not mention the bot into inbox documents
  * and notifies the groups whose bindings turn on notices when the bot goes
  * online and offline, answers commands such as /openid sent in C2C chats or by
  * group owners who mention the bot, syncs the command panels with the config,
- * and keeps the known groups and C2C users with their status in users.json
- * from the events. With the online switch off, it does not connect to the
+ * and keeps the known groups and C2C users with their status in
+ * `qq/<AppID>/chats.json` from the events. With the online switch off, it does not connect to the
  * gateway; when a device is set, only that device connects to the gateway,
  * sends the notices and syncs the command panels. The call-qq-api RPC method
  * calls the QQ bot OpenAPI as the bot, get-users returns the known groups and
  * C2C users, and qq-get-state returns the connection state of the QQ bot on
  * this device. After a WeChat ClawBot QR code login (weixin-login-* RPC
  * methods) and with its online switch on, the device that logged in long-polls
- * its messages into the inbox; the login is kept in weixin.json. When
+ * its messages into the inbox; the login is kept in `weixin/<bot ID>/auth.json`
+ * and the bot ID in weixin.botId of the config. When
  * siyuan.crypto of the kernel supports AES-ECB, the media of the messages are
  * decrypted and saved as assets, otherwise they are written as placeholders.
  * With a Telegram bot token and its online switch on, it long-polls the
  * updates of the bot: the messages of bound chats go into the inbox, /chatid
  * and /start are answered, and the bound chats that turn on notices are told
- * when the bot goes online and offline; telegram-get-state returns its state.
+ * when the bot goes online and offline; telegram-get-state returns its state,
+ * and the bot ID from getMe is written to telegram.botId of the config.
+ * With a Feishu app ID, app secret and its online switch on, it receives the
+ * events of the Feishu bot through the long connection in the same way, and
+ * feishu-get-state returns its state.
  * kernel.js is evaluated as a plain script, not an ES module: do not export
  * from this file or import runtime values from external modules (e.g. siyuan).
  */
@@ -173,12 +192,20 @@ class ImBotKernelPlugin {
     private readonly telegramInbox: TelegramInbox;
     private readonly telegramCommands: TelegramCommands;
     private readonly telegramNotices: TelegramNotices;
+    private readonly feishuApi: FeishuApi;
+    private readonly feishuGateway: FeishuGateway;
+    private readonly feishuMembers: FeishuMembers;
+    private readonly feishuMedia: FeishuMedia;
+    private readonly feishuInbox: FeishuInbox;
+    private readonly feishuCommands: FeishuCommands;
+    private readonly feishuNotices: FeishuNotices;
 
     private config: IConfig = mergeConfig();
-    private weixinAccount?: IWeixinAccount; // weixin.json 中的微信登录信息
+    private weixinAccount?: IWeixinAccount; // 当前微信机器人的 auth.json 中的登录信息
     private weixinRunning?: boolean; // 上次应用登录信息与配置时本机是否接收微信消息
+    private weixinWatching?: string; // 正在监听的微信机器人数据目录
     /**
-     * 已失效的登录 (bot_token) 与发现失效的时间。只保存在内存中: 写入随数据同步的 weixin.json 可能与其他设备上的新登录冲突。
+     * 已失效的登录 (bot_token) 与发现失效的时间。只保存在内存中: 写入随数据同步的 auth.json 可能与其他设备上的新登录冲突。
      * 插件重新启动后会用失效的登录再请求一次, 收到 -14 后再次停止
      */
     private weixinExpired?: { token: string; time: string };
@@ -187,6 +214,7 @@ class ImBotKernelPlugin {
     private deviceName = ""; // 本机设备名称, 用于通知
     private running?: boolean; // 上次应用配置时本机是否运行 QQ 机器人
     private telegramRunning?: boolean; // 上次应用配置时本机是否运行 Telegram 机器人
+    private feishuRunning?: boolean; // 上次应用配置时本机是否运行飞书机器人
     private panelsSynced?: string; // 最近一次同步指令面板时的凭证与面板配置
     private reloadTimer?: ReturnType<typeof setTimeout>;
 
@@ -205,11 +233,18 @@ class ImBotKernelPlugin {
         this.weixinMedia = new WeixinMedia(this.siyuan);
         this.weixinInbox = new WeixinInbox(this.siyuan, this.weixinApi, this.writer, this.weixinMedia, () => this.config.weixin);
         this.telegramApi = new TelegramApi(this.siyuan);
-        this.telegramPoller = new TelegramPoller(this.siyuan, this.telegramApi, this.onTelegramUpdate.bind(this));
+        this.telegramPoller = new TelegramPoller(this.siyuan, this.telegramApi, this.onTelegramUpdate.bind(this), this.onTelegramReady.bind(this));
         this.telegramMedia = new TelegramMedia(this.siyuan, this.telegramApi);
         this.telegramInbox = new TelegramInbox(this.siyuan, this.telegramApi, this.writer, this.telegramMedia, () => this.config.telegram);
         this.telegramCommands = new TelegramCommands(this.siyuan, this.telegramApi);
         this.telegramNotices = new TelegramNotices(this.siyuan, this.telegramApi);
+        this.feishuApi = new FeishuApi(this.siyuan);
+        this.feishuGateway = new FeishuGateway(this.siyuan, this.feishuApi, this.onFeishuEvent.bind(this));
+        this.feishuMembers = new FeishuMembers(this.siyuan, this.feishuApi);
+        this.feishuMedia = new FeishuMedia(this.siyuan, this.feishuApi);
+        this.feishuInbox = new FeishuInbox(this.siyuan, this.feishuApi, this.writer, this.feishuMedia, this.feishuMembers, () => this.config.feishu);
+        this.feishuCommands = new FeishuCommands(this.siyuan, this.feishuApi);
+        this.feishuNotices = new FeishuNotices(this.siyuan, this.feishuApi);
         this.siyuan.event.handler = this.onEvent.bind(this);
 
         // 绑定生命周期钩子, 内核会等待钩子返回的 Promise 后再进入下一阶段。
@@ -227,9 +262,9 @@ class ImBotKernelPlugin {
         this.deviceName = device.name;
 
         /* 绑定 RPC 方法 */
-        await this.siyuan.rpc.bind(CONSTANTS.KERNEL_RPC_METHOD.UPDATE_CONFIG, this.rpcUpdateConfig.bind(this), "Update the plugin config, then connect or disconnect the QQ bot and start or stop receiving WeChat and Telegram messages as the new config says.");
-        await this.siyuan.rpc.bind(CONSTANTS.KERNEL_RPC_METHOD.CALL_QQ_API, this.rpcCallQQApi.bind(this), "Call a QQ bot OpenAPI endpoint as the configured bot. Params: url (a path starting with /), method (GET, POST, PUT, PATCH or DELETE), body (optional, sent as JSON). Returns the response { status, headers, body }.");
-        await this.siyuan.rpc.bind(CONSTANTS.KERNEL_RPC_METHOD.GET_USERS, this.rpcGetUsers.bind(this), "Get the known groups and C2C users of the configured bot from users.json, including the changes not written yet. Returns { groups, users }, keyed by group_openid and user_openid.");
+        await this.siyuan.rpc.bind(CONSTANTS.KERNEL_RPC_METHOD.UPDATE_CONFIG, this.rpcUpdateConfig.bind(this), "Update the plugin config, then connect or disconnect the QQ and Feishu bots and start or stop receiving WeChat and Telegram messages as the new config says.");
+        await this.siyuan.rpc.bind(CONSTANTS.KERNEL_RPC_METHOD.CALL_QQ_API, this.rpcCallQQApi.bind(this), "Call a QQ bot OpenAPI endpoint as the configured bot. Params: url (a path starting with /), method (GET, POST, PUT, PATCH or DELETE), body (optional, sent as JSON). Returns the response { status, headers, body }. A successful GET /v2/groups/{group_openid}/info also records the group name in qq/<AppID>/chats.json.");
+        await this.siyuan.rpc.bind(CONSTANTS.KERNEL_RPC_METHOD.GET_USERS, this.rpcGetUsers.bind(this), "Get the known groups and C2C users of the configured bot from qq/<AppID>/chats.json, including the changes not written yet. Returns { groups, users }, keyed by group_openid and user_openid.");
         await this.siyuan.rpc.bind(CONSTANTS.KERNEL_RPC_METHOD.QQ_GET_STATE, this.rpcQQGetState.bind(this), "Get the connection state of the QQ bot on this device. Returns { status, since?, username?, error?, retryAt?, device? }.");
         await this.loadWeixinAccount();
         await this.siyuan.rpc.bind(CONSTANTS.KERNEL_RPC_METHOD.WEIXIN_GET_ACCOUNT, this.rpcWeixinGetAccount.bind(this), "Get the WeChat bot login without its token, or null when not logged in. Returns { botId, userId, device, deviceName, loginTime, expiredAt?, running }.");
@@ -237,8 +272,9 @@ class ImBotKernelPlugin {
         await this.siyuan.rpc.bind(CONSTANTS.KERNEL_RPC_METHOD.WEIXIN_LOGIN_STATE, this.rpcWeixinLoginState.bind(this), "Get the state of the WeChat QR code login.");
         await this.siyuan.rpc.bind(CONSTANTS.KERNEL_RPC_METHOD.WEIXIN_LOGIN_VERIFY, this.rpcWeixinLoginVerify.bind(this), "Submit the digits shown on the phone when the WeChat login status is need_verifycode. Params: code. Returns the login state.");
         await this.siyuan.rpc.bind(CONSTANTS.KERNEL_RPC_METHOD.WEIXIN_LOGIN_CANCEL, this.rpcWeixinLoginCancel.bind(this), "Cancel the WeChat QR code login. Returns the login state.");
-        await this.siyuan.rpc.bind(CONSTANTS.KERNEL_RPC_METHOD.WEIXIN_LOGOUT, this.rpcWeixinLogout.bind(this), "Log out of WeChat: stop receiving messages and remove the login from weixin.json.");
+        await this.siyuan.rpc.bind(CONSTANTS.KERNEL_RPC_METHOD.WEIXIN_LOGOUT, this.rpcWeixinLogout.bind(this), "Log out of WeChat: stop receiving messages, remove the login (auth.json) and the cursor of the bot, and clear weixin.botId of the config.");
         await this.siyuan.rpc.bind(CONSTANTS.KERNEL_RPC_METHOD.TELEGRAM_GET_STATE, this.rpcTelegramGetState.bind(this), "Get the connection state of the Telegram bot on this device. Returns { status, since?, username?, error?, retryAt?, device? }.");
+        await this.siyuan.rpc.bind(CONSTANTS.KERNEL_RPC_METHOD.FEISHU_GET_STATE, this.rpcFeishuGetState.bind(this), "Get the connection state of the Feishu bot on this device. Returns { status, since?, username?, error?, retryAt?, device? }.");
 
         /* 其他设备修改的配置随数据同步到本机时, 前端不会调用 RPC, 需要监听配置文件 */
         await this.siyuan.storage.watcher.add(".");
@@ -263,30 +299,78 @@ class ImBotKernelPlugin {
         await this.siyuan.rpc.unbind(CONSTANTS.KERNEL_RPC_METHOD.WEIXIN_LOGIN_CANCEL);
         await this.siyuan.rpc.unbind(CONSTANTS.KERNEL_RPC_METHOD.WEIXIN_LOGOUT);
         await this.siyuan.rpc.unbind(CONSTANTS.KERNEL_RPC_METHOD.TELEGRAM_GET_STATE);
+        await this.siyuan.rpc.unbind(CONSTANTS.KERNEL_RPC_METHOD.FEISHU_GET_STATE);
 
         clearTimeout(this.reloadTimer);
         clearTimeout(this.weixinReloadTimer);
         this.weixinLogin.cancel();
-        // 运行中的 QQ 与 Telegram 机器人发送下线通知, 与微信 notifystop 同时发送, 各自最多等待 5 秒
-        await Promise.all([
-            waitAtMost(this.running ? this.notify("offline") : Promise.resolve(), OFFLINE_NOTICE_TIMEOUT),
-            waitAtMost(this.telegramRunning ? this.notifyTelegram("offline") : Promise.resolve(), OFFLINE_NOTICE_TIMEOUT),
-            waitAtMost(this.weixinPoller.stop(), OFFLINE_NOTICE_TIMEOUT),
-        ]);
+        // 飞书的事件已经回包, 等待排序的消息不再等待, 直接排入写入队列
+        this.feishuInbox.flush();
+        // 运行中的 QQ、Telegram 与飞书机器人发送下线通知, 与微信 notifystop 同时发送, 各自最多等待 5 秒
+        await Promise.all([waitAtMost(this.running ? this.notify("offline") : Promise.resolve(), OFFLINE_NOTICE_TIMEOUT), waitAtMost(this.telegramRunning ? this.notifyTelegram("offline") : Promise.resolve(), OFFLINE_NOTICE_TIMEOUT), waitAtMost(this.feishuRunning ? this.notifyFeishu("offline") : Promise.resolve(), OFFLINE_NOTICE_TIMEOUT), waitAtMost(this.weixinPoller.stop(), OFFLINE_NOTICE_TIMEOUT)]);
         this.telegramPoller.stop();
+        await this.feishuGateway.stop();
         await this.qq.stop();
-        // 断开连接后不会再有新的事件, 把还没写入的变化写入 users.json
+        // 断开连接后不会再有新的事件, 把还没写入的变化写入 chats.json
         await this.users.flush();
 
         // 存储目录被删除后监听会自动失效, 此时 remove 会失败, 所以放在断开连接之后
+        await this.watchWeixin("");
         await this.siyuan.storage.watcher.remove(".");
     }
 
-    /* 应用配置: QQ、微信与 Telegram 机器人各自按上线开关等条件开始或停止运行 */
+    /* 应用配置: QQ、微信、Telegram 与飞书机器人各自按上线开关等条件开始或停止运行 */
     private async applyConfig(): Promise<void> {
         this.applyWeixin();
         this.applyTelegram();
+        this.applyFeishu();
         await this.applyQQ();
+    }
+
+    /**
+     * 按上线开关与运行设备连接或断开飞书长连接, 通知的发送时机与 QQ 机器人相同:
+     * 开始运行 (包括内核插件开始运行时) 发送上线通知, 停止运行时发送下线通知, 通知在后台发送
+     */
+    private applyFeishu(): void {
+        const { device, online } = this.config.feishu;
+        const running = online && (!device || device === this.device);
+        const previous = this.feishuRunning;
+        if (running !== previous) {
+            void this.siyuan.logger.info(running ? `[feishu] run the Feishu bot on this device ${this.device}` : online ? `[feishu] the Feishu bot runs on device ${device} only, not on this device ${this.device}` : "[feishu] the Feishu bot is offline");
+            this.feishuRunning = running;
+        }
+
+        if (running) {
+            this.feishuGateway.update(this.config.feishu);
+            if (!previous) {
+                void this.notifyFeishu("online");
+            }
+        }
+        else {
+            if (previous) {
+                void this.notifyFeishu("offline");
+            }
+            void this.feishuGateway.stop();
+        }
+    }
+
+    /* 向开启了通知的生效绑定所在的飞书会话发送上线或下线通知; 由调用方确保只在运行飞书机器人的设备上发送 */
+    private async notifyFeishu(notice: TNotice): Promise<void> {
+        let options: IFeishuOptions | undefined;
+        try {
+            options = resolveFeishuOptions(this.config.feishu);
+        }
+        catch {
+            // 开放平台地址无效, 原因已由 FeishuGateway 记录
+            return;
+        }
+        const chats = activeFeishuBindings(this.config.feishu.inbox)
+            .filter((binding) => binding.notify)
+            .map((binding) => binding.chat);
+        if (!options || chats.length === 0) {
+            return;
+        }
+        await this.feishuNotices.send(options, chats, notice, this.deviceName || this.device);
     }
 
     /**
@@ -298,11 +382,7 @@ class ImBotKernelPlugin {
         const running = online && (!device || device === this.device);
         const previous = this.telegramRunning;
         if (running !== previous) {
-            void this.siyuan.logger.info(running
-                ? `[telegram] run the Telegram bot on this device ${this.device}`
-                : online
-                    ? `[telegram] the Telegram bot runs on device ${device} only, not on this device ${this.device}`
-                    : "[telegram] the Telegram bot is offline");
+            void this.siyuan.logger.info(running ? `[telegram] run the Telegram bot on this device ${this.device}` : online ? `[telegram] the Telegram bot runs on device ${device} only, not on this device ${this.device}` : "[telegram] the Telegram bot is offline");
             this.telegramRunning = running;
         }
 
@@ -330,7 +410,9 @@ class ImBotKernelPlugin {
             // Token 或 Bot API 地址无效, 原因已由 TelegramPoller 记录
             return;
         }
-        const chats = activeTelegramBindings(this.config.telegram.inbox).filter((binding) => binding.notify).map((binding) => binding.chat);
+        const chats = activeTelegramBindings(this.config.telegram.inbox)
+            .filter((binding) => binding.notify)
+            .map((binding) => binding.chat);
         if (!options || chats.length === 0) {
             return;
         }
@@ -346,11 +428,7 @@ class ImBotKernelPlugin {
         const running = online && (!device || device === this.device);
         const previous = this.running;
         if (running !== previous) {
-            void this.siyuan.logger.info(running
-                ? `[qq] run the QQ bot on this device ${this.device}`
-                : online
-                    ? `[qq] the QQ bot runs on device ${device} only, not on this device ${this.device}`
-                    : "[qq] the QQ bot is offline");
+            void this.siyuan.logger.info(running ? `[qq] run the QQ bot on this device ${this.device}` : online ? `[qq] the QQ bot runs on device ${device} only, not on this device ${this.device}` : "[qq] the QQ bot is offline");
             this.running = running;
         }
 
@@ -394,34 +472,40 @@ class ImBotKernelPlugin {
     /* 向开启了通知的生效绑定所在的群发送上线或下线通知; 由调用方确保只在运行 QQ 机器人的设备上发送 */
     private async notify(notice: TNotice): Promise<void> {
         const credentials = resolveCredentials(this.config.qq);
-        const groups = activeBindings(this.config.qq.inbox).filter((binding) => binding.notify).map((binding) => binding.group);
+        const groups = activeBindings(this.config.qq.inbox)
+            .filter((binding) => binding.notify)
+            .map((binding) => binding.chat);
         if (!credentials || groups.length === 0) {
             return;
         }
         await this.notices.send(credentials, groups, notice, this.deviceName || this.device);
     }
 
-    /* 配置文件与微信登录信息变化后 (包括数据同步) 重新读取并应用 */
+    /**
+     * 配置文件与当前微信机器人的登录信息变化后 (包括数据同步) 重新读取并应用。
+     * 配置文件中的 weixin.botId 可能已经改变 (在其他设备上登录了另一个机器人), 所以同时重新读取登录信息
+     */
     private onEvent(event: kernel.TEventMessage): void {
         if (event.type !== "fs-notify") {
             return;
         }
-        switch (event.detail?.path) {
-            case CONSTANTS.GLOBAL_CONFIG_NAME:
-                clearTimeout(this.reloadTimer);
-                this.reloadTimer = setTimeout(async () => {
-                    await this.loadConfig();
-                    await this.applyConfig();
-                }, CONFIG_RELOAD_DELAY);
-                break;
-
-            case CONSTANTS.WEIXIN_ACCOUNT_FILE_NAME:
-                clearTimeout(this.weixinReloadTimer);
-                this.weixinReloadTimer = setTimeout(async () => {
-                    await this.loadWeixinAccount();
-                    this.applyWeixin();
-                }, CONFIG_RELOAD_DELAY);
-                break;
+        // Windows 上子目录中的路径以 `\` 分隔
+        const path = String(event.detail?.path ?? "").replace(/\\/g, "/");
+        const botId = this.config.weixin.botId;
+        if (path === CONSTANTS.GLOBAL_CONFIG_NAME) {
+            clearTimeout(this.reloadTimer);
+            this.reloadTimer = setTimeout(async () => {
+                await this.loadConfig();
+                await this.loadWeixinAccount();
+                await this.applyConfig();
+            }, CONFIG_RELOAD_DELAY);
+        }
+        else if (botId && path === weixinAuthPath(botId)) {
+            clearTimeout(this.weixinReloadTimer);
+            this.weixinReloadTimer = setTimeout(async () => {
+                await this.loadWeixinAccount();
+                this.applyWeixin();
+            }, CONFIG_RELOAD_DELAY);
         }
     }
 
@@ -430,20 +514,14 @@ class ImBotKernelPlugin {
         return this.weixinExpired?.token === account.token ? this.weixinExpired.time : undefined;
     }
 
-    /* 按上线开关与 weixin.json 开始或停止接收微信消息: 只在上线时、在扫码登录的设备上, 且登录没有失效时接收 */
+    /* 按上线开关与登录信息开始或停止接收微信消息: 只在上线时、在扫码登录的设备上, 且登录没有失效时接收 */
     private applyWeixin(): void {
         const account = this.weixinAccount;
         const online = this.config.weixin.online;
         const expiredAt = account && this.weixinExpiredAt(account);
         const running = online && !!account && !expiredAt && account.device === this.device;
         if (account && running !== this.weixinRunning) {
-            void this.siyuan.logger.info(running
-                ? `[weixin] receive the messages of bot ${account.botId} on this device ${this.device}`
-                : expiredAt
-                    ? `[weixin] the login of bot ${account.botId} expired at ${expiredAt}, scan the QR code again`
-                    : online
-                        ? `[weixin] bot ${account.botId} receives messages on device ${account.device} only, not on this device ${this.device}`
-                        : `[weixin] bot ${account.botId} is offline`);
+            void this.siyuan.logger.info(running ? `[weixin] receive the messages of bot ${account.botId} on this device ${this.device}` : expiredAt ? `[weixin] the login of bot ${account.botId} expired at ${expiredAt}, scan the QR code again` : online ? `[weixin] bot ${account.botId} receives messages on device ${account.device} only, not on this device ${this.device}` : `[weixin] bot ${account.botId} is offline`);
         }
         this.weixinRunning = running;
 
@@ -455,29 +533,107 @@ class ImBotKernelPlugin {
         }
     }
 
-    /* 读取 weixin.json; 没有该文件或内容无效时视为未登录 */
+    /**
+     * 读取配置中 weixin.botId 对应的 `weixin/<机器人 ID>/auth.json`, 并监听该目录;
+     * 没有机器人 ID、没有该文件或内容无效时视为未登录
+     */
     private async loadWeixinAccount(): Promise<void> {
+        const botId = this.config.weixin.botId;
+        await this.watchWeixin(botId);
+        if (!botId) {
+            this.weixinAccount = undefined;
+            return;
+        }
+        const path = weixinAuthPath(botId);
         let data: kernel.IDataObject;
         try {
-            data = await this.siyuan.storage.get(CONSTANTS.WEIXIN_ACCOUNT_FILE_NAME);
+            data = await this.siyuan.storage.get(path);
         }
         catch {
-            // 还没有登录, 或已退出登录
+            // 已在其他设备上退出登录, 或者登录信息还没有同步到本机
             this.weixinAccount = undefined;
             return;
         }
         try {
-            this.weixinAccount = resolveWeixinAccount(await data.json());
+            const account = resolveWeixinAccount(await data.json());
+            if (account.botId !== botId) {
+                throw new Error(`it is the login of bot ${account.botId}`);
+            }
+            this.weixinAccount = account;
         }
         catch (error) {
-            void this.siyuan.logger.warn(`[weixin] ${CONSTANTS.WEIXIN_ACCOUNT_FILE_NAME} is invalid, treat it as logged out:`, errorMessage(error));
+            void this.siyuan.logger.warn(`[weixin] ${path} is invalid, treat it as logged out:`, errorMessage(error));
             this.weixinAccount = undefined;
         }
     }
 
-    private async saveWeixinAccount(account: IWeixinAccount): Promise<void> {
-        await this.siyuan.storage.put(CONSTANTS.WEIXIN_ACCOUNT_FILE_NAME, JSON.stringify(account, undefined, 4));
-        this.weixinAccount = account;
+    /**
+     * 只监听当前微信机器人的数据目录: 存储目录的监听不包括子目录, 而在其他设备上重新扫码登录同一个机器人时,
+     * 配置文件不变, 只有其中的 auth.json 变化。目录还不存在时监听失败, 下次读取登录信息时重试
+     * @param botId - 机器人 ID, 为空时停止监听
+     */
+    private async watchWeixin(botId: string): Promise<void> {
+        const directory = botId ? weixinDirectory(botId) : undefined;
+        if (directory === this.weixinWatching) {
+            return;
+        }
+        if (this.weixinWatching) {
+            try {
+                await this.siyuan.storage.watcher.remove(this.weixinWatching);
+            }
+            catch {
+                // 目录被删除后监听已经自动失效
+            }
+            this.weixinWatching = undefined;
+        }
+        if (directory) {
+            try {
+                await this.siyuan.storage.watcher.add(directory);
+                this.weixinWatching = directory;
+            }
+            catch (error) {
+                void this.siyuan.logger.debug(`[weixin] watch ${directory} failed:`, errorMessage(error));
+            }
+        }
+    }
+
+    /**
+     * 把微信或 Telegram 的机器人 ID 写入配置文件。
+     * 机器人 ID 只由内核插件修改, 前端保存配置时沿用配置文件中的值。写入前重新读取配置文件并只修改这一项,
+     * 不覆盖前端刚刚保存、内核插件还没有重新读取的修改; 使用 siyuan.storage.put, 理由同 writeEventLog
+     * @throws 配置文件不是 JSON 对象, 或写入失败
+     */
+    private async saveBotId(bot: "telegram" | "weixin", botId: string): Promise<void> {
+        if (this.config[bot].botId === botId) {
+            return;
+        }
+
+        const name = CONSTANTS.GLOBAL_CONFIG_NAME;
+        let data: kernel.IDataObject | undefined;
+        try {
+            data = await this.siyuan.storage.get(name);
+        }
+        catch {
+            // 前端插件还没有保存过配置, 写入当前的配置
+        }
+        let saved: unknown = { ...this.config };
+        if (data) {
+            try {
+                // 不用 data.json(): 它返回的对象的键没有固定的顺序, 写回后配置文件中各项的顺序会被打乱
+                saved = JSON.parse(await data.text());
+            }
+            catch (error) {
+                throw new Error(`${name} is not valid JSON, fix or delete it: ${errorMessage(error)}`);
+            }
+        }
+        if (!isObject(saved)) {
+            throw new Error(`${name} is not a JSON object, fix or delete it`);
+        }
+        const section = saved[bot];
+        saved[bot] = { ...(isObject(section) ? section : {}), botId };
+        await this.siyuan.storage.put(name, JSON.stringify(saved, undefined, 4));
+        this.config[bot].botId = botId;
+        void this.siyuan.logger.info(`[${bot}] ${botId ? `set the bot ID ${botId}` : "clear the bot ID"} in ${name}`);
     }
 
     /* 返回给前端的登录信息, 不含 bot_token 与接口地址 */
@@ -497,7 +653,7 @@ class ImBotKernelPlugin {
     private async loadDevice(): Promise<{ id: string; name: string }> {
         try {
             const response = await this.siyuan.client.fetch("/api/system/getConf", { method: "POST", body: "{}" });
-            const result = await response.json() as { data?: { conf?: { system?: { id?: string; name?: string } } } };
+            const result = (await response.json()) as { data?: { conf?: { system?: { id?: string; name?: string } } } };
             const system = result.data?.conf?.system;
             return { id: system?.id ?? "", name: system?.name ?? "" };
         }
@@ -522,15 +678,20 @@ class ImBotKernelPlugin {
     /**
      * RPC: update-config
      * 前端插件调用: `await this.kernel.rpc.call[CONSTANTS.KERNEL_RPC_METHOD.UPDATE_CONFIG]?.(config)`
+     * 机器人 ID (weixin.botId、telegram.botId) 由内核插件维护, 前端传来的可能是旧值, 所以保留当前的值
      */
     private async rpcUpdateConfig(config: IConfig): Promise<void> {
+        const { weixin, telegram } = this.config;
         this.config = mergeConfig(config);
+        this.config.weixin.botId = weixin.botId;
+        this.config.telegram.botId = telegram.botId;
         await this.applyConfig();
     }
 
     /**
      * RPC: call-qq-api
      * 以插件设置中的 QQ 机器人身份调用服务端接口 (OpenAPI), 不受运行设备限制。
+     * QQ 的事件中没有群名称: 查询群信息 (`GET /v2/groups/{group_openid}/info`) 成功时, 把群名称记录到 chats.json。
      * 前端插件调用: `await this.kernel.rpc.call[CONSTANTS.KERNEL_RPC_METHOD.CALL_QQ_API]?.("/v2/groups/{group_openid}/messages", "POST", { content: "...", msg_type: 0 })`
      * @param url - 请求路径, 以 `/` 开头, 相对 https://api.bot.qq.com
      * @param method - 请求方法: GET、POST、PUT、PATCH 或 DELETE, 不区分大小写
@@ -544,15 +705,21 @@ class ImBotKernelPlugin {
         if (!credentials) {
             throw new Error("QQ_BOT_APPID or QQ_BOT_SECRET is not configured");
         }
-        return this.openapi.request(credentials, request);
+        const response = await this.openapi.request(credentials, request);
+        const group = request.method === "GET" ? /^\/v2\/groups\/([\w-]+)\/info$/.exec(request.url)?.[1] : undefined;
+        const name = (response.body as IGroupInfo | null)?.group_name;
+        if (group && response.status >= 200 && response.status < 300 && typeof name === "string" && name) {
+            this.users.recordGroupName(credentials.appid, group, name);
+        }
+        return response;
     }
 
     /**
      * RPC: get-users
-     * 插件设置中的机器人已知的群与单聊用户, 包括还没写入 users.json 的变化, 不受运行设备限制。
+     * 插件设置中的机器人已知的群与单聊用户, 包括还没写入 `qq/<AppID>/chats.json` 的变化, 不受运行设备限制。
      * 前端插件调用: `await this.kernel.rpc.call[CONSTANTS.KERNEL_RPC_METHOD.GET_USERS]()`
      * @returns 以 group_openid 与 user_openid 为键的群与单聊用户, 没有记录时都为空
-     * @throws 未设置 AppID, 或 users.json 不是 JSON 对象
+     * @throws 未设置 AppID, 或 chats.json 不是 JSON 对象
      */
     private async rpcGetUsers(): Promise<IBotUsers> {
         const appid = this.config.qq.appid.trim();
@@ -592,6 +759,22 @@ class ImBotKernelPlugin {
             return { status: "other-device", device };
         }
         return this.telegramPoller.state;
+    }
+
+    /**
+     * RPC: feishu-get-state
+     * 本设备上飞书机器人的连接状态: 上线开关关闭或只在其他设备上运行时不连接, 否则为长连接的状态。
+     * 前端插件调用: `await this.kernel.rpc.call[CONSTANTS.KERNEL_RPC_METHOD.FEISHU_GET_STATE]()`
+     */
+    private rpcFeishuGetState(): IFeishuConnectionState {
+        const { device, online } = this.config.feishu;
+        if (!online) {
+            return { status: "offline" };
+        }
+        if (device && device !== this.device) {
+            return { status: "other-device", device };
+        }
+        return this.feishuGateway.state;
     }
 
     /**
@@ -641,21 +824,29 @@ class ImBotKernelPlugin {
 
     /**
      * RPC: weixin-logout
-     * 停止接收消息并删除 weixin.json; 删除随数据同步到其他设备后, 正在接收消息的设备也会停止。
+     * 停止接收消息, 删除当前机器人的 auth.json 与游标并清空 weixin.botId, 消息日志保留;
+     * 这些变化随数据同步到其他设备后, 正在接收消息的设备也会停止。
      * 前端插件调用: `await this.kernel.rpc.call[CONSTANTS.KERNEL_RPC_METHOD.WEIXIN_LOGOUT]()`
      */
     private async rpcWeixinLogout(): Promise<void> {
         this.weixinLogin.cancel();
-        const account = this.weixinAccount;
+        const botId = this.config.weixin.botId;
         this.weixinAccount = undefined;
         this.weixinRunning = false;
         await this.weixinPoller.stop();
-        await this.siyuan.storage.remove(CONSTANTS.WEIXIN_ACCOUNT_FILE_NAME);
-        await this.weixinPoller.removeCursor();
-        void this.siyuan.logger.info(`[weixin] logged out${account ? ` of bot ${account.botId}` : ""}`);
+        if (botId) {
+            // 先删除登录信息再修改配置文件: 同步到其他设备的配置文件不会指向已经删除的登录
+            await this.removeWeixinLogin(botId);
+        }
+        await this.saveBotId("weixin", "");
+        await this.watchWeixin("");
+        void this.siyuan.logger.info(`[weixin] logged out${botId ? ` of bot ${botId}` : ""}`);
     }
 
-    /* 扫码确认: 保存登录信息, 由本设备接收消息 */
+    /**
+     * 扫码确认: 保存登录信息并把机器人 ID 写入配置文件, 由本设备接收消息。
+     * 同一时间只有一个登录: 登录了另一个机器人时, 删除上一个机器人的登录信息与游标, 保留它的消息日志
+     */
     private async onWeixinLogin(login: IConfirmedLogin): Promise<IWeixinAccountState> {
         const account: IWeixinAccount = {
             ...login,
@@ -663,9 +854,23 @@ class ImBotKernelPlugin {
             deviceName: this.deviceName,
             loginTime: new Date().toISOString(),
         };
-        await this.saveWeixinAccount(account);
+        const previous = this.config.weixin.botId;
+        // 先写入登录信息再修改配置文件: 同步到其他设备的配置文件指向的登录信息已经存在
+        await this.siyuan.storage.put(weixinAuthPath(account.botId), JSON.stringify(account, undefined, 4));
+        this.weixinAccount = account;
+        if (previous && previous !== account.botId) {
+            await this.removeWeixinLogin(previous);
+        }
+        await this.saveBotId("weixin", account.botId);
+        await this.watchWeixin(account.botId);
         this.applyWeixin();
         return this.weixinAccountState(account);
+    }
+
+    /* 删除微信机器人的登录信息与游标, 保留消息日志 */
+    private async removeWeixinLogin(botId: string): Promise<void> {
+        await this.siyuan.storage.remove(weixinAuthPath(botId));
+        await this.weixinPoller.removeCursor(botId);
     }
 
     /* 登录失效: 记录失效时间, 重新扫码后才再次接收消息 */
@@ -678,25 +883,32 @@ class ImBotKernelPlugin {
     private onWeixinMessage(account: IWeixinAccount, message: IWeixinMessage): void {
         void this.siyuan.logger.info("[weixin] message", message);
         if (this.config.weixin.eventLog) {
-            void this.writeWeixinMessageLog(message);
+            void this.writeWeixinMessageLog(account, message);
         }
         this.weixinInbox.handle(account, message);
     }
 
-    /* 把消息以不带缩进的 JSON 写入 `logs/weixin/messages/<消息 ID>.json`, 理由同 writeEventLog */
-    private async writeWeixinMessageLog(message: IWeixinMessage): Promise<void> {
-        const id = messageId(message)?.replace(/[^\w-]/g, "_");
+    /* 把消息以不带缩进的 JSON 写入 `weixin/<机器人 ID>/events/<消息 ID>.json`, 理由同 writeEventLog */
+    private async writeWeixinMessageLog(account: IWeixinAccount, message: IWeixinMessage): Promise<void> {
+        const id = messageId(message);
         if (!id) {
             void this.siyuan.logger.debug("[weixin] the message has no message ID, skip the message log");
             return;
         }
-        const path = `${WEIXIN_MESSAGE_LOG_DIRECTORY}/${id}.json`;
+        const path = weixinEventPath(account.botId, id);
         try {
             await this.siyuan.storage.put(path, JSON.stringify(message));
         }
         catch (error) {
             void this.siyuan.logger.warn(`[weixin] write message log ${path} failed:`, errorMessage(error));
         }
+    }
+
+    /* Telegram 机器人 getMe 成功: 把机器人 ID 写入配置文件; 只有运行 Telegram 机器人的设备会写入 */
+    private onTelegramReady(bot: ITelegramBot): void {
+        this.saveBotId("telegram", String(bot.me.id)).catch((error: unknown) => {
+            void this.siyuan.logger.warn("[telegram] save the bot ID failed:", errorMessage(error));
+        });
     }
 
     /* 打印收到的 Telegram 更新, 开启事件日志时同时保存到文件; 消息写入收集箱并作为指令处理 */
@@ -720,9 +932,49 @@ class ImBotKernelPlugin {
         }
     }
 
-    /* 把更新以不带缩进的 JSON 写入 `logs/telegram/updates/<机器人 ID>/<update_id>.json`, 理由同 writeEventLog; update_id 只在同一个机器人中唯一 */
+    /* 打印收到的飞书事件, 开启事件日志时同时保存到文件; 接收到的消息写入收集箱并作为指令处理 */
+    private onFeishuEvent(bot: IFeishuBot, event: IEvent): void {
+        const type = event.header?.event_type ?? event.event?.type ?? "";
+        const id = event.header?.event_id ?? event.uuid ?? "";
+        void this.siyuan.logger.info("[feishu] event", type, event);
+        if (this.config.feishu.eventLog) {
+            void this.writeFeishuEventLog(bot, type, id, event);
+        }
+
+        switch (type) {
+            case "im.message.receive_v1": {
+                const message = fromEvent(event.event as IMessageReceiveEvent);
+                this.feishuInbox.handle(bot, message, id || undefined);
+                this.feishuCommands.handle(bot, message);
+                break;
+            }
+            case "im.chat.member.bot.added_v1":
+            case "im.chat.member.bot.deleted_v1": {
+                const chat = event.event as IChatMemberBotEvent;
+                void this.siyuan.logger.info(`[feishu] the bot is ${type === "im.chat.member.bot.added_v1" ? "added to" : "removed from"} chat ${chat.chat_id} (${chat.name ?? ""})`);
+                break;
+            }
+        }
+    }
+
+    /* 把事件以不带缩进的 JSON 写入 `feishu/<App ID>/events/<事件类型>/<事件 ID>.json`, 理由同 writeEventLog */
+    private async writeFeishuEventLog(bot: IFeishuBot, type: string, id: string, event: IEvent): Promise<void> {
+        if (!type || !id) {
+            void this.siyuan.logger.debug("[feishu] the event has no type or ID, skip the event log");
+            return;
+        }
+        const path = feishuEventPath(bot.options.appId, type, id);
+        try {
+            await this.siyuan.storage.put(path, JSON.stringify(event));
+        }
+        catch (error) {
+            void this.siyuan.logger.warn(`[feishu] write event log ${path} failed:`, errorMessage(error));
+        }
+    }
+
+    /* 把更新以不带缩进的 JSON 写入 `telegram/<机器人 ID>/events/<update_id>.json`, 理由同 writeEventLog */
     private async writeTelegramUpdateLog(bot: ITelegramBot, update: IUpdate): Promise<void> {
-        const path = `${TELEGRAM_UPDATE_LOG_DIRECTORY}/${bot.me.id}/${update.update_id}.json`;
+        const path = telegramEventPath(bot.me.id, update.update_id);
         try {
             await this.siyuan.storage.put(path, JSON.stringify(update));
         }
@@ -731,7 +983,7 @@ class ImBotKernelPlugin {
         }
     }
 
-    /* 打印 QQ 网关推送的事件, 开启事件日志时同时保存到文件; 群聊中 @ 机器人的消息作为指令处理, 其余消息写入绑定的收集箱; 群与单聊用户的事件汇总到 users.json */
+    /* 打印 QQ 网关推送的事件, 开启事件日志时同时保存到文件; 群聊中 @ 机器人的消息作为指令处理, 其余消息写入绑定的收集箱; 群与单聊用户的事件汇总到 qq/<AppID>/chats.json */
     private onQQDispatch(payload: IPayload): void {
         void this.siyuan.logger.info("[qq] event", payload.t, payload);
         if (this.config.qq.eventLog) {
@@ -743,12 +995,12 @@ class ImBotKernelPlugin {
     }
 
     /**
-     * 把事件以不带缩进的 JSON 写入 `logs/events/<事件类型>/<事件 ID>.json`。
+     * 把事件以不带缩进的 JSON 写入 `qq/<AppID>/events/<事件类型>/<事件 ID>.json`。
      * 使用 siyuan.storage.put 而不是 /api/file/putFile: putFile 写入 data/storage/petal/im-bot/ 时,
      * 内核会通知所有前端该插件的数据已变更, 未覆盖 onDataChanged 的前端插件会因此重新加载。
      */
     private async writeEventLog(payload: IPayload): Promise<void> {
-        const path = eventLogPath(payload);
+        const path = eventLogPath(this.config.qq.appid.trim(), payload);
         if (!path) {
             void this.siyuan.logger.debug("[qq] the event has no event ID, skip the event log:", payload.t);
             return;

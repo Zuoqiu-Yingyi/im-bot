@@ -56,6 +56,15 @@ export function encodeBase64Url(text: string): string {
         .replace(/=+$/, "");
 }
 
+/**
+ * 把文本中内核转发地址的 u、h 参数值替换为 `***`。
+ * siyuan.client.fetch 与 socket 失败 (如请求超时) 时, 错误信息带有完整的内核地址,
+ * 其中 h 是 base64url 编码的请求头 (如 Authorization), u 是目标地址 (可能带有票据)
+ */
+export function redactProxyParams(text: string): string {
+    return text.replace(/([?&][uh]=)[\w-]+/g, "$1***");
+}
+
 /* 把请求交给内核转发 */
 function forward(siyuan: kernel.ISiyuan, request: IProxyRequest): Promise<kernel.IFetchResponse> {
     const headers = request.headers
