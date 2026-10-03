@@ -101,9 +101,14 @@ export function image(url: string, title = ""): string {
     return `![${title.replace(/[[\]\\\r\n]/g, "")}](${destination(url)})`;
 }
 
-/* 超链接 */
+/* 超链接, 链接文本为已经转换的行内内容 */
+export function richLink(content: string, url: string): string {
+    return `[${content}](${destination(url)})`;
+}
+
+/* 超链接, 链接文本按原样显示 */
 export function link(text: string, url: string): string {
-    return `[${escapeText(text)}](${destination(url)})`;
+    return richLink(escapeText(text), url);
 }
 
 const URL_TRAILING_PUNCTUATION = /[.,;:!?'*]+$/;
@@ -122,16 +127,67 @@ export function trimUrl(href: string): string {
     return url;
 }
 
-/* 纯文本按原样显示, 其中的网址转为超链接 */
-export function textWithLinks(text: string): string {
+/**
+ * 纯文本按原样显示, 其中的网址转为超链接
+ * @param text - 纯文本
+ * @param render - 文本 (包括链接文本) 的转换方式, 默认按原样显示
+ */
+export function textWithLinks(text: string, render: (value: string) => string = escapeText): string {
     let result = "";
     let last = 0;
     for (const match of text.matchAll(URL_IN_TEXT)) {
         const url = trimUrl(match[0]);
-        result += escapeText(text.slice(last, match.index)) + link(url, url);
+        result += render(text.slice(last, match.index)) + richLink(render(url), url);
         last = match.index + url.length;
     }
-    return result + escapeText(text.slice(last));
+    return result + render(text.slice(last));
+}
+
+const UNDERLINE_UNSAFE = /[*_~`#[\]$^]|==|\(\(|:[\w+-]+:/; // 在 <u> 中可能组成标记的字符
+
+/**
+ * 带下划线的纯文本, 按原样显示。
+ * lute 会把 `<u>` 中的内容去掉转义后重新解析, 并丢弃其中的标记 (包括转义过的 `*x*`、`#t#`、`[l](u)` 等),
+ * 所以下划线只能放在其他标记的最内层; 文本中有可能组成标记的字符时不加下划线, 以免丢失文字。
+ * `&`、`<`、`>` 与反斜杠改用 HTML 实体: `\<` 等转义会被转义两次, 结尾的反斜杠会转义 `</u>` 的 `<`
+ */
+export function underline(text: string): string {
+    if (UNDERLINE_UNSAFE.test(text)) {
+        return escapeText(text);
+    }
+    const content = text
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/\\/g, "&#92;");
+    return `<u>${content}</u>`;
+}
+
+/* 行内代码: 定界符比代码中最长的连续反引号多一个; 代码以反引号开头或结尾, 或者首尾都是空格时两侧各加一个空格, 解析时会去掉 */
+export function inlineCode(code: string): string {
+    const longest = Math.max(0, ...Array.from(code.matchAll(/`+/g), (match) => match[0].length));
+    const fence = "`".repeat(longest + 1);
+    const padding = /^`|`$/.test(code) || (code.startsWith(" ") && code.endsWith(" ") && code.trim() !== "")
+        ? " "
+        : "";
+    return `${fence}${padding}${code}${padding}${fence}`;
+}
+
+/**
+ * 代码块: 围栏比代码中最长的连续反引号多一个。
+ * 代码中只有 `}}}` 的一行会结束外层的超级块, 在 `}}}` 前插入零宽连接符 (U+200D)
+ * @param code - 代码, 末尾的换行会被去掉
+ * @param language - 代码的语言, 只保留字母、数字与 `#+.-_`
+ */
+export function codeBlock(code: string, language = ""): string {
+    const longest = Math.max(2, ...Array.from(code.matchAll(/`+/g), (match) => match[0].length));
+    const fence = "`".repeat(longest + 1);
+    const lines = code
+        .replace(/\r\n?/g, "\n")
+        .replace(/\n+$/, "")
+        .split("\n")
+        .map((line) => line.replace(/^\s*(?=\}\}\}\s*$)/, (indent) => `${indent}\u200D`));
+    return [`${fence}${language.replace(/[^\w#+.-]/g, "")}`, ...lines, fence].join("\n");
 }
 
 /* 音频块 */
@@ -157,10 +213,33 @@ export function kbd(text: string): string {
 }
 
 /**
- * 块引用, 锚文本为静态文本
+ * 行级备注 (inline-memo): 显示 text, 点击后弹出备注 content; text 按原样显示, 其中的 HTML 语法不生效。
+ * `data-inline-memo-content` 属性值中的 `"` 必须转义, 否则整个标签都不会被解析为行级备注;
+ * 其中的 `&`、`<`、`>` 会被解码还原, 所以也要转义。content 为空时整个标签会被丢弃, 因此不支持空备注
+ */
+export function inlineMemo(text: string, content: string): string {
+    const escape = (value: string): string => value
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;");
+    return `<span data-type="inline-memo" data-inline-memo-content="${escape(content).replace(/"/g, "&quot;")}">${escape(text)}</span>`;
+}
+
+/**
+ * 块引用, 锚文本为动态锚文本 (以单引号包裹): 被引用的块改变后, 思源按该块的内容更新锚文本。
+ * 锚文本中的 `&`、`<`、`>`、`'` 与反斜杠改用 HTML 实体: lute 会去掉其中的 HTML 标签,
+ * `'` 会提前结束锚文本, 结尾的反斜杠会让结束锚文本的 `'` 被当作转义字符
  * @param id - 被引用的块 ID
  * @param anchor - 锚文本, 不能为空: 没有锚文本时思源会把块 ID 作为锚文本
  */
 export function blockRef(id: string, anchor: string): string {
-    return `((${id} "${anchor.replace(/"/g, "'").replace(/\s+/g, " ").trim()}"))`;
+    const text = anchor
+        .replace(/\s+/g, " ")
+        .trim()
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/'/g, "&#39;")
+        .replace(/\\/g, "&#92;");
+    return `((${id} '${text}'))`;
 }

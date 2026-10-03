@@ -114,6 +114,9 @@ From then on, the messages of the chat are recorded in dated sub-documents of th
   - The token is stored in plain text in `data/storage/petal/im-bot/config.json` of the workspace and syncs with your data. Any program that can call the kernel API of this workspace, including other plugins, can read this file. Whoever has the token fully controls the bot; if it leaks, send `/revoke` to @BotFather to get a new token.
   - In the logs the plugin writes and in the errors it shows in the settings panel, the secret part of the token is replaced with `***`.
   - Every request sends the token to the `Bot API server`, so only fill in a server you trust.
+- The anchor text of a block reference in a quote changed?
+
+  - The block references in quotes and replies in the inbox use dynamic anchor texts: after the quoted message changes (for example when you edit it in SiYuan), SiYuan makes the anchor text again from the first block of that message. When the quoted message is itself a quote, its first block is its own blockquote, so the anchor text becomes the content it quotes. To keep an anchor text, change the block reference to a static anchor text in its context menu.
 
 ## INTRODUCTION
 
@@ -161,7 +164,7 @@ From then on, the messages of the chat are recorded in dated sub-documents of th
     - Voice: an audio block, followed by the speech recognition text from QQ.
     - Video: a video block.
     - Files: a link named after the file.
-    - Quotes: a block reference to the quoted message when it is in the inbox; otherwise a blockquote with the quoted content.
+    - Quotes: a blockquote before the text. When the quoted message is in the inbox, it holds a block reference to that message with a dynamic anchor text; otherwise it holds the quoted content.
     - Chat records (forwarded messages): a super block per message, including nested chat records.
     - Cards and other messages: shown as text.
   - Message blocks carry these custom attributes, which can be used in queries
@@ -217,7 +220,7 @@ From then on, the messages of the chat are recorded in dated sub-documents of th
     - Each message becomes a super block with one paragraph per message item: text shows as it is, with web addresses turned into links; images, voice messages, files and videos first show as `[Image]`, `[Voice]` followed by the transcription, `[File] <file name>` and `[Video]`.
     - When `WeChat Bot > Inbox > Download assets` is on and the SiYuan kernel can decrypt them, the plugin downloads the media from the WeChat CDN after the reply, decrypts them with AES-128-ECB, saves them as assets and replaces the placeholders: images show as images, videos as video blocks, and voice messages and files as links to their assets (voice messages keep the transcription). The message block keeps its ID, so the block link already sent and the block references to it still work.
     - Media that fail to download or decrypt keep their placeholders, with a warning in the kernel log. When a message carries the MD5 of a file or a video, the plugin checks it and only logs a warning on a mismatch; the file is still saved.
-    - Quotes: when the quoted message is already in the inbox, the quote becomes a block reference to it; otherwise a blockquote shows the quoted content.
+    - Quotes: a blockquote before the text. When the quoted message is already in the inbox, it holds a block reference to that message with a dynamic anchor text; otherwise it holds the quoted content.
     - Messages sent by the bot itself are not written, and a message received more than once is written only once.
   - Message blocks have the custom attributes `custom-author-id` (the WeChat user ID of the sender) and `custom-msg-id` (the message ID).
 - Telegram bot
@@ -233,16 +236,18 @@ From then on, the messages of the chat are recorded in dated sub-documents of th
   - A message received more than once is written only once. Editing or deleting a message in Telegram does not change the inbox.
   - How messages are converted
 
-    - Each message becomes a super block. Text shows as it is (formatting such as bold is not kept), with web addresses and text links turned into links.
-    - Media first show as placeholders such as `[Image]`, `[Voice]` and `[File] <file name>`. With `Telegram Bot > Inbox > Download assets` on, the plugin downloads the media from Telegram, saves them as assets and replaces the placeholders: images and static stickers show as images; videos, video messages, video stickers and animations as video blocks; voice messages and audio as audio blocks; and files as links named after the files. Only the largest size of an image is saved, and the caption follows the media.
-    - The official Telegram server only serves files up to 20 MB, so larger media and media that fail to download keep their placeholders, with a warning in the kernel log. Animated stickers (.tgs) cannot be shown and keep their placeholders.
+    - Each message becomes a super block. The formatting of the text becomes SiYuan styles: bold, italic, underline, strikethrough and inline code stay as they are, spoilers become highlights, quotes become blockquotes and code blocks stay code blocks; text links, web addresses, email addresses and phone numbers become links; mentions and commands show as <kbd>@username</kbd> and <kbd>/command</kbd>, and users without a username as <kbd>@&lt;name&gt;</kbd>; dates and times become inline memos with their UTC time as the memo. Other text shows as it is, with web addresses turned into links.
+    - Formatting SiYuan cannot keep in full: underlined text with characters that can form Markdown marks, such as `*`, `_`, `#` and `[`, shows without the underline; in strikethrough, highlights and other styles with punctuation, the spaces next to the punctuation may lose the style.
+    - Media first show as placeholders such as `[Image]`, `[Voice]` and `[File] <file name>`. With `Telegram Bot > Inbox > Download assets` on, the plugin downloads the media from Telegram, saves them as assets and replaces the placeholders: images and static stickers show as images; videos, video messages, video stickers and animations as video blocks; voice messages and audio as audio blocks; and files as links named after the files. SiYuan cannot play animated stickers (.tgs), so they show as their thumbnails, followed by a link to the sticker file. Only the largest size of an image is saved, and the caption follows the media.
+    - The official Telegram server only serves files up to 20 MB, so larger media and media that fail to download keep their placeholders, with a warning in the kernel log.
     - Locations show as links to OpenStreetMap; contacts, polls and dice show as text.
-    - Replies: when the replied message is already in the inbox, the reply starts with a block reference to it; otherwise a blockquote shows the replied content (the quoted part when the reply quotes part of the message).
+    - Replies: a blockquote before the text. When the replied message is already in the inbox, it holds a block reference to that message with a dynamic anchor text; otherwise it holds the replied content. When the reply quotes part of the message, the anchor text or the blockquote shows the quoted part.
   - Message blocks have these custom attributes
 
     - `custom-msg-id`: `<chat ID>:<message ID>`. A message ID is only unique within its chat, so the chat ID is included
     - `custom-author-id`: the user ID of the sender; the ID of the group or channel when sending as that group or channel
     - `custom-author-username`: the name of the sender (the signature or the channel name in channels), only recorded in groups and channels, and shown at the top left of the message block
+    - `custom-update-id`: the ID of the update that delivered the message (update_id)
   - With "Reply with the block link" on in a binding, the bot replies to each message written to the document with the block hyperlink of its super block, `siyuan://blocks/<block ID>`. With "Online and offline notices" on, the chat gets a notice when the bot goes online and when it goes offline, at the same moments as the QQ "Online and offline notices".
 - Telegram commands
 

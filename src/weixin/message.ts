@@ -147,8 +147,8 @@ function anchorText(text: string): string {
 
 /**
  * 把一条微信消息转换为超级块, 每个消息项为一个段落, 块属性记录消息的元数据。
- * 引用消息: 能找到被引用消息所在的块时在正文前加上块引用, 否则先用引述块显示被引用的内容。
- * 块引用的锚文本优先取消息中带的被引用的文本, 没有时取被引用的块的文本
+ * 引用消息: 正文前是一个引述块, 能找到被引用消息所在的块时其中为指向该块的块引用 (动态锚文本),
+ * 否则为被引用的内容。块引用的锚文本优先取消息中带的被引用的文本, 没有时取被引用的块的文本
  */
 export function convertMessage(message: IWeixinMessage, options: IConvertOptions): string {
     const { assets, labels, reference, referenceText } = options;
@@ -159,19 +159,11 @@ export function convertMessage(message: IWeixinMessage, options: IConvertOptions
 
     if (referenceItem(message)) {
         const quoted = quotedText(message, labels);
-        if (reference) {
-            const anchor = anchorText(quoted) || anchorText(referenceText ?? "") || labels.quote;
-            const first = contents[0];
-            if (first && "inline" in first) {
-                first.inline = `${blockRef(reference, anchor)} ${first.inline}`;
-            }
-            else {
-                contents.unshift({ inline: blockRef(reference, anchor) });
-            }
-        }
-        else {
-            blocks.push(blockquote([escapeText(quoted || labels.quote)]));
-        }
+        blocks.push(blockquote([
+            reference
+                ? blockRef(reference, anchorText(quoted) || anchorText(referenceText ?? "") || labels.quote)
+                : escapeText(quoted || labels.quote),
+        ]));
     }
     blocks.push(...contents.map((content) => "block" in content ? content.block : paragraph(content.inline)));
 

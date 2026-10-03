@@ -76,8 +76,13 @@ export class TelegramInbox {
         this.config = config;
     }
 
-    /* 处理收到的消息 (message 与 channel_post), 只写入有生效绑定的会话中的消息 */
-    public handle(bot: ITelegramBot, message: IMessage): void {
+    /**
+     * 处理收到的消息 (message 与 channel_post), 只写入有生效绑定的会话中的消息
+     * @param bot - 接收该消息的机器人
+     * @param message - 消息
+     * @param updateId - 推送该消息的更新的 ID
+     */
+    public handle(bot: ITelegramBot, message: IMessage, updateId: number): void {
         if (commandOf(message, bot.me.username) !== undefined || !hasContent(message)) {
             return;
         }
@@ -92,7 +97,7 @@ export class TelegramInbox {
         this.writer.enqueue(async () => {
             for (const binding of bindings) {
                 try {
-                    await this.write(bot, binding, message, downloadAssets);
+                    await this.write(bot, binding, message, updateId, downloadAssets);
                 }
                 catch (error) {
                     void this.siyuan.logger.warn(`[telegram] [inbox] write the message ${messageKey(message)} to ${binding.doc} failed:`, errorMessage(error));
@@ -101,7 +106,7 @@ export class TelegramInbox {
         });
     }
 
-    private async write(bot: ITelegramBot, binding: ITelegramInboxBinding, message: IMessage, downloadAssets: boolean): Promise<void> {
+    private async write(bot: ITelegramBot, binding: ITelegramInboxBinding, message: IMessage, updateId: number, downloadAssets: boolean): Promise<void> {
         const inbox = binding.doc;
         await this.writer.prepare(inbox);
 
@@ -114,6 +119,7 @@ export class TelegramInbox {
 
         const replied = repliedMessage(message);
         const options: IConvertOptions = {
+            updateId,
             reference: replied ? await this.writer.findMessage(inbox, MSG_ID_ATTRIBUTE, messageKey(replied)) : undefined,
             showAuthor: message.chat.type !== "private",
             labels: this.labels(),
@@ -131,12 +137,12 @@ export class TelegramInbox {
 
     /* 保存消息中的媒体, 再用资源文件替换超级块中的占位文本; 失败时只记录日志, 保留占位文本 */
     private async saveMedia(bot: ITelegramBot, message: IMessage, block: string, options: IConvertOptions): Promise<void> {
-        const asset = await this.media.save(bot, message, block);
-        if (!asset) {
+        const assets = await this.media.save(bot, message, block);
+        if (!assets.file && !assets.thumbnail) {
             return;
         }
         try {
-            await this.writer.updateBlock(block, convertMessage(message, { ...options, asset }));
+            await this.writer.updateBlock(block, convertMessage(message, { ...options, assets }));
         }
         catch (error) {
             void this.siyuan.logger.warn(`[telegram] [inbox] put the media of the message ${messageKey(message)} into the block ${block} failed:`, errorMessage(error));

@@ -22,17 +22,20 @@ import {
     link,
     paragraph,
     superBlock,
-    textWithLinks,
     video,
 } from "@/utils/kramdown";
+
+import { convertText } from "./entities";
 
 import type {
     IFile,
     ILocation,
     IMessage,
-    IMessageEntity,
+    IPhotoSize,
     IVenue,
 } from "@/types/telegram";
+
+import type { TContent } from "./entities";
 
 /* 转换时使用的界面文本 */
 export interface ITelegramMessageLabels {
@@ -58,18 +61,24 @@ export interface IMedia {
     file: IFile;
     name?: string; // 文件的原名, 用作资源文件名
     title?: string; // 附在占位文本后的说明: 文件名、音频的标题或贴纸的表情
+    isAnimated?: boolean; // 动画贴纸 (.tgs), 思源无法显示
     isVideo?: boolean; // 视频贴纸 (.webm)
+    thumbnail?: IPhotoSize; // 动画贴纸的缩略图 (.webp 或 .jpg), 代替贴纸显示
+}
+
+/* 保存为资源文件的媒体, 没有保存时显示为占位文本 */
+export interface IMediaAssets {
+    file?: string; // 媒体文件的资源文件路径
+    thumbnail?: string; // 缩略图的资源文件路径
 }
 
 export interface IConvertOptions {
+    updateId?: number; // 推送该消息的更新的 ID, 写入 custom-update-id
     reference?: string; // 被回复的消息所在的块 ID
-    asset?: string; // 媒体的资源文件路径, 没有保存时媒体显示为占位文本
+    assets?: IMediaAssets; // 媒体的资源文件
     showAuthor: boolean; // 是否记录发送者的名称 (显示在消息块的左上角), 群组与频道中开启
     labels: ITelegramMessageLabels;
 }
-
-/* 消息的一部分内容: 段落中的行内内容, 或不能放在段落中的块 (音频块、视频块) */
-type TContent = { block: string } | { inline: string };
 
 const ANCHOR_LENGTH = 32;
 const LOCAL_PATH = /^(?:\/|[a-z]:[\\/])/i;
@@ -109,7 +118,7 @@ export function repliedMessage(message: IMessage): IMessage | undefined {
     return replied && !replied.forum_topic_created ? replied : undefined;
 }
 
-/* 消息中的媒体: 动图同时带有 document, 所以先于文件判断; 动画贴纸 (.tgs) 无法显示, 不算媒体 */
+/* 消息中的媒体: 动图同时带有 document, 所以先于文件判断 */
 export function messageMedia(message: IMessage): IMedia | undefined {
     if (message.photo?.length) {
         // 同一张图片的多个尺寸, 取像素最多的
@@ -133,8 +142,16 @@ export function messageMedia(message: IMessage): IMedia | undefined {
         const title = [item.performer, item.title].filter(Boolean).join(" - ");
         return { kind: "audio", file: item, name: item.file_name, title: title || item.file_name };
     }
-    if (message.sticker && !message.sticker.is_animated) {
-        return { kind: "sticker", file: message.sticker, title: message.sticker.emoji, isVideo: message.sticker.is_video };
+    if (message.sticker) {
+        const sticker = message.sticker;
+        return {
+            kind: "sticker",
+            file: sticker,
+            title: sticker.emoji,
+            isAnimated: sticker.is_animated,
+            isVideo: sticker.is_video,
+            thumbnail: sticker.is_animated ? sticker.thumbnail : undefined,
+        };
     }
     if (message.document) {
         return { kind: "file", file: message.document, name: message.document.file_name, title: message.document.file_name };
@@ -147,7 +164,6 @@ export function hasContent(message: IMessage): boolean {
     return !!(message.text
         || message.caption
         || messageMedia(message)
-        || message.sticker
         || message.location
         || message.contact
         || message.poll
@@ -164,9 +180,6 @@ function contentText(message: IMessage, labels: ITelegramMessageLabels): string 
     const media = messageMedia(message);
     if (media) {
         return placeholder(media, labels);
-    }
-    if (message.sticker) {
-        return [labels.sticker, message.sticker.emoji].filter(Boolean).join(" ");
     }
     if (message.venue) {
         return [labels.location, message.venue.title, message.venue.address].filter(Boolean).join(" ");
@@ -210,24 +223,6 @@ function sender(message: IMessage): { id: number; name: string } {
     return { id: chat.id, name: message.author_signature || chat.title || name || chat.username || String(chat.id) };
 }
 
-/* 文本中的 text_link 实体转为超链接 (它的网址不在文本中), 其余文本中的网址也转为超链接 */
-function inlineText(text: string, entities: IMessageEntity[] | undefined): string {
-    const links = (entities ?? [])
-        .filter((entity) => entity.type === "text_link" && entity.url)
-        .sort((a, b) => a.offset - b.offset);
-    let result = "";
-    let last = 0;
-    for (const entity of links) {
-        if (entity.offset < last) {
-            continue;
-        }
-        const end = entity.offset + entity.length;
-        result += textWithLinks(text.slice(last, entity.offset)) + link(text.slice(entity.offset, end), entity.url!);
-        last = end;
-    }
-    return result + textWithLinks(text.slice(last));
-}
-
 /* 位置: 地点的名称与地址, 坐标链接到 OpenStreetMap */
 function locationContent(location: ILocation, labels: ITelegramMessageLabels, venue?: IVenue): string {
     const { latitude, longitude } = location;
@@ -236,11 +231,24 @@ function locationContent(location: ILocation, labels: ITelegramMessageLabels, ve
     return [escapeText(labels.location), escapeText(name), link(`${latitude}, ${longitude}`, url)].filter(Boolean).join(" ");
 }
 
+/* 资源文件的文件名 */
+function assetFileName(asset: string): string {
+    return asset.replace(/^.*\//, "");
+}
+
 /**
  * 媒体的内容。已保存为资源文件时: 图片与静态贴纸转为图片, 视频、视频贴纸与动图 (MP4) 转为视频块,
- * 语音与音频转为音频块 (音频后附标题), 文件转为以文件名命名的超链接; 否则显示为占位文本
+ * 语音与音频转为音频块 (音频后附标题), 文件转为以文件名命名的超链接; 否则显示为占位文本。
+ * 思源无法显示动画贴纸 (.tgs): 显示它的缩略图, 后面附上指向贴纸文件的超链接
  */
-function mediaContents(media: IMedia, asset: string | undefined, labels: ITelegramMessageLabels): TContent[] {
+function mediaContents(media: IMedia, assets: IMediaAssets, labels: ITelegramMessageLabels): TContent[] {
+    const asset = assets.file;
+    if (media.isAnimated) {
+        const preview = assets.thumbnail
+            ? image(assets.thumbnail, media.title || labels.sticker)
+            : escapeText(placeholder(media, labels));
+        return [{ inline: asset ? `${preview} ${link(assetFileName(asset), asset)}` : preview }];
+    }
     if (!asset) {
         return [{ inline: escapeText(placeholder(media, labels)) }];
     }
@@ -258,7 +266,7 @@ function mediaContents(media: IMedia, asset: string | undefined, labels: ITelegr
         case "audio":
             return [{ block: audio(asset) }, { inline: escapeText(media.title ?? "") }];
         case "file":
-            return [{ inline: `${escapeText(labels.file)} ${link(media.name?.trim() || asset.replace(/^.*\//, ""), asset)}` }];
+            return [{ inline: `${escapeText(labels.file)} ${link(media.name?.trim() || assetFileName(asset), asset)}` }];
     }
 }
 
@@ -271,17 +279,17 @@ function anchorText(text: string): string {
 }
 
 /**
- * 把一条消息转换为超级块: 媒体或其他内容在前, 文本或说明在后, 各为一个段落或块; 块属性记录消息的元数据。
- * 文本按原样显示 (不保留粗体等格式), 网址与 text_link 转为超链接。
- * 回复的消息: 能找到被回复消息所在的块时在正文前加上块引用, 否则先用引述块显示被回复的内容;
- * 被回复的内容优先取回复时引用的部分 (quote), 没有时取被回复消息的纯文本
+ * 把一条消息转换为超级块: 媒体或其他内容在前, 文本或说明在后; 块属性记录消息的元数据。
+ * 文本中的格式转为思源的样式与块, 见 convertText。
+ * 回复的消息: 正文前是一个引述块, 能找到被回复消息所在的块时其中为指向该块的块引用 (动态锚文本),
+ * 否则为被回复的内容; 被回复的内容优先取回复时引用的部分 (quote), 没有时取被回复消息的纯文本
  */
 export function convertMessage(message: IMessage, options: IConvertOptions): string {
-    const { asset, labels, reference } = options;
+    const { assets, labels, reference } = options;
     const contents: TContent[] = [];
     const media = messageMedia(message);
     if (media) {
-        contents.push(...mediaContents(media, asset, labels));
+        contents.push(...mediaContents(media, assets ?? {}, labels));
     }
     else if (message.venue) {
         contents.push({ inline: locationContent(message.venue.location, labels, message.venue) });
@@ -294,7 +302,7 @@ export function convertMessage(message: IMessage, options: IConvertOptions): str
     }
     const text = message.text ?? message.caption;
     if (text) {
-        contents.push({ inline: inlineText(text, message.text === undefined ? message.caption_entities : message.entities) });
+        contents.push(...convertText(text, message.text === undefined ? message.caption_entities : message.entities));
     }
     const visible = contents.filter((content) => "block" in content || paragraph(content.inline));
 
@@ -302,19 +310,11 @@ export function convertMessage(message: IMessage, options: IConvertOptions): str
     const replied = repliedMessage(message);
     if (replied) {
         const quoted = message.quote?.text?.trim() || messageText(replied, labels);
-        if (reference) {
-            const anchor = anchorText(quoted) || labels.quote;
-            const first = visible[0];
-            if (first && "inline" in first) {
-                first.inline = `${blockRef(reference, anchor)} ${first.inline}`;
-            }
-            else {
-                visible.unshift({ inline: blockRef(reference, anchor) });
-            }
-        }
-        else {
-            blocks.push(blockquote([escapeText(quoted || labels.quote)]));
-        }
+        blocks.push(blockquote([
+            reference
+                ? blockRef(reference, anchorText(quoted) || labels.quote)
+                : escapeText(quoted || labels.quote),
+        ]));
     }
     blocks.push(...visible.map((content) => "block" in content ? content.block : paragraph(content.inline)));
 
@@ -322,6 +322,7 @@ export function convertMessage(message: IMessage, options: IConvertOptions): str
     return superBlock(
         blocks.length > 0 ? blocks : [escapeText(labels.unavailable)],
         {
+            "custom-update-id": options.updateId === undefined ? undefined : String(options.updateId),
             "custom-author-id": String(author.id),
             "custom-author-username": options.showAuthor ? author.name : undefined,
             "custom-msg-id": messageKey(message),

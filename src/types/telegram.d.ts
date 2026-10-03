@@ -53,12 +53,14 @@ export interface IChat {
     last_name?: string;
 }
 
-/* 文本中的实体, offset 与 length 以 UTF-16 码元计 */
+/* 文本中的实体, offset 与 length 以 UTF-16 码元计; 有公共字符的两个实体一定是一个包含另一个 */
 export interface IMessageEntity {
-    type: string; // 如 bot_command、url、text_link
+    type: string; // 如 bold、bot_command、text_link, 见 https://core.telegram.org/bots/api#messageentity
     offset: number;
     length: number;
     url?: string; // text_link 的网址
+    language?: string; // pre 的编程语言
+    unix_time?: number; // date_time 表示的时间 (Unix 时间, 秒)
 }
 
 /* 文件的共有字段 */
@@ -97,6 +99,7 @@ export interface ISticker extends IFile {
     is_animated: boolean; // .tgs 动画贴纸
     is_video: boolean; // .webm 视频贴纸
     emoji?: string;
+    thumbnail?: IPhotoSize; // .webp 或 .jpg 格式的缩略图
 }
 
 export interface IVideo extends IFile {

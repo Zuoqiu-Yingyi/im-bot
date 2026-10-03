@@ -711,7 +711,7 @@ class ImBotKernelPlugin {
             if (message.migrate_to_chat_id) {
                 void this.siyuan.logger.warn(`[telegram] group ${message.chat.id} was upgraded to supergroup ${message.migrate_to_chat_id}, bind the new chat ID to keep recording its messages`);
             }
-            this.telegramInbox.handle(bot, message);
+            this.telegramInbox.handle(bot, message, update.update_id);
             this.telegramCommands.handle(bot, message);
         }
         const member = update.my_chat_member;
