@@ -17,15 +17,25 @@
         "urlPlaceholder": "以 / 開頭的請求路徑，相對於 https://api.bot.qq.com，例如 /gateway/bot"
     },
     "commands": {
+        "chatid": {
+            "chat": "會話 ID：{{1}}",
+            "user": "使用者 ID：{{1}}"
+        },
         "openid": {
             "group": "群組 OpenID：{{1}}",
             "user": "使用者 OpenID：{{1}}"
         }
     },
     "inbox": {
+        "animation": "[動圖]",
+        "audio": "[音訊]",
+        "contact": "[聯絡人]",
         "file": "[檔案]",
         "image": "[圖片]",
+        "location": "[位置]",
+        "poll": "[投票]",
         "quote": "引用的訊息",
+        "sticker": "[貼圖]",
         "unavailable": "[無法顯示的訊息]",
         "video": "[影片]",
         "voice": "[語音]"
@@ -81,7 +91,11 @@
     },
     "notices": {
         "offline": "收集箱已下線，本群訊息暫停記錄（裝置：{{1}}）",
-        "online": "收集箱已上線，本群訊息將記錄到思源筆記（裝置：{{1}}）"
+        "online": "收集箱已上線，本群訊息將記錄到思源筆記（裝置：{{1}}）",
+        "telegram": {
+            "offline": "收集箱已下線，本會話的訊息暫停記錄（裝置：{{1}}）",
+            "online": "收集箱已上線，本會話的訊息將記錄到思源筆記（裝置：{{1}}）"
+        }
     },
     "settings": {
         "generalSettings": {
@@ -172,6 +186,70 @@
                 "inbox": "收集箱"
             },
             "title": "QQ 機器人"
+        },
+        "telegramBotSettings": {
+            "apiBaseUrl": {
+                "description": "留空時使用官方伺服器。也可以填寫自架的 Bot API 伺服器或反向代理的位址，Token 會隨每個請求傳送到這個位址",
+                "title": "Bot API 位址"
+            },
+            "connection": {
+                "connected": "正在接收訊息，開始於 {{1}}",
+                "connecting": "正在連線...",
+                "description": "本裝置上機器人與 Telegram 的連線，自動重新整理",
+                "failed": "已停止接收，請檢查 Token 與 Bot API 位址；機器人設定了 Webhook，或其他程式正在接收同一個機器人的訊息時也會停止。修改設定後會再次連線",
+                "loading": "正在取得...",
+                "offline": "已下線，開啟「上線」後連線",
+                "otherDevice": "只在裝置 {{1}} 上執行，本裝置不連線",
+                "reason": "原因",
+                "reconnecting": "請求失敗，將於 {{1}} 重試",
+                "status": "狀態",
+                "stopped": "未連線",
+                "title": "連線狀態",
+                "unconfigured": "沒有填寫 Token，不會連線",
+                "username": "機器人"
+            },
+            "device": {
+                "assigned": "目前執行的裝置 ID",
+                "current": "本裝置 ID",
+                "description": "開啟後只有本裝置接收訊息。Telegram 同一時間只允許一個程式接收機器人的訊息，有多台裝置時請開啟",
+                "title": "只在此裝置上執行",
+                "unassigned": "未指定執行裝置，每台裝置都會連線"
+            },
+            "eventLog": {
+                "description": "把收到的更新儲存到工作空間，便於排查問題",
+                "title": "事件日誌"
+            },
+            "inboxBindings": {
+                "add": "新增綁定",
+                "chat": "會話 ID",
+                "chatPlaceholder": "-1001234567890",
+                "description": "把私聊、群組或頻道的訊息寫入收集箱文件，一個會話可以綁定多篇文件。向機器人傳送 /chatid 可以查詢會話 ID",
+                "doc": "收集箱文件 ID",
+                "docPlaceholder": "20260930112233-abcdefg",
+                "enabled": "啟用",
+                "notify": "上下線通知",
+                "remove": "刪除",
+                "reply": "回覆區塊連結",
+                "title": "綁定會話"
+            },
+            "inboxDownloadAssets": {
+                "description": "把訊息中的圖片、語音、影片與檔案下載到工作空間。官方伺服器只允許下載 20 MB 以內的檔案",
+                "title": "下載資源檔案"
+            },
+            "online": {
+                "description": "開啟後機器人接收 Telegram 訊息，記錄綁定會話的訊息並回應指令；關閉後停止接收",
+                "title": "上線"
+            },
+            "tabs": {
+                "bot": "機器人",
+                "inbox": "收集箱"
+            },
+            "title": "Telegram 機器人",
+            "token": {
+                "description": "從 @BotFather 取得的機器人 Token，以明文儲存並隨資料同步",
+                "placeholder": "123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11",
+                "title": "Token"
+            }
         },
         "weixinBotSettings": {
             "account": {

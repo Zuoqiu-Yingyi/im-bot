@@ -23,6 +23,12 @@ import { QQNotices } from "@/qq/notices";
 import { QQOpenApi, resolveApiRequest, resolveCredentials } from "@/qq/openapi";
 import { QQPanels } from "@/qq/panels";
 import { QQUsers } from "@/qq/users";
+import { resolveOptions as resolveTelegramOptions, TelegramApi } from "@/telegram/api";
+import { TelegramCommands } from "@/telegram/commands";
+import { activeBindings as activeTelegramBindings, TelegramInbox } from "@/telegram/inbox";
+import { TelegramMedia } from "@/telegram/media";
+import { TelegramNotices } from "@/telegram/notices";
+import { TelegramPoller } from "@/telegram/poller";
 import { InboxWriter } from "@/utils/inbox";
 import { WeixinApi } from "@/weixin/api";
 import { WeixinInbox } from "@/weixin/inbox";
@@ -34,8 +40,11 @@ import { WeixinPoller } from "@/weixin/poller";
 import type * as kernel from "siyuan/kernel";
 
 import type { TNotice } from "@/qq/notices";
+import type { ITelegramOptions } from "@/telegram/api";
+import type { ITelegramBot } from "@/telegram/poller";
 import type { IConfig } from "@/types/config";
 import type { IApiResponse, IPayload, IQQConnectionState } from "@/types/qq";
+import type { ITelegramConnectionState, IUpdate } from "@/types/telegram";
 import type { IBotUsers } from "@/types/users";
 import type {
     IWeixinAccount,
@@ -48,6 +57,7 @@ import type { IConfirmedLogin } from "@/weixin/login";
 const CONFIG_RELOAD_DELAY = 1_000; // 配置文件变化后重新读取的延迟 (ms), 合并一次写入产生的多个文件事件
 const OFFLINE_NOTICE_TIMEOUT = 5_000; // 卸载时等待下线通知的最长时间 (ms): 内核会等待 onunload 结束, 退出思源时也是如此
 const WEIXIN_MESSAGE_LOG_DIRECTORY = "logs/weixin/messages"; // 微信消息日志目录, 相对插件数据目录
+const TELEGRAM_UPDATE_LOG_DIRECTORY = "logs/telegram/updates"; // Telegram 更新日志目录, 相对插件数据目录
 
 function errorMessage(error: unknown): string {
     return error instanceof Error ? error.message : String(error);
@@ -111,8 +121,10 @@ function waitAtMost(promise: Promise<unknown>, ms: number): Promise<void> {
  * 关闭上线开关时不连接网关; 指定了运行设备时, 只有该设备连接网关、发送通知并同步指令面板。
  * 微信 ClawBot 扫码登录后 (RPC weixin-login-*), 打开上线开关时在扫码登录的设备上以长轮询接收消息并写入收集箱, 登录信息保存在 weixin.json 中;
  * 内核的 siyuan.crypto 支持 AES-ECB 时, 消息中的媒体解密后保存为资源文件, 否则显示为占位文本。
+ * Telegram 机器人填写 Token 并打开上线开关后, 以长轮询 (getUpdates) 接收更新: 把绑定会话的消息写入收集箱,
+ * 响应 /chatid 与 /start, 上线与下线时向开启了通知的绑定会话发送通知; 指定了运行设备时只有该设备接收。
  * 前端可以通过 RPC call-qq-api 以机器人身份调用 QQ 开放平台的服务端接口, 通过 RPC get-users 获取已知的群与单聊用户,
- * 通过 RPC qq-get-state 获取本设备上 QQ 机器人的连接状态。
+ * 通过 RPC qq-get-state 与 telegram-get-state 获取本设备上 QQ 与 Telegram 机器人的连接状态。
  * kernel.js 以普通脚本 (非 ES module) 执行: 本文件不能 export, 也不能从 external 模块 (如 siyuan) 导入运行时值。
  * Kernel plugin, built to dist/kernel.js. Runs in the goja runtime of the
  * SiYuan kernel (no DOM) and uses the global `siyuan` object. Connects to the
@@ -133,6 +145,10 @@ function waitAtMost(promise: Promise<unknown>, ms: number): Promise<void> {
  * its messages into the inbox; the login is kept in weixin.json. When
  * siyuan.crypto of the kernel supports AES-ECB, the media of the messages are
  * decrypted and saved as assets, otherwise they are written as placeholders.
+ * With a Telegram bot token and its online switch on, it long-polls the
+ * updates of the bot: the messages of bound chats go into the inbox, /chatid
+ * and /start are answered, and the bound chats that turn on notices are told
+ * when the bot goes online and offline; telegram-get-state returns its state.
  * kernel.js is evaluated as a plain script, not an ES module: do not export
  * from this file or import runtime values from external modules (e.g. siyuan).
  */
@@ -151,6 +167,12 @@ class ImBotKernelPlugin {
     private readonly weixinPoller: WeixinPoller;
     private readonly weixinMedia: WeixinMedia;
     private readonly weixinInbox: WeixinInbox;
+    private readonly telegramApi: TelegramApi;
+    private readonly telegramPoller: TelegramPoller;
+    private readonly telegramMedia: TelegramMedia;
+    private readonly telegramInbox: TelegramInbox;
+    private readonly telegramCommands: TelegramCommands;
+    private readonly telegramNotices: TelegramNotices;
 
     private config: IConfig = mergeConfig();
     private weixinAccount?: IWeixinAccount; // weixin.json 中的微信登录信息
@@ -164,6 +186,7 @@ class ImBotKernelPlugin {
     private device = ""; // 本机设备 ID
     private deviceName = ""; // 本机设备名称, 用于通知
     private running?: boolean; // 上次应用配置时本机是否运行 QQ 机器人
+    private telegramRunning?: boolean; // 上次应用配置时本机是否运行 Telegram 机器人
     private panelsSynced?: string; // 最近一次同步指令面板时的凭证与面板配置
     private reloadTimer?: ReturnType<typeof setTimeout>;
 
@@ -181,6 +204,12 @@ class ImBotKernelPlugin {
         this.weixinPoller = new WeixinPoller(this.siyuan, this.weixinApi, this.onWeixinMessage.bind(this), this.onWeixinExpired.bind(this));
         this.weixinMedia = new WeixinMedia(this.siyuan);
         this.weixinInbox = new WeixinInbox(this.siyuan, this.weixinApi, this.writer, this.weixinMedia, () => this.config.weixin);
+        this.telegramApi = new TelegramApi(this.siyuan);
+        this.telegramPoller = new TelegramPoller(this.siyuan, this.telegramApi, this.onTelegramUpdate.bind(this));
+        this.telegramMedia = new TelegramMedia(this.siyuan, this.telegramApi);
+        this.telegramInbox = new TelegramInbox(this.siyuan, this.telegramApi, this.writer, this.telegramMedia, () => this.config.telegram);
+        this.telegramCommands = new TelegramCommands(this.siyuan, this.telegramApi);
+        this.telegramNotices = new TelegramNotices(this.siyuan, this.telegramApi);
         this.siyuan.event.handler = this.onEvent.bind(this);
 
         // 绑定生命周期钩子, 内核会等待钩子返回的 Promise 后再进入下一阶段。
@@ -198,7 +227,7 @@ class ImBotKernelPlugin {
         this.deviceName = device.name;
 
         /* 绑定 RPC 方法 */
-        await this.siyuan.rpc.bind(CONSTANTS.KERNEL_RPC_METHOD.UPDATE_CONFIG, this.rpcUpdateConfig.bind(this), "Update the plugin config, then connect or disconnect the QQ bot and start or stop receiving WeChat messages as the new config says.");
+        await this.siyuan.rpc.bind(CONSTANTS.KERNEL_RPC_METHOD.UPDATE_CONFIG, this.rpcUpdateConfig.bind(this), "Update the plugin config, then connect or disconnect the QQ bot and start or stop receiving WeChat and Telegram messages as the new config says.");
         await this.siyuan.rpc.bind(CONSTANTS.KERNEL_RPC_METHOD.CALL_QQ_API, this.rpcCallQQApi.bind(this), "Call a QQ bot OpenAPI endpoint as the configured bot. Params: url (a path starting with /), method (GET, POST, PUT, PATCH or DELETE), body (optional, sent as JSON). Returns the response { status, headers, body }.");
         await this.siyuan.rpc.bind(CONSTANTS.KERNEL_RPC_METHOD.GET_USERS, this.rpcGetUsers.bind(this), "Get the known groups and C2C users of the configured bot from users.json, including the changes not written yet. Returns { groups, users }, keyed by group_openid and user_openid.");
         await this.siyuan.rpc.bind(CONSTANTS.KERNEL_RPC_METHOD.QQ_GET_STATE, this.rpcQQGetState.bind(this), "Get the connection state of the QQ bot on this device. Returns { status, since?, username?, error?, retryAt?, device? }.");
@@ -209,6 +238,7 @@ class ImBotKernelPlugin {
         await this.siyuan.rpc.bind(CONSTANTS.KERNEL_RPC_METHOD.WEIXIN_LOGIN_VERIFY, this.rpcWeixinLoginVerify.bind(this), "Submit the digits shown on the phone when the WeChat login status is need_verifycode. Params: code. Returns the login state.");
         await this.siyuan.rpc.bind(CONSTANTS.KERNEL_RPC_METHOD.WEIXIN_LOGIN_CANCEL, this.rpcWeixinLoginCancel.bind(this), "Cancel the WeChat QR code login. Returns the login state.");
         await this.siyuan.rpc.bind(CONSTANTS.KERNEL_RPC_METHOD.WEIXIN_LOGOUT, this.rpcWeixinLogout.bind(this), "Log out of WeChat: stop receiving messages and remove the login from weixin.json.");
+        await this.siyuan.rpc.bind(CONSTANTS.KERNEL_RPC_METHOD.TELEGRAM_GET_STATE, this.rpcTelegramGetState.bind(this), "Get the connection state of the Telegram bot on this device. Returns { status, since?, username?, error?, retryAt?, device? }.");
 
         /* 其他设备修改的配置随数据同步到本机时, 前端不会调用 RPC, 需要监听配置文件 */
         await this.siyuan.storage.watcher.add(".");
@@ -232,15 +262,18 @@ class ImBotKernelPlugin {
         await this.siyuan.rpc.unbind(CONSTANTS.KERNEL_RPC_METHOD.WEIXIN_LOGIN_VERIFY);
         await this.siyuan.rpc.unbind(CONSTANTS.KERNEL_RPC_METHOD.WEIXIN_LOGIN_CANCEL);
         await this.siyuan.rpc.unbind(CONSTANTS.KERNEL_RPC_METHOD.WEIXIN_LOGOUT);
+        await this.siyuan.rpc.unbind(CONSTANTS.KERNEL_RPC_METHOD.TELEGRAM_GET_STATE);
 
         clearTimeout(this.reloadTimer);
         clearTimeout(this.weixinReloadTimer);
         this.weixinLogin.cancel();
-        // 运行中的 QQ 机器人发送下线通知, 与微信 notifystop 同时发送, 各自最多等待 5 秒
+        // 运行中的 QQ 与 Telegram 机器人发送下线通知, 与微信 notifystop 同时发送, 各自最多等待 5 秒
         await Promise.all([
             waitAtMost(this.running ? this.notify("offline") : Promise.resolve(), OFFLINE_NOTICE_TIMEOUT),
+            waitAtMost(this.telegramRunning ? this.notifyTelegram("offline") : Promise.resolve(), OFFLINE_NOTICE_TIMEOUT),
             waitAtMost(this.weixinPoller.stop(), OFFLINE_NOTICE_TIMEOUT),
         ]);
+        this.telegramPoller.stop();
         await this.qq.stop();
         // 断开连接后不会再有新的事件, 把还没写入的变化写入 users.json
         await this.users.flush();
@@ -249,10 +282,59 @@ class ImBotKernelPlugin {
         await this.siyuan.storage.watcher.remove(".");
     }
 
-    /* 应用配置: QQ 机器人与微信机器人各自按上线开关等条件开始或停止运行 */
+    /* 应用配置: QQ、微信与 Telegram 机器人各自按上线开关等条件开始或停止运行 */
     private async applyConfig(): Promise<void> {
         this.applyWeixin();
+        this.applyTelegram();
         await this.applyQQ();
+    }
+
+    /**
+     * 按上线开关与运行设备开始或停止接收 Telegram 更新, 通知的发送时机与 QQ 机器人相同:
+     * 开始运行 (包括内核插件开始运行时) 发送上线通知, 停止运行时发送下线通知, 通知在后台发送
+     */
+    private applyTelegram(): void {
+        const { device, online } = this.config.telegram;
+        const running = online && (!device || device === this.device);
+        const previous = this.telegramRunning;
+        if (running !== previous) {
+            void this.siyuan.logger.info(running
+                ? `[telegram] run the Telegram bot on this device ${this.device}`
+                : online
+                    ? `[telegram] the Telegram bot runs on device ${device} only, not on this device ${this.device}`
+                    : "[telegram] the Telegram bot is offline");
+            this.telegramRunning = running;
+        }
+
+        if (running) {
+            this.telegramPoller.update(this.config.telegram);
+            if (!previous) {
+                void this.notifyTelegram("online");
+            }
+        }
+        else {
+            if (previous) {
+                void this.notifyTelegram("offline");
+            }
+            this.telegramPoller.stop();
+        }
+    }
+
+    /* 向开启了通知的生效绑定所在的 Telegram 会话发送上线或下线通知; 由调用方确保只在运行 Telegram 机器人的设备上发送 */
+    private async notifyTelegram(notice: TNotice): Promise<void> {
+        let options: ITelegramOptions | undefined;
+        try {
+            options = resolveTelegramOptions(this.config.telegram);
+        }
+        catch {
+            // Token 或 Bot API 地址无效, 原因已由 TelegramPoller 记录
+            return;
+        }
+        const chats = activeTelegramBindings(this.config.telegram.inbox).filter((binding) => binding.notify).map((binding) => binding.chat);
+        if (!options || chats.length === 0) {
+            return;
+        }
+        await this.telegramNotices.send(options, chats, notice, this.deviceName || this.device);
     }
 
     /**
@@ -497,6 +579,22 @@ class ImBotKernelPlugin {
     }
 
     /**
+     * RPC: telegram-get-state
+     * 本设备上 Telegram 机器人的连接状态: 上线开关关闭或只在其他设备上运行时不接收, 否则为长轮询的状态。
+     * 前端插件调用: `await this.kernel.rpc.call[CONSTANTS.KERNEL_RPC_METHOD.TELEGRAM_GET_STATE]()`
+     */
+    private rpcTelegramGetState(): ITelegramConnectionState {
+        const { device, online } = this.config.telegram;
+        if (!online) {
+            return { status: "offline" };
+        }
+        if (device && device !== this.device) {
+            return { status: "other-device", device };
+        }
+        return this.telegramPoller.state;
+    }
+
+    /**
      * RPC: weixin-get-account
      * 前端插件调用: `await this.kernel.rpc.call[CONSTANTS.KERNEL_RPC_METHOD.WEIXIN_GET_ACCOUNT]()`
      * @returns 微信登录信息 (不含 bot_token), 没有登录时为 null
@@ -598,6 +696,38 @@ class ImBotKernelPlugin {
         }
         catch (error) {
             void this.siyuan.logger.warn(`[weixin] write message log ${path} failed:`, errorMessage(error));
+        }
+    }
+
+    /* 打印收到的 Telegram 更新, 开启事件日志时同时保存到文件; 消息写入收集箱并作为指令处理 */
+    private onTelegramUpdate(bot: ITelegramBot, update: IUpdate): void {
+        void this.siyuan.logger.info("[telegram] update", update);
+        if (this.config.telegram.eventLog) {
+            void this.writeTelegramUpdateLog(bot, update);
+        }
+
+        const message = update.message ?? update.channel_post;
+        if (message) {
+            if (message.migrate_to_chat_id) {
+                void this.siyuan.logger.warn(`[telegram] group ${message.chat.id} was upgraded to supergroup ${message.migrate_to_chat_id}, bind the new chat ID to keep recording its messages`);
+            }
+            this.telegramInbox.handle(bot, message);
+            this.telegramCommands.handle(bot, message);
+        }
+        const member = update.my_chat_member;
+        if (member) {
+            void this.siyuan.logger.info(`[telegram] the bot is ${member.new_chat_member.status} in ${member.chat.type} chat ${member.chat.id} (${member.chat.title ?? member.chat.username ?? ""})`);
+        }
+    }
+
+    /* 把更新以不带缩进的 JSON 写入 `logs/telegram/updates/<机器人 ID>/<update_id>.json`, 理由同 writeEventLog; update_id 只在同一个机器人中唯一 */
+    private async writeTelegramUpdateLog(bot: ITelegramBot, update: IUpdate): Promise<void> {
+        const path = `${TELEGRAM_UPDATE_LOG_DIRECTORY}/${bot.me.id}/${update.update_id}.json`;
+        try {
+            await this.siyuan.storage.put(path, JSON.stringify(update));
+        }
+        catch (error) {
+            void this.siyuan.logger.warn(`[telegram] write update log ${path} failed:`, errorMessage(error));
         }
     }
 

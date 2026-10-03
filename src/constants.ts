@@ -32,5 +32,6 @@ export default {
         WEIXIN_LOGIN_VERIFY: "weixin-login-verify", // 提交手机上显示的数字, 参数为 (code)
         WEIXIN_LOGIN_CANCEL: "weixin-login-cancel", // 取消扫码登录
         WEIXIN_LOGOUT: "weixin-logout", // 退出登录: 停止接收消息并删除登录信息
+        TELEGRAM_GET_STATE: "telegram-get-state", // 获取本设备上 Telegram 机器人的连接状态
     } as const,
 } as const;

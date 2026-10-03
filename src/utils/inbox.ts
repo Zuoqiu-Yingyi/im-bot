@@ -35,7 +35,7 @@ const RECENT_MESSAGES = 1024; // 在内存中记住的最近消息数, 数据库
 const SYNC_POLL_INTERVAL = 2_000; // 等待文档同步标记消失的轮询间隔 (ms)
 const SYNC_WAIT_TIMEOUT = 30 * 60_000; // 等待文档同步标记消失的最长时间 (ms)
 
-/* 插件写入的消息超级块带有其中至少一个属性: QQ 消息带 custom-event-id, 微信消息带 custom-msg-id */
+/* 插件写入的消息超级块带有其中至少一个属性: QQ 消息带 custom-event-id, 微信与 Telegram 消息带 custom-msg-id */
 const MESSAGE_MARKERS = [
     "custom-event-id",
     "custom-msg-id",
@@ -71,7 +71,7 @@ function blockDate(id: string): string {
 }
 
 /**
- * 写入思源收集箱文档, QQ 与微信共用一个实例: 同一篇收集箱文档可以同时接收两个平台的消息。
+ * 写入思源收集箱文档, QQ、微信与 Telegram 共用一个实例: 同一篇收集箱文档可以同时接收多个平台的消息。
  * 每条消息先插入收集箱文档下的 .temp 文档, 需要时调用 netAssets2LocalAssets 下载资源文件,
  * 再移动到 YYYY/MM/YYYY-MM-DD 文档的末尾。
  * 所有写入排在同一个队列中逐条执行, 保证顺序, 也不会重复创建日期文档。

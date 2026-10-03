@@ -27,17 +27,19 @@
     import Panels from "@workspace/components/siyuan/setting/panel/Panels.svelte";
     import Tabs from "@workspace/components/siyuan/setting/tab/Tabs.svelte";
 
-    import { DEFAULT_INBOX_BINDING } from "@/configs/default";
+    import { DEFAULT_INBOX_BINDING, DEFAULT_TELEGRAM_INBOX_BINDING } from "@/configs/default";
     import { INTENTS } from "@/qq/constants";
+    import { DEFAULT_API_BASE_URL } from "@/telegram/constants";
 
     import QQConnection from "./QQConnection.svelte";
+    import TelegramConnection from "./TelegramConnection.svelte";
     import WeixinAccount from "./WeixinAccount.svelte";
 
     import type { ITab } from "@workspace/components/siyuan/setting/tab";
 
     import type Plugin from "@/index";
     import type { TIntent } from "@/qq/constants";
-    import type { IConfig, IQQInboxBinding } from "@/types/config";
+    import type { IConfig, IQQInboxBinding, ITelegramInboxBinding } from "@/types/config";
 
     interface IProps {
         config: IConfig; // 传入的配置项
@@ -68,6 +70,7 @@
         general: "general", // 常规设置
         qq: "qq", // QQ 机器人设置
         weixin: "weixin", // 微信机器人设置
+        telegram: "telegram", // Telegram 机器人设置
     } as const;
 
     const TabKey = {
@@ -95,9 +98,15 @@
             name: i18n.settings.weixinBotSettings.title,
             icon: "#icon-wechat",
         },
+        {
+            key: PanelKey.telegram,
+            text: i18n.settings.telegramBotSettings.title,
+            name: i18n.settings.telegramBotSettings.title,
+            icon: "#icon-telegram",
+        },
     ] as const satisfies ITab[];
 
-    /* QQ 与微信机器人面板中的页签: 机器人本身的设置与收集箱的设置 */
+    /* 各机器人面板中的页签: 机器人本身的设置与收集箱的设置 */
     const tabs_focus_key = TabKey.bot;
     const qqTabs = [
         {
@@ -124,6 +133,20 @@
             key: TabKey.inbox,
             text: i18n.settings.weixinBotSettings.tabs.inbox,
             name: i18n.settings.weixinBotSettings.tabs.inbox,
+            icon: "📥",
+        },
+    ] as const satisfies ITab[];
+    const telegramTabs = [
+        {
+            key: TabKey.bot,
+            text: i18n.settings.telegramBotSettings.tabs.bot,
+            name: i18n.settings.telegramBotSettings.tabs.bot,
+            icon: "⚙",
+        },
+        {
+            key: TabKey.inbox,
+            text: i18n.settings.telegramBotSettings.tabs.inbox,
+            name: i18n.settings.telegramBotSettings.tabs.inbox,
             icon: "📥",
         },
     ] as const satisfies ITab[];
@@ -157,6 +180,30 @@
     async function removeBinding(index: number) {
         bindings.splice(index, 1);
         await saveBindings();
+    }
+
+    // svelte-ignore state_referenced_locally
+    let telegramDevice = $state(config.telegram.device); // 运行 Telegram 机器人的设备 ID
+
+    const telegramBindingsTitle = `${i18n.settings.telegramBotSettings.inboxBindings.title}<div class="b3-label__text">${i18n.settings.telegramBotSettings.inboxBindings.description}</div>`;
+
+    /* Telegram 收集箱绑定; 手动编辑的配置可能缺少字段, 按默认值补全 */
+    // svelte-ignore state_referenced_locally
+    const telegramBindings = $state<ITelegramInboxBinding[]>(config.telegram.inbox.bindings.map((binding) => ({ ...DEFAULT_TELEGRAM_INBOX_BINDING, ...binding })));
+
+    async function saveTelegramBindings() {
+        config.telegram.inbox.bindings = $state.snapshot(telegramBindings);
+        await updated();
+    }
+
+    async function addTelegramBinding() {
+        telegramBindings.push({ ...DEFAULT_TELEGRAM_INBOX_BINDING });
+        await saveTelegramBindings();
+    }
+
+    async function removeTelegramBinding(index: number) {
+        telegramBindings.splice(index, 1);
+        await saveTelegramBindings();
     }
 </script>
 
@@ -595,6 +642,254 @@
                                     }}
                                     settingKey="weixinInboxDownloadAssets"
                                     settingValue={config.weixin.inbox.downloadAssets}
+                                    type={ItemType.checkbox}
+                                />
+                            {/snippet}
+                        </Item>
+                    </div>
+                {/snippet}
+            </Tabs>
+        </Panel>
+
+        <!-- Telegram 机器人设置面板: 机器人与收集箱两个页签 -->
+        <Panel display={panels[3].key === focusPanel}>
+            <Tabs
+                focus={tabs_focus_key}
+                tabs={telegramTabs}
+            >
+                {#snippet children(focusTab)}
+                    <!-- 标签页 1 - 机器人 -->
+                    <div
+                        class:fn__none={telegramTabs[0].key !== focusTab}
+                        data-type={telegramTabs[0].name}
+                    >
+                        <!-- 上线 -->
+                        <Item
+                            text={i18n.settings.telegramBotSettings.online.description}
+                            title={i18n.settings.telegramBotSettings.online.title}
+                        >
+                            {#snippet input()}
+                                <Input
+                                    onChanged={async (e) => {
+                                        config.telegram.online = e.value;
+                                        await updated();
+                                    }}
+                                    settingKey="telegramOnline"
+                                    settingValue={config.telegram.online}
+                                    type={ItemType.checkbox}
+                                />
+                            {/snippet}
+                        </Item>
+
+                        <!-- 连接状态 -->
+                        <div class="b3-label">
+                            {i18n.settings.telegramBotSettings.connection.title}
+                            <div class="b3-label__text">{i18n.settings.telegramBotSettings.connection.description}</div>
+                            <div class="fn__hr"></div>
+                            <TelegramConnection {plugin} />
+                        </div>
+
+                        <!-- Token -->
+                        <Item
+                            block={true}
+                            text={i18n.settings.telegramBotSettings.token.description}
+                            title={i18n.settings.telegramBotSettings.token.title}
+                        >
+                            {#snippet input()}
+                                <Input
+                                    block={true}
+                                    onChanged={async (e) => {
+                                        config.telegram.token = e.value.trim();
+                                        await updated();
+                                    }}
+                                    placeholder={i18n.settings.telegramBotSettings.token.placeholder}
+                                    settingKey="telegramToken"
+                                    settingValue={config.telegram.token}
+                                    type={ItemType.text}
+                                />
+                            {/snippet}
+                        </Item>
+
+                        <!-- Bot API 地址 -->
+                        <Item
+                            block={true}
+                            text={i18n.settings.telegramBotSettings.apiBaseUrl.description}
+                            title={i18n.settings.telegramBotSettings.apiBaseUrl.title}
+                        >
+                            {#snippet input()}
+                                <Input
+                                    block={true}
+                                    onChanged={async (e) => {
+                                        config.telegram.apiBaseUrl = e.value.trim();
+                                        await updated();
+                                    }}
+                                    placeholder={DEFAULT_API_BASE_URL}
+                                    settingKey="telegramApiBaseUrl"
+                                    settingValue={config.telegram.apiBaseUrl}
+                                    type={ItemType.text}
+                                />
+                            {/snippet}
+                        </Item>
+
+                        <!-- 事件日志 -->
+                        <Item
+                            text={i18n.settings.telegramBotSettings.eventLog.description}
+                            title={i18n.settings.telegramBotSettings.eventLog.title}
+                        >
+                            {#snippet input()}
+                                <Input
+                                    onChanged={async (e) => {
+                                        config.telegram.eventLog = e.value;
+                                        await updated();
+                                    }}
+                                    settingKey="telegramEventLog"
+                                    settingValue={config.telegram.eventLog}
+                                    type={ItemType.checkbox}
+                                />
+                            {/snippet}
+                        </Item>
+
+                        <!-- 运行设备 -->
+                        <Item title={i18n.settings.telegramBotSettings.device.title}>
+                            {#snippet textSlot()}
+                                {i18n.settings.telegramBotSettings.device.description}
+                                <br />
+                                {i18n.settings.telegramBotSettings.device.current} <code class="fn__code">{currentDevice}</code>
+                                <br />
+                                {#if telegramDevice}
+                                    {i18n.settings.telegramBotSettings.device.assigned} <code class="fn__code">{telegramDevice}</code>
+                                {:else}
+                                    {i18n.settings.telegramBotSettings.device.unassigned}
+                                {/if}
+                            {/snippet}
+                            {#snippet input()}
+                                <Input
+                                    onChanged={async (e) => {
+                                        telegramDevice = e.value ? currentDevice : "";
+                                        config.telegram.device = telegramDevice;
+                                        await updated();
+                                    }}
+                                    settingKey="telegramDevice"
+                                    settingValue={telegramDevice === currentDevice}
+                                    type={ItemType.checkbox}
+                                />
+                            {/snippet}
+                        </Item>
+                    </div>
+
+                    <!-- 标签页 2 - 收集箱 -->
+                    <div
+                        class:fn__none={telegramTabs[1].key !== focusTab}
+                        data-type={telegramTabs[1].name}
+                    >
+                        <!-- 绑定会话: 不能放进 Item 的 label 中, 否则点击空白处会切换第一个开关 -->
+                        <div class="b3-label">
+                            <!-- eslint-disable-next-line svelte/no-at-html-tags -->
+                            {@html telegramBindingsTitle}
+                            {#each telegramBindings as binding, index (binding)}
+                                <div class="fn__hr"></div>
+                                <div class="binding">
+                                    <div class="binding__fields">
+                                        <label class="binding__field">
+                                            <span>{i18n.settings.telegramBotSettings.inboxBindings.chat}</span>
+                                            <Input
+                                                block={true}
+                                                onChanged={async (e) => {
+                                                    binding.chat = e.value.trim();
+                                                    await saveTelegramBindings();
+                                                }}
+                                                placeholder={i18n.settings.telegramBotSettings.inboxBindings.chatPlaceholder}
+                                                settingKey="chat"
+                                                settingValue={binding.chat}
+                                                type={ItemType.text}
+                                            />
+                                        </label>
+                                        <label class="binding__field">
+                                            <span>{i18n.settings.telegramBotSettings.inboxBindings.doc}</span>
+                                            <Input
+                                                block={true}
+                                                onChanged={async (e) => {
+                                                    binding.doc = e.value.trim();
+                                                    await saveTelegramBindings();
+                                                }}
+                                                placeholder={i18n.settings.telegramBotSettings.inboxBindings.docPlaceholder}
+                                                settingKey="doc"
+                                                settingValue={binding.doc}
+                                                type={ItemType.text}
+                                            />
+                                        </label>
+                                    </div>
+                                    <div class="fn__flex binding__switches">
+                                        <label class="fn__flex">
+                                            <span class="binding__switch">{i18n.settings.telegramBotSettings.inboxBindings.enabled}</span>
+                                            <span class="fn__space"></span>
+                                            <Input
+                                                onChanged={async (e) => {
+                                                    binding.enabled = e.value;
+                                                    await saveTelegramBindings();
+                                                }}
+                                                settingKey="enabled"
+                                                settingValue={binding.enabled}
+                                                type={ItemType.checkbox}
+                                            />
+                                        </label>
+                                        <label class="fn__flex">
+                                            <span class="binding__switch">{i18n.settings.telegramBotSettings.inboxBindings.reply}</span>
+                                            <span class="fn__space"></span>
+                                            <Input
+                                                onChanged={async (e) => {
+                                                    binding.reply = e.value;
+                                                    await saveTelegramBindings();
+                                                }}
+                                                settingKey="reply"
+                                                settingValue={binding.reply}
+                                                type={ItemType.checkbox}
+                                            />
+                                        </label>
+                                        <label class="fn__flex">
+                                            <span class="binding__switch">{i18n.settings.telegramBotSettings.inboxBindings.notify}</span>
+                                            <span class="fn__space"></span>
+                                            <Input
+                                                onChanged={async (e) => {
+                                                    binding.notify = e.value;
+                                                    await saveTelegramBindings();
+                                                }}
+                                                settingKey="notify"
+                                                settingValue={binding.notify}
+                                                type={ItemType.checkbox}
+                                            />
+                                        </label>
+                                        <button
+                                            class="b3-button b3-button--remove binding__remove"
+                                            onclick={() => removeTelegramBinding(index)}
+                                        >
+                                            {i18n.settings.telegramBotSettings.inboxBindings.remove}
+                                        </button>
+                                    </div>
+                                </div>
+                            {/each}
+                            <div class="fn__hr"></div>
+                            <button
+                                class="b3-button b3-button--outline"
+                                onclick={addTelegramBinding}
+                            >
+                                {i18n.settings.telegramBotSettings.inboxBindings.add}
+                            </button>
+                        </div>
+
+                        <!-- 下载资源文件 -->
+                        <Item
+                            text={i18n.settings.telegramBotSettings.inboxDownloadAssets.description}
+                            title={i18n.settings.telegramBotSettings.inboxDownloadAssets.title}
+                        >
+                            {#snippet input()}
+                                <Input
+                                    onChanged={async (e) => {
+                                        config.telegram.inbox.downloadAssets = e.value;
+                                        await updated();
+                                    }}
+                                    settingKey="telegramDownloadAssets"
+                                    settingValue={config.telegram.inbox.downloadAssets}
                                     type={ItemType.checkbox}
                                 />
                             {/snippet}
