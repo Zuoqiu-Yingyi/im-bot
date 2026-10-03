@@ -2,7 +2,7 @@
     "name": "im-bot",
     "author": "Zuoqiu Yingyi",
     "url": "https://github.com/Zuoqiu-Yingyi/siyuan-plugin-im-bot",
-    "version": "0.3.0",
+    "version": "0.4.0",
     "minAppVersion": "3.8.6",
     "disabledInPublish": true,
     "keywords": [
